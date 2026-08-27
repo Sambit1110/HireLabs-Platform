@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireLabs - AI Resume Scorer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="branding">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F9D2BA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <h1>HireLabs</h1>
+                </div>
+                <div class="hero-content">
+                    <h2>Elevate Your Resume with AI</h2>
+                    <p>Upload your resume and get AI-generated insights, suggested answers, and a precise score out of 100 to maximize your hiring potential.</p>
+                </div>
+            </div>
+            
+            <div class="illustration-container">
+                <img src="C:/Users/hritt/.gemini/antigravity-ide/brain/5864df6d-0ffe-4a93-af7f-e30ac1c0f6a5/resume_ai_illustration_1787854997874.jpg" alt="AI Resume Analysis Illustration" class="hero-image">
+                <div class="glass-card score-card">
+                    <div class="score-circle">
+                        <span class="score-value">98</span>
+                        <span class="score-max">/100</span>
+                    </div>
+                    <div class="score-text">AI Match Score</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="login-wrapper">
+                <div class="login-header">
+                    <h2>Welcome back</h2>
+                    <p>Log in to access your AI resume insights</p>
+                </div>
+                
+                <form class="login-form">
+                    <div class="input-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" placeholder="name@example.com" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label for="password">Password</label>
+                            <a href="#" class="forgot-password">Forgot password?</a>
+                        </div>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">
+                        Sign In
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                    
+                    <div class="divider">
+                        <span>or continue with</span>
+                    </div>
+                    
+                    <div class="social-login">
+                        <button type="button" class="btn-outline" id="google-login">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                            </svg>
+                            Google
+                        </button>
+                    </div>
+                </form>
+                
+                <p class="signup-prompt">
+                    Don't have an account? <a href="signup.html">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Supabase (Replace with your actual URL and Anon Key)
+        const supabaseUrl = 'https://zqbxcgbcllvhabkthkdi.supabase.co';
+        const supabaseKey = 'sb_publishable_TKIlfHx3W5hScrkGxIE27w_DecJFwLV';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        document.querySelector('.login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-primary');
+            const originalContent = btn.innerHTML;
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            btn.innerHTML = '<span class="loader"></span> Loading...';
+            btn.style.opacity = '0.8';
+            btn.disabled = true;
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+            
+            btn.innerHTML = originalContent;
+            btn.style.opacity = '1';
+            btn.disabled = false;
+            
+            if (error) {
+                alert('Login failed: ' + error.message);
+            } else {
+                alert('Login successful! Welcome to HireLabs.');
+                // Redirect user to dashboard
+                // window.location.href = '/dashboard.html';
+            }
+        });
+
+        // Google OAuth Login
+        document.getElementById('google-login').addEventListener('click', async () => {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+            
+            if (error) {
+                alert('Google login failed: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
