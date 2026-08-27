@@ -1,4 +1,4 @@
-# PrepGenius
+# HireLabs
 
 Production-oriented AI resume parser and semantic applicant tracking system. It uses Next.js App Router, Supabase Auth/Postgres/Storage, Gemini embeddings, and pgvector. Resume files stay in a private Supabase Storage bucket; vectors and candidate profiles are scoped to the signed-in HR user through RLS.
 
