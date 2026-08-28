@@ -127,7 +127,7 @@ export function InteractiveDemo({ onAuthRequired }) {
         <div className="sandbox-container">
           {activeTab === 'parser' && (
             <div className="sandbox-grid">
-              <div className="sandbox-panel">
+              <div className="sandbox-panel" style={{ minWidth: 0, overflow: 'hidden' }}>
                 <div className="panel-header">
                   <span className="panel-title">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -213,15 +213,48 @@ export function InteractiveDemo({ onAuthRequired }) {
               </div>
 
               {/* Code Box */}
-              <div className="sandbox-panel">
-                <div className="code-display-box">
-                  <div className="code-box-header">
-                    <div className="code-box-tabs">
-                      <span className="code-tab-btn active">normalized_profile.json</span>
+              <div className="sandbox-panel" style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div className="code-display-box" style={{ minWidth: 0, width: '100%', overflow: 'hidden' }}>
+                  <div
+                    className="code-box-header"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.6rem',
+                      minWidth: 0,
+                    }}
+                  >
+                    <div className="code-box-tabs" style={{ minWidth: 0, maxWidth: '100%' }}>
+                      <span
+                        className="code-tab-btn active"
+                        style={{
+                          display: 'block',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        normalized_profile.json
+                      </span>
                     </div>
-                    <Badge variant="cyan">1536 Dimensions (Gemini-002)</Badge>
+                    <div style={{ minWidth: 0, flexShrink: 1, maxWidth: '100%' }}>
+                      <Badge variant="cyan">1536 Dimensions (Gemini-002)</Badge>
+                    </div>
                   </div>
-                  <pre className="code-content">
+                  <pre
+                    className="code-content"
+                    style={{
+                      maxWidth: '100%',
+                      minWidth: 0,
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
 {`{
   "candidate_profile": {
     "full_name": "${selectedResume === 'alex' ? 'Alex Mercer' : selectedResume === 'sarah' ? 'Dr. Sarah Lin' : 'Elena Rostova'}",
