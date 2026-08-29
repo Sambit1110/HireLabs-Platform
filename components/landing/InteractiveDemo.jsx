@@ -1,4 +1,11 @@
-import React, { useRef, useState } from 'react';
+'use client';
+
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
 import { Tabs } from '../ui/Tabs';
 import { Button } from '../ui/Button';
 import { createClient } from '@/lib/supabase/client';
@@ -16,8 +23,32 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState('');
   const [isInteractive, setIsInteractive] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
+  const sectionRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      {
+        threshold: 0.08,
+        rootMargin: '0px 0px -10% 0px',
+      }
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, []);
 
   const candidates = [
     {
@@ -88,6 +119,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
       if (!user) {
         onAuthRequired?.();
+
         throw new Error(
           'Sign in to upload and save resumes.'
         );
@@ -101,33 +133,35 @@ export function InteractiveDemo({ onAuthRequired }) {
       const filePath =
         `${user.id}/${crypto.randomUUID()}.${extension}`;
 
-      const { error: storageError } =
-        await supabase.storage
-          .from('resumes')
-          .upload(
-            filePath,
-            file,
-            {
-              contentType: file.type,
-              upsert: false,
-            }
-          );
+      const {
+        error: storageError,
+      } = await supabase.storage
+        .from('resumes')
+        .upload(
+          filePath,
+          file,
+          {
+            contentType: file.type,
+            upsert: false,
+          }
+        );
 
       if (storageError) {
         throw storageError;
       }
 
-      const { error: dbError } =
-        await supabase
-          .from('resumes')
-          .insert({
-            user_id: user.id,
-            file_name: file.name,
-            file_path: filePath,
-            file_type: file.type,
-            file_size: file.size,
-            processing_status: 'uploaded',
-          });
+      const {
+        error: dbError,
+      } = await supabase
+        .from('resumes')
+        .insert({
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          processing_status: 'uploaded',
+        });
 
       if (dbError) {
         await supabase.storage
@@ -228,6 +262,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
   const handleDrop = (event) => {
     event.preventDefault();
+
     acceptResume(
       event.dataTransfer.files?.[0]
     );
@@ -272,7 +307,12 @@ export function InteractiveDemo({ onAuthRequired }) {
           stroke="currentColor"
           strokeWidth="1.7"
         >
-          <circle cx="11" cy="11" r="8" />
+          <circle
+            cx="11"
+            cy="11"
+            r="8"
+          />
+
           <line
             x1="21"
             y1="21"
@@ -289,6 +329,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
     requestAnimationFrame(() => {
       setActiveTab(tab);
+
       requestAnimationFrame(() => {
         setIsInteractive(true);
       });
@@ -297,14 +338,23 @@ export function InteractiveDemo({ onAuthRequired }) {
 
   return (
     <section
+      ref={sectionRef}
       className={`hl-demo-section ${
         isInteractive
           ? 'hl-demo-interactive'
+          : ''
+      } ${
+        isVisible
+          ? 'hl-demo-visible'
           : ''
       }`}
       id="demo"
     >
       <style>{`
+        /* =====================================================
+           MAIN SECTION
+           ===================================================== */
+
         .hl-demo-section {
           --cream: #F5F1E8;
           --cream-deep: #ECE6DA;
@@ -341,8 +391,9 @@ export function InteractiveDemo({ onAuthRequired }) {
           box-sizing: border-box;
         }
 
+
         /* =====================================================
-           AMBIENT BACKGROUND
+           HERO → DEMO CONTINUITY
            ===================================================== */
 
         .hl-demo-section::before {
@@ -350,11 +401,70 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           position: absolute;
 
-          width: 780px;
-          height: 780px;
+          top: 0;
+          left: 50%;
 
-          right: -390px;
-          top: 4%;
+          width: 1px;
+          height: 150px;
+
+          transform:
+            translateX(-50%)
+            scaleY(0);
+
+          transform-origin:
+            top center;
+
+          background:
+            linear-gradient(
+              to bottom,
+              rgba(
+                111,
+                125,
+                85,
+                0
+              ),
+              rgba(
+                111,
+                125,
+                85,
+                0.42
+              ),
+              rgba(
+                111,
+                125,
+                85,
+                0
+              )
+            );
+
+          transition:
+            transform 1.2s
+            cubic-bezier(
+              0.16,
+              1,
+              0.3,
+              1
+            );
+
+          z-index: 1;
+
+          pointer-events:
+            none;
+        }
+
+        .hl-demo-section.hl-demo-visible::before {
+          transform:
+            translateX(-50%)
+            scaleY(1);
+        }
+
+
+        /* =====================================================
+           AMBIENT BACKGROUND RINGS
+           ===================================================== */
+
+        .hl-demo-section .hl-demo-ambient-ring {
+          position: absolute;
 
           border-radius: 50%;
 
@@ -367,35 +477,31 @@ export function InteractiveDemo({ onAuthRequired }) {
               0.08
             );
 
-          opacity: 0.75;
-
           pointer-events: none;
         }
 
-        .hl-demo-section::after {
-          content: '';
+        .hl-demo-section .hl-demo-ambient-ring.one {
+          width: 780px;
+          height: 780px;
 
-          position: absolute;
+          right: -390px;
+          top: 4%;
+        }
 
+        .hl-demo-section .hl-demo-ambient-ring.two {
           width: 500px;
           height: 500px;
 
           left: -300px;
           bottom: 4%;
 
-          border-radius: 50%;
-
-          border:
-            1px dashed
-            rgba(
-              111,
-              125,
-              85,
-              0.07
-            );
-
-          pointer-events: none;
+          border-style: dashed;
         }
+
+
+        /* =====================================================
+           SHELL
+           ===================================================== */
 
         .hl-demo-shell {
           position: relative;
@@ -411,24 +517,122 @@ export function InteractiveDemo({ onAuthRequired }) {
           margin: 0 auto;
         }
 
+
         /* =====================================================
-           HEADER
+           CONTINUATION LABEL
            ===================================================== */
 
-        .hl-demo-heading {
-          max-width: 820px;
+        .hl-demo-shell::before {
+          content:
+            'THE SIGNAL CONTINUES';
 
-          margin-bottom: 62px;
+          display: block;
+
+          width: fit-content;
+
+          margin:
+            0 auto 38px;
+
+          padding:
+            8px 11px;
+
+          border:
+            1px solid
+            var(--border);
+
+          border-radius:
+            999px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.58
+            );
+
+          color:
+            var(--olive-dark);
+
+          font-size:
+            8px;
+
+          line-height: 1;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            0.14em;
+
+          text-transform:
+            uppercase;
 
           opacity: 0;
 
           transform:
             translate3d(
               0,
-              32px,
+              22px,
               0
             );
 
+          transition:
+            opacity 800ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 900ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-demo-section.hl-demo-visible
+          .hl-demo-shell::before {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
+        }
+
+
+        /* =====================================================
+           HEADING
+           ===================================================== */
+
+        .hl-demo-heading {
+          max-width: 820px;
+
+          margin-top: 12px;
+
+          margin-bottom: 58px;
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              38px,
+              0
+            );
+
+          animation: none;
+        }
+
+        .hl-demo-section.hl-demo-visible
+          .hl-demo-heading {
           animation:
             hlDemoHeadingIn
             1s
@@ -470,6 +674,8 @@ export function InteractiveDemo({ onAuthRequired }) {
           font-size: 10px;
 
           font-weight: 800;
+
+          line-height: 1;
 
           letter-spacing: 0.15em;
 
@@ -540,6 +746,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           line-height: 1.7;
         }
 
+
         /* =====================================================
            TABS
            ===================================================== */
@@ -553,7 +760,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           padding: 5px;
 
-          margin-bottom: 25px;
+          margin-bottom: 27px;
 
           border:
             1px solid
@@ -574,10 +781,15 @@ export function InteractiveDemo({ onAuthRequired }) {
           transform:
             translate3d(
               0,
-              18px,
+              24px,
               0
             );
 
+          animation: none;
+        }
+
+        .hl-demo-section.hl-demo-visible
+          .hl-demo-tabs {
           animation:
             hlDemoTabsIn
             850ms
@@ -587,7 +799,7 @@ export function InteractiveDemo({ onAuthRequired }) {
               0.3,
               1
             )
-            430ms
+            390ms
             forwards;
         }
 
@@ -663,6 +875,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             );
         }
 
+
         /* =====================================================
            MAIN DEMO CARD
            ===================================================== */
@@ -698,16 +911,21 @@ export function InteractiveDemo({ onAuthRequired }) {
           transform:
             translate3d(
               0,
-              38px,
+              48px,
               0
             )
             scale(
-              0.985
+              0.975
             );
 
+          animation: none;
+        }
+
+        .hl-demo-section.hl-demo-visible
+          .hl-demo-card {
           animation:
             hlDemoCardIn
-            1.15s
+            1.2s
             cubic-bezier(
               0.16,
               1,
@@ -747,6 +965,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           overflow: hidden;
         }
+
 
         /* =====================================================
            TOOLBAR
@@ -838,6 +1057,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             );
         }
 
+
         /* =====================================================
            PARSER LAYOUT
            ===================================================== */
@@ -915,6 +1135,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           line-height: 1.65;
         }
 
+
         /* =====================================================
            SAMPLE RESUMES
            ===================================================== */
@@ -983,6 +1204,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           color:
             var(--cream);
         }
+
 
         /* =====================================================
            DROPZONE
@@ -1126,6 +1348,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             #7E756C;
         }
 
+
         /* =====================================================
            PROCESSING PIPELINE
            ===================================================== */
@@ -1257,6 +1480,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           font-weight: 700;
         }
+
 
         /* =====================================================
            CODE PANEL
@@ -1531,6 +1755,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           font-weight: 800;
         }
 
+
         /* =====================================================
            TAB TRANSITION
            ===================================================== */
@@ -1576,6 +1801,7 @@ export function InteractiveDemo({ onAuthRequired }) {
               );
           }
         }
+
 
         /* =====================================================
            MATCHER
@@ -1762,6 +1988,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           margin-top: 21px;
         }
+
 
         /* =====================================================
            RESULTS
@@ -2107,6 +2334,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           font-weight: 800;
         }
 
+
         /* =====================================================
            TRUST STRIP
            ===================================================== */
@@ -2176,6 +2404,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             uppercase;
         }
 
+
         /* =====================================================
            TABLET
            ===================================================== */
@@ -2203,6 +2432,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           }
         }
 
+
         /* =====================================================
            MOBILE
            ===================================================== */
@@ -2222,8 +2452,22 @@ export function InteractiveDemo({ onAuthRequired }) {
               );
           }
 
+          .hl-demo-section::before {
+            height:
+              95px;
+          }
+
+          .hl-demo-shell::before {
+            margin-bottom:
+              27px;
+          }
+
           .hl-demo-heading {
-            margin-bottom: 44px;
+            margin-top:
+              5px;
+
+            margin-bottom:
+              44px;
           }
 
           .hl-demo-title {
@@ -2303,6 +2547,7 @@ export function InteractiveDemo({ onAuthRequired }) {
           }
         }
 
+
         /* =====================================================
            REDUCED MOTION
            ===================================================== */
@@ -2313,13 +2558,17 @@ export function InteractiveDemo({ onAuthRequired }) {
           .hl-demo-heading,
           .hl-demo-tabs,
           .hl-demo-card,
-          .hl-result-card {
+          .hl-result-card,
+          .hl-demo-shell::before,
+          .hl-demo-section::before {
             animation: none !important;
 
             opacity: 1 !important;
 
             transform:
               none !important;
+
+            transition: none !important;
           }
 
           .hl-dropzone,
@@ -2332,11 +2581,15 @@ export function InteractiveDemo({ onAuthRequired }) {
         }
       `}</style>
 
+      {/* =====================================================
+          MAIN DEMO SHELL
+          ===================================================== */}
+
       <div className="hl-demo-shell">
 
-        {/* =========================================
+        {/* ===================================================
             INTRO
-           ========================================= */}
+           =================================================== */}
 
         <div className="hl-demo-heading">
 
@@ -2360,9 +2613,10 @@ export function InteractiveDemo({ onAuthRequired }) {
 
         </div>
 
-        {/* =========================================
+
+        {/* ===================================================
             TABS
-           ========================================= */}
+           =================================================== */}
 
         <div className="hl-demo-tabs">
 
@@ -2389,9 +2643,10 @@ export function InteractiveDemo({ onAuthRequired }) {
 
         </div>
 
-        {/* =========================================
-            DEMO
-           ========================================= */}
+
+        {/* ===================================================
+            DEMO CARD
+           =================================================== */}
 
         <div
           className={`hl-demo-card ${
@@ -2402,17 +2657,19 @@ export function InteractiveDemo({ onAuthRequired }) {
         >
           <div className="hl-demo-inner">
 
-            {/* =====================================
+            {/* =================================================
                 TOOLBAR
-               ===================================== */}
+               ================================================= */}
 
             <div className="hl-demo-toolbar">
 
               <div className="hl-demo-toolbar-title">
 
                 <span>
+
                   {activeTab ===
                   'parser' ? (
+
                     <svg
                       width="15"
                       height="15"
@@ -2424,7 +2681,9 @@ export function InteractiveDemo({ onAuthRequired }) {
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
+
                   ) : (
+
                     <svg
                       width="15"
                       height="15"
@@ -2438,6 +2697,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                         cy="11"
                         r="8"
                       />
+
                       <line
                         x1="21"
                         y1="21"
@@ -2445,36 +2705,47 @@ export function InteractiveDemo({ onAuthRequired }) {
                         y2="16.65"
                       />
                     </svg>
+
                   )}
+
                 </span>
 
                 <span>
+
                   {activeTab ===
                   'parser'
                     ? 'Resume intelligence'
                     : 'Semantic candidate matching'}
+
                 </span>
 
               </div>
 
+
               <div className="hl-demo-status">
+
                 <span className="hl-demo-status-dot" />
 
                 Private workspace
+
               </div>
 
             </div>
 
-            {/* =====================================
-                PARSER TAB
-               ===================================== */}
 
-            {activeTab === 'parser' && (
+            {/* =================================================
+                PARSER TAB
+               ================================================= */}
+
+            {activeTab ===
+              'parser' && (
               <div className="hl-demo-transition">
 
                 <div className="hl-demo-grid">
 
-                  {/* LEFT */}
+                  {/* =========================================
+                      LEFT PANEL
+                     ========================================= */}
 
                   <div className="hl-demo-panel">
 
@@ -2493,12 +2764,17 @@ export function InteractiveDemo({ onAuthRequired }) {
                       authentication.
                     </p>
 
+
+                    {/* SAMPLE CANDIDATES */}
+
                     <div className="hl-sample-list">
 
                       {candidates.map(
                         (candidate) => (
                           <button
-                            key={candidate.id}
+                            key={
+                              candidate.id
+                            }
                             type="button"
                             className={`hl-sample-button ${
                               selectedResume ===
@@ -2520,12 +2796,17 @@ export function InteractiveDemo({ onAuthRequired }) {
                               );
                             }}
                           >
-                            {candidate.name}
+                            {
+                              candidate.name
+                            }
                           </button>
                         )
                       )}
 
                     </div>
+
+
+                    {/* FILE INPUT */}
 
                     <input
                       ref={fileInputRef}
@@ -2534,12 +2815,18 @@ export function InteractiveDemo({ onAuthRequired }) {
                       style={{
                         display: 'none',
                       }}
-                      onChange={(event) =>
+                      onChange={(
+                        event
+                      ) =>
                         acceptResume(
-                          event.target.files?.[0]
+                          event.target
+                            .files?.[0]
                         )
                       }
                     />
+
+
+                    {/* DROPZONE */}
 
                     <div
                       className="hl-dropzone"
@@ -2548,7 +2835,9 @@ export function InteractiveDemo({ onAuthRequired }) {
                       onClick={() =>
                         fileInputRef.current?.click()
                       }
-                      onKeyDown={(event) => {
+                      onKeyDown={(
+                        event
+                      ) => {
                         if (
                           event.key ===
                             'Enter' ||
@@ -2559,14 +2848,19 @@ export function InteractiveDemo({ onAuthRequired }) {
                           fileInputRef.current?.click();
                         }
                       }}
-                      onDragOver={(event) =>
+                      onDragOver={(
+                        event
+                      ) =>
                         event.preventDefault()
                       }
-                      onDrop={handleDrop}
+                      onDrop={
+                        handleDrop
+                      }
                       aria-label="Upload a PDF or DOCX resume"
                     >
 
                       <div className="hl-drop-icon">
+
                         <svg
                           width="22"
                           height="22"
@@ -2579,27 +2873,37 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <path d="m7 9 5-5 5 5" />
                           <path d="M5 19h14" />
                         </svg>
+
                       </div>
+
 
                       <div>
 
                         <div className="hl-upload-title">
+
                           {isParsing
                             ? 'Reading your resume…'
                             : uploadedFile
                               ? uploadedFile.name
                               : 'Drop a resume here'}
+
                         </div>
 
+
                         <div className="hl-upload-subtitle">
+
                           {uploadedFile
                             ? 'Saving this file to your private resume library.'
                             : 'PDF or DOCX · maximum file size 5 MB'}
+
                         </div>
 
                       </div>
 
                     </div>
+
+
+                    {/* UPLOAD STATUS */}
 
                     {uploadMessage && (
                       <p
@@ -2626,24 +2930,36 @@ export function InteractiveDemo({ onAuthRequired }) {
                       </p>
                     )}
 
+
+                    {/* REMOVE FILE */}
+
                     {uploadedFile &&
                       !isParsing && (
                         <button
                           type="button"
-                          onClick={resetUpload}
+                          onClick={
+                            resetUpload
+                          }
                           style={{
                             marginTop:
                               '10px',
+
                             border: 0,
+
                             background:
                               'transparent',
+
                             color:
                               '#7C736A',
+
                             padding: 0,
+
                             fontSize:
                               '9px',
+
                             fontWeight:
                               800,
+
                             cursor:
                               'pointer',
                           }}
@@ -2652,14 +2968,23 @@ export function InteractiveDemo({ onAuthRequired }) {
                         </button>
                       )}
 
+
+                    {/* PROCESSING PIPELINE */}
+
                     <div className="hl-pipeline">
 
                       <div className="hl-pipeline-title">
+
                         <span />
+
                         Processing flow
+
                       </div>
 
+
                       <div className="hl-pipeline-row">
+
+                        {/* STAGE 01 */}
 
                         <div
                           className={`hl-pipeline-stage ${
@@ -2671,6 +2996,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               : ''
                           }`}
                         >
+
                           <span className="hl-pipeline-icon">
                             01
                           </span>
@@ -2678,7 +3004,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <span>
                             Private upload
                           </span>
+
                         </div>
+
+
+                        {/* STAGE 02 */}
 
                         <div
                           className={`hl-pipeline-stage ${
@@ -2689,6 +3019,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               : ''
                           }`}
                         >
+
                           <span className="hl-pipeline-icon">
                             02
                           </span>
@@ -2696,7 +3027,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <span>
                             Text extraction
                           </span>
+
                         </div>
+
+
+                        {/* STAGE 03 */}
 
                         <div
                           className={`hl-pipeline-stage ${
@@ -2707,6 +3042,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               : ''
                           }`}
                         >
+
                           <span className="hl-pipeline-icon">
                             03
                           </span>
@@ -2714,7 +3050,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <span>
                             AI normalization
                           </span>
+
                         </div>
+
+
+                        {/* STAGE 04 */}
 
                         <div
                           className={`hl-pipeline-stage ${
@@ -2725,6 +3065,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               : ''
                           }`}
                         >
+
                           <span className="hl-pipeline-icon">
                             04
                           </span>
@@ -2732,6 +3073,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <span>
                             Vector embedding
                           </span>
+
                         </div>
 
                       </div>
@@ -2740,7 +3082,10 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                   </div>
 
-                  {/* RIGHT */}
+
+                  {/* =========================================
+                      RIGHT PANEL
+                     ========================================= */}
 
                   <div className="hl-demo-panel">
 
@@ -2749,15 +3094,20 @@ export function InteractiveDemo({ onAuthRequired }) {
                       <div className="hl-code-top">
 
                         <div className="hl-code-file">
+
                           <span className="hl-code-dot" />
+
                           normalized_profile.json
+
                         </div>
+
 
                         <div className="hl-code-model">
                           Gemini embedding 002
                         </div>
 
                       </div>
+
 
                       <div className="hl-code-content">
 
@@ -2788,7 +3138,8 @@ export function InteractiveDemo({ onAuthRequired }) {
 <span className="hl-code-number">
   {selectedResume === 'alex'
     ? 8
-    : selectedResume === 'sarah'
+    : selectedResume ===
+        'sarah'
       ? 10
       : 12}
 </span>{`
@@ -2883,15 +3234,18 @@ export function InteractiveDemo({ onAuthRequired }) {
 }`}
                         </pre>
 
+
                         <div className="hl-vector-box">
 
                           <div className="hl-vector-label">
                             Searchable representation
                           </div>
 
+
                           <div className="hl-vector-value">
                             [-0.02341, 0.08412, -0.05193, 0.01248, ...]
                           </div>
+
 
                           <div className="hl-vector-meta">
 
@@ -2919,9 +3273,13 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                 </div>
 
+
+                {/* TRUST STRIP */}
+
                 <div className="hl-trust-strip">
 
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       PDF + DOCX
                     </span>
@@ -2929,9 +3287,12 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Resume input formats
                     </span>
+
                   </div>
 
+
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       1536
                     </span>
@@ -2939,9 +3300,12 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Embedding dimensions
                     </span>
+
                   </div>
 
+
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       RLS
                     </span>
@@ -2949,6 +3313,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Private data boundary
                     </span>
+
                   </div>
 
                 </div>
@@ -2956,14 +3321,20 @@ export function InteractiveDemo({ onAuthRequired }) {
               </div>
             )}
 
-            {/* =====================================
-                MATCHER TAB
-               ===================================== */}
 
-            {activeTab === 'matcher' && (
+            {/* =================================================
+                MATCHER TAB
+               ================================================= */}
+
+            {activeTab ===
+              'matcher' && (
               <div className="hl-demo-transition">
 
                 <div className="hl-match-layout">
+
+                  {/* =========================================
+                      FORM PANEL
+                     ========================================= */}
 
                   <div className="hl-form-panel">
 
@@ -2981,26 +3352,34 @@ export function InteractiveDemo({ onAuthRequired }) {
                       against it.
                     </p>
 
+
+                    {/* MATCH MODE */}
+
                     <div className="hl-toggle">
 
                       <button
                         type="button"
                         className={
-                          matchMode === 'best'
+                          matchMode ===
+                          'best'
                             ? 'active'
                             : ''
                         }
                         onClick={() =>
-                          setMatchMode('best')
+                          setMatchMode(
+                            'best'
+                          )
                         }
                       >
                         Find best match
                       </button>
 
+
                       <button
                         type="button"
                         className={
-                          matchMode === 'specific'
+                          matchMode ===
+                          'specific'
                             ? 'active'
                             : ''
                         }
@@ -3015,6 +3394,9 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     </div>
 
+
+                    {/* SPECIFIC RESUME */}
+
                     {matchMode ===
                       'specific' && (
                       <label className="hl-field">
@@ -3023,17 +3405,21 @@ export function InteractiveDemo({ onAuthRequired }) {
                           Resume to evaluate
                         </span>
 
+
                         <select
                           value={
                             selectedResume
                           }
-                          onChange={(event) =>
+                          onChange={(
+                            event
+                          ) =>
                             setSelectedResume(
                               event.target
                                 .value
                             )
                           }
                         >
+
                           {candidates.map(
                             (candidate) => (
                               <option
@@ -3044,15 +3430,24 @@ export function InteractiveDemo({ onAuthRequired }) {
                                   candidate.id
                                 }
                               >
-                                {candidate.name} —{' '}
-                                {candidate.title}
+                                {
+                                  candidate.name
+                                }{' '}
+                                —{' '}
+                                {
+                                  candidate.title
+                                }
                               </option>
                             )
                           )}
+
                         </select>
 
                       </label>
                     )}
+
+
+                    {/* ROLE */}
 
                     <label className="hl-field">
 
@@ -3060,11 +3455,15 @@ export function InteractiveDemo({ onAuthRequired }) {
                         Role
                       </span>
 
+
                       <input
                         value={role}
-                        onChange={(event) =>
+                        onChange={(
+                          event
+                        ) =>
                           setRole(
-                            event.target.value
+                            event.target
+                              .value
                           )
                         }
                         placeholder="e.g. Senior Data Engineer"
@@ -3072,18 +3471,24 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     </label>
 
+
+                    {/* JOB DESCRIPTION */}
+
                     <label className="hl-field">
 
                       <span className="hl-field-label">
                         Job description
                       </span>
 
+
                       <textarea
                         rows={6}
                         value={
                           jobDescription
                         }
-                        onChange={(event) =>
+                        onChange={(
+                          event
+                        ) =>
                           setJobDescription(
                             event.target
                               .value
@@ -3094,14 +3499,20 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     </label>
 
+
+                    {/* MATCH BUTTON */}
+
                     <div className="hl-match-button">
 
                       <Button
                         variant="primary"
                         style={{
-                          width: '100%',
+                          width:
+                            '100%',
                         }}
-                        onClick={runMatch}
+                        onClick={
+                          runMatch
+                        }
                         disabled={
                           !role.trim() ||
                           !jobDescription.trim()
@@ -3119,11 +3530,14 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <path d="M13 2 3 14h9l-1 8 10-12h-9z" />
                         </svg>
 
+
                         <span>
+
                           {matchMode ===
                           'best'
                             ? 'Find best resume match'
                             : 'Check compatibility'}
+
                         </span>
 
                       </Button>
@@ -3131,6 +3545,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                     </div>
 
                   </div>
+
+
+                  {/* =========================================
+                      RESULTS PANEL
+                     ========================================= */}
 
                   <div className="hl-result-panel">
 
@@ -3148,6 +3567,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                       </div>
 
+
                       {matchResult && (
                         <div className="hl-result-count">
                           {
@@ -3158,12 +3578,16 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     </div>
 
+
+                    {/* EMPTY STATE */}
+
                     {!matchResult && (
                       <div className="hl-empty-state">
 
                         <div>
 
                           <div className="hl-empty-icon">
+
                             <svg
                               width="21"
                               height="21"
@@ -3177,13 +3601,17 @@ export function InteractiveDemo({ onAuthRequired }) {
                                 cy="11"
                                 r="7"
                               />
+
                               <path d="m20 20-4-4" />
                             </svg>
+
                           </div>
+
 
                           <div className="hl-empty-title">
                             Your shortlist starts here.
                           </div>
+
 
                           <p className="hl-empty-copy">
                             Enter a role and run a match
@@ -3196,6 +3624,9 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                       </div>
                     )}
+
+
+                    {/* RESULTS */}
 
                     {matchResult && (
                       <div className="hl-results">
@@ -3224,6 +3655,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                                     #{index + 1}
                                   </div>
 
+
                                   <div>
 
                                     <div className="hl-result-name">
@@ -3231,6 +3663,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                                         candidate.name
                                       }
                                     </div>
+
 
                                     <div className="hl-result-role">
                                       {
@@ -3242,6 +3675,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                                 </div>
 
+
                                 <div className="hl-result-score">
                                   {
                                     candidate.score
@@ -3252,17 +3686,22 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                               </div>
 
+
                               <div className="hl-reasoning">
 
                                 <strong>
                                   Compatibility analysis:
-                                </strong>{' '}
+                                </strong>
+                                {' '}
 
-                                {candidate.evidence.length
+                                {candidate
+                                  .evidence
+                                  .length
                                   ? `Matched ${candidate.evidence.join(
                                       ', '
                                     )} to this role.`
                                   : 'No direct skill terms were found; review this candidate manually.'}
+
 
                                 <div className="hl-evidence">
 
@@ -3304,9 +3743,13 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                 </div>
 
+
+                {/* TRUST STRIP */}
+
                 <div className="hl-trust-strip">
 
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       Semantic
                     </span>
@@ -3314,9 +3757,12 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Meaning over keywords
                     </span>
+
                   </div>
 
+
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       Explainable
                     </span>
@@ -3324,9 +3770,12 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Evidence behind every result
                     </span>
+
                   </div>
 
+
                   <div className="hl-trust-item">
+
                     <span className="hl-trust-number">
                       Scoped
                     </span>
@@ -3334,6 +3783,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <span className="hl-trust-label">
                       Results protected by auth boundaries
                     </span>
+
                   </div>
 
                 </div>

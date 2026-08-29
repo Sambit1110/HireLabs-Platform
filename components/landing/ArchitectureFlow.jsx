@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+'use client';
+
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 export function ArchitectureFlow() {
   const sectionRef = useRef(null);
@@ -9,7 +15,8 @@ export function ArchitectureFlow() {
       num: '01',
       title: 'Secure Upload',
       short: 'Start with the source',
-      desc: 'PDF/DOCX uploaded to user-scoped private Supabase Storage bucket.',
+      desc:
+        'PDF/DOCX uploaded to a user-scoped private Supabase Storage bucket.',
       label: 'PRIVATE INPUT',
       visual: 'upload',
     },
@@ -17,7 +24,8 @@ export function ArchitectureFlow() {
       num: '02',
       title: 'LLM Normalize',
       short: 'Turn a resume into structure',
-      desc: 'Gemini extracts candidate profile, skills ontology, and work history.',
+      desc:
+        'Gemini extracts candidate profile, skills ontology, and work history.',
       label: 'STRUCTURED DATA',
       visual: 'normalize',
     },
@@ -25,7 +33,8 @@ export function ArchitectureFlow() {
       num: '03',
       title: '1536-dim Embed',
       short: 'Create a searchable signal',
-      desc: 'Vector representation generated via Gemini Embedding-002 model.',
+      desc:
+        'Vector representation generated via Gemini Embedding-002 model.',
       label: 'VECTOR SIGNAL',
       visual: 'embed',
     },
@@ -33,7 +42,8 @@ export function ArchitectureFlow() {
       num: '04',
       title: 'pgvector RPC',
       short: 'Find the closest candidates',
-      desc: 'Cosine distance calculated in Postgres filtered by signed-in auth.uid().',
+      desc:
+        'Cosine distance calculated in Postgres filtered by signed-in auth.uid().',
       label: 'SEMANTIC SEARCH',
       visual: 'search',
     },
@@ -41,54 +51,136 @@ export function ArchitectureFlow() {
       num: '05',
       title: 'Explain & Rank',
       short: 'Make the result useful',
-      desc: 'AI generates evidence quotes and flags gap analysis for HR decision support.',
+      desc:
+        'AI generates evidence quotes and flags gap analysis for HR decision support.',
       label: 'DECISION SUPPORT',
       visual: 'explain',
     },
   ];
 
   useEffect(() => {
-    const handleScroll = () => {
+    let frame = null;
+
+    const updateProgress = () => {
       const section = sectionRef.current;
 
-      if (!section) return;
+      if (!section) {
+        return;
+      }
 
-      const rect = section.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
+      const rect =
+        section.getBoundingClientRect();
 
-      const totalDistance = Math.max(
-        section.offsetHeight - viewportHeight,
-        1
-      );
+      const viewportHeight =
+        window.innerHeight;
+
+      const totalDistance =
+        Math.max(
+          section.offsetHeight -
+            viewportHeight,
+          1
+        );
 
       const nextProgress = Math.min(
         1,
-        Math.max(0, -rect.top / totalDistance)
+        Math.max(
+          0,
+          -rect.top /
+            totalDistance
+        )
       );
 
-      setProgress(nextProgress);
+      setProgress(
+        nextProgress
+      );
+
+      frame = null;
     };
 
-    handleScroll();
+    const handleScroll = () => {
+      if (frame !== null) {
+        return;
+      }
 
-    window.addEventListener('scroll', handleScroll, {
-      passive: true,
-    });
+      frame =
+        window.requestAnimationFrame(
+          updateProgress
+        );
+    };
 
-    window.addEventListener('resize', handleScroll);
+    updateProgress();
+
+    window.addEventListener(
+      'scroll',
+      handleScroll,
+      {
+        passive: true,
+      }
+    );
+
+    window.addEventListener(
+      'resize',
+      handleScroll
+    );
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener(
+        'scroll',
+        handleScroll
+      );
+
+      window.removeEventListener(
+        'resize',
+        handleScroll
+      );
+
+      if (frame !== null) {
+        window.cancelAnimationFrame(
+          frame
+        );
+      }
     };
   }, []);
 
   const activeIndex = Math.min(
     steps.length - 1,
-    Math.floor(progress * steps.length)
+    Math.floor(
+      progress *
+        steps.length
+    )
   );
 
-  const lineProgress = progress * (steps.length - 1);
+  const stagePosition =
+    progress *
+    (steps.length - 1);
+
+  const activeStage =
+    Math.min(
+      steps.length - 1,
+      Math.floor(
+        stagePosition
+      )
+    );
+
+  const localProgress =
+    stagePosition -
+    activeStage;
+
+  const progressToNext =
+    Math.min(
+      1,
+      Math.max(
+        0,
+        localProgress
+      )
+    );
+
+  const lineProgress =
+    progress *
+    (steps.length - 1);
+
+  const activeStep =
+    steps[activeStage];
 
   return (
     <section
@@ -97,31 +189,130 @@ export function ArchitectureFlow() {
       id="architecture"
     >
       <style>{`
+        /* =====================================================
+           ROOT
+           ===================================================== */
+
         .hl-architecture {
           --cream: #F5F1E8;
           --cream-soft: #ECE6DA;
           --white: #FFFFFF;
+
           --espresso: #211C18;
           --espresso-soft: #615850;
+
           --olive: #6F7D55;
           --olive-dark: #596544;
+
           --taupe: #C8C0AF;
           --border: #DED7CA;
 
           position: relative;
-          min-height: 430vh;
 
-          background: var(--cream);
-          color: var(--espresso);
+          min-height:
+            430vh;
 
-          overflow: visible;
+          background:
+            linear-gradient(
+              180deg,
+              #F5F1E8 0%,
+              #F2ECE2 100%
+            );
+
+          color:
+            var(--espresso);
+
+          overflow: clip;
+
+          isolation: isolate;
         }
+
 
         .hl-architecture *,
         .hl-architecture *::before,
         .hl-architecture *::after {
-          box-sizing: border-box;
+          box-sizing:
+            border-box;
         }
+
+
+        /* =====================================================
+           AMBIENT FIELD
+           ===================================================== */
+
+        .hl-architecture::before {
+          content: '';
+
+          position: absolute;
+
+          width:
+            min(
+              900px,
+              80vw
+            );
+
+          height:
+            min(
+              900px,
+              80vw
+            );
+
+          right:
+            -390px;
+
+          top:
+            12vh;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.07
+            );
+
+          border-radius:
+            50%;
+
+          pointer-events:
+            none;
+        }
+
+
+        .hl-architecture::after {
+          content: '';
+
+          position: absolute;
+
+          width:
+            520px;
+
+          height:
+            520px;
+
+          left:
+            -350px;
+
+          bottom:
+            8vh;
+
+          border:
+            1px dashed
+            rgba(
+              111,
+              125,
+              85,
+              0.065
+            );
+
+          border-radius:
+            50%;
+
+          pointer-events:
+            none;
+        }
+
 
         /* =====================================================
            STICKY VIEWPORT
@@ -129,27 +320,41 @@ export function ArchitectureFlow() {
 
         .hl-arch-sticky {
           position: sticky;
+
           top: 0;
 
           height: 100vh;
-          min-height: 100vh;
 
-          display: flex;
-          align-items: flex-start;
+          min-height: 720px;
 
-          padding: 0;
+          display:
+            flex;
 
-          overflow: visible;
+          align-items:
+            center;
+
+          overflow: hidden;
+
+          isolation: isolate;
         }
+
 
         .hl-arch-shell {
-          width: min(1180px, calc(100% - 56px));
-          height: 100vh;
-
-          margin: 0 auto;
-
           position: relative;
+
+          width:
+            min(
+              1210px,
+              calc(100% - 64px)
+            );
+
+          height:
+            100vh;
+
+          margin:
+            0 auto;
         }
+
 
         /* =====================================================
            INTRO
@@ -158,84 +363,158 @@ export function ArchitectureFlow() {
         .hl-arch-intro {
           position: absolute;
 
-          top: 7vh;
+          z-index: 12;
+
           left: 0;
 
-          z-index: 10;
+          top:
+            8.5vh;
 
-          max-width: 670px;
+          width:
+            min(
+              650px,
+              52%
+            );
 
-          transition: opacity 160ms linear;
+          pointer-events:
+            none;
 
-          pointer-events: none;
+          opacity:
+            ${
+              1 -
+              Math.min(
+                1,
+                progress /
+                  0.34
+              ) *
+                0.54
+            };
+
+          transform:
+            translate3d(
+              0,
+              ${
+                progress *
+                -18
+              }px,
+              0
+            );
         }
+
 
         .hl-arch-kicker {
-          display: flex;
-          align-items: center;
-          gap: 9px;
+          display:
+            inline-flex;
 
-          margin-bottom: 17px;
+          align-items:
+            center;
 
-          color: var(--olive-dark);
+          gap:
+            9px;
 
-          font-size: 10px;
-          line-height: 1;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          font-weight: 800;
+          margin-bottom:
+            18px;
+
+          color:
+            var(--olive-dark);
+
+          font-size:
+            10px;
+
+          line-height:
+            1;
+
+          letter-spacing:
+            0.15em;
+
+          text-transform:
+            uppercase;
+
+          font-weight:
+            900;
         }
 
+
         .hl-arch-kicker-dot {
-          width: 7px;
-          height: 7px;
+          width:
+            7px;
 
-          flex: 0 0 7px;
+          height:
+            7px;
 
-          border-radius: 50%;
+          border-radius:
+            50%;
 
-          background: var(--olive);
+          background:
+            var(--olive);
 
           box-shadow:
             0 0 0 4px
-            rgba(111,125,85,0.11);
+            rgba(
+              111,
+              125,
+              85,
+              0.11
+            );
         }
 
+
         .hl-arch-title {
-          margin: 0;
+          margin:
+            0;
 
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: clamp(48px, 5.4vw, 76px);
+          font-size:
+            clamp(
+              52px,
+              6vw,
+              82px
+            );
 
-          line-height: 0.96;
+          line-height:
+            0.92;
 
-          letter-spacing: -0.055em;
+          letter-spacing:
+            -0.058em;
 
-          font-weight: 500;
+          font-weight:
+            500;
         }
+
 
         .hl-arch-title em {
-          color: var(--olive);
-          font-style: italic;
+          color:
+            var(--olive);
+
+          font-style:
+            italic;
         }
+
 
         .hl-arch-description {
-          max-width: 610px;
+          max-width:
+            610px;
 
-          margin: 20px 0 0;
+          margin:
+            24px 0 0;
 
-          color: var(--espresso-soft);
+          color:
+            var(--espresso-soft);
 
-          font-size: 14px;
-          line-height: 1.7;
+          font-size:
+            14px;
+
+          line-height:
+            1.72;
         }
 
+
         /* =====================================================
-           MAIN SCENE
+           MAIN STORY GRID
            ===================================================== */
 
         .hl-arch-scene {
@@ -243,634 +522,1217 @@ export function ArchitectureFlow() {
 
           inset: 0;
 
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
-            minmax(290px, 0.78fr)
-            minmax(0, 1.22fr);
+            minmax(
+              300px,
+              0.78fr
+            )
+            minmax(
+              0,
+              1.22fr
+            );
 
-          gap: clamp(50px, 8vw, 120px);
+          gap:
+            clamp(
+              55px,
+              8vw,
+              120px
+            );
 
-          align-items: center;
+          align-items:
+            center;
 
-          padding-top: 145px;
-          padding-bottom: 35px;
+          padding-top:
+            155px;
+
+          padding-bottom:
+            40px;
         }
 
+
         /* =====================================================
-           LEFT NAVIGATION
+           LEFT PIPELINE
            ===================================================== */
 
         .hl-arch-nav {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 5;
+          z-index: 12;
 
-          padding-top: 135px;
+          align-self:
+            center;
 
-          align-self: center;
+          padding-top:
+            112px;
         }
 
-        .hl-arch-step {
-          position: relative;
 
-          display: grid;
+        .hl-arch-step {
+          position:
+            relative;
+
+          display:
+            grid;
 
           grid-template-columns:
             52px
-            minmax(0, 1fr);
+            minmax(
+              0,
+              1fr
+            );
 
-          gap: 15px;
+          gap:
+            15px;
 
-          min-height: 84px;
+          min-height:
+            88px;
 
-          padding-bottom: 22px;
+          padding-bottom:
+            23px;
         }
+
 
         .hl-arch-step-marker {
-          position: relative;
+          position:
+            relative;
 
-          display: flex;
+          display:
+            flex;
 
-          justify-content: center;
+          justify-content:
+            center;
         }
+
 
         .hl-arch-step-marker::before {
           content: '';
 
-          position: absolute;
+          position:
+            absolute;
 
-          top: 33px;
-          bottom: -2px;
+          top:
+            34px;
 
-          width: 1px;
+          bottom:
+            -4px;
 
-          background: var(--border);
+          width:
+            1px;
+
+          background:
+            var(--border);
+
+          opacity:
+            0.95;
         }
+
 
         .hl-arch-step:last-child
           .hl-arch-step-marker::before {
-          display: none;
+          display:
+            none;
         }
 
-        .hl-arch-step-number {
-          position: relative;
 
-          z-index: 2;
+        .hl-arch-progress-line {
+          position:
+            absolute;
 
-          width: 36px;
-          height: 36px;
+          left:
+            50%;
 
-          display: grid;
+          top:
+            34px;
 
-          place-items: center;
+          bottom:
+            -4px;
 
-          border: 1px solid var(--border);
+          width:
+            2px;
 
-          border-radius: 50%;
+          transform:
+            translateX(-50%)
+            scaleY(
+              var(
+                --step-progress,
+                0
+              )
+            );
 
-          background: var(--cream);
+          transform-origin:
+            top center;
 
-          color: #857B71;
+          background:
+            var(--olive);
 
-          font-size: 9px;
-
-          font-weight: 900;
+          opacity:
+            0.6;
 
           transition:
-            background 240ms ease,
-            color 240ms ease,
-            border-color 240ms ease,
-            transform 240ms ease;
+            transform 300ms
+            cubic-bezier(
+              0.16,
+              1,
+              0.3,
+              1
+            );
         }
+
+
+        .hl-arch-step-number {
+          position:
+            relative;
+
+          z-index:
+            2;
+
+          width:
+            37px;
+
+          height:
+            37px;
+
+          display:
+            grid;
+
+          place-items:
+            center;
+
+          border:
+            1px solid
+            var(--border);
+
+          border-radius:
+            50%;
+
+          background:
+            var(--cream);
+
+          color:
+            #857B71;
+
+          font-size:
+            9px;
+
+          font-weight:
+            900;
+
+          transition:
+            background 320ms ease,
+            color 320ms ease,
+            border-color 320ms ease,
+            transform 320ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+            box-shadow 320ms ease;
+        }
+
 
         .hl-arch-step.active
           .hl-arch-step-number {
-          background: var(--espresso);
+          background:
+            var(--espresso);
 
-          border-color: var(--espresso);
+          border-color:
+            var(--espresso);
 
-          color: var(--cream);
+          color:
+            var(--cream);
 
-          transform: scale(1.08);
+          transform:
+            scale(
+              1.11
+            );
+
+          box-shadow:
+            0 12px 28px
+            rgba(
+              33,
+              28,
+              24,
+              0.12
+            );
         }
 
+
+        .hl-arch-step-content {
+          min-width:
+            0;
+
+          opacity:
+            0.42;
+
+          transform:
+            translateX(0);
+
+          transition:
+            opacity 320ms ease,
+            transform 320ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+
+        .hl-arch-step.active
+          .hl-arch-step-content {
+          opacity:
+            1;
+
+          transform:
+            translateX(
+              5px
+            );
+        }
+
+
         .hl-arch-step-title {
-          margin-top: 1px;
+          margin-top:
+            1px;
 
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: 22px;
+          font-size:
+            22px;
 
-          line-height: 1.1;
+          line-height:
+            1.1;
 
-          letter-spacing: -0.03em;
+          letter-spacing:
+            -0.03em;
 
-          transition: color 220ms ease;
+          transition:
+            color 320ms ease;
         }
+
 
         .hl-arch-step.active
           .hl-arch-step-title {
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
         }
+
 
         .hl-arch-step-desc {
-          max-width: 330px;
+          max-width:
+            330px;
 
-          margin: 6px 0 0;
+          margin:
+            7px 0 0;
 
-          color: #847B72;
+          color:
+            #847B72;
 
-          font-size: 10px;
+          font-size:
+            10px;
 
-          line-height: 1.55;
+          line-height:
+            1.55;
         }
+
 
         .hl-arch-step-label {
-          display: inline-block;
+          display:
+            inline-flex;
 
-          margin-top: 8px;
+          margin-top:
+            9px;
 
-          padding: 6px 8px;
+          padding:
+            6px 8px;
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
-          background: #ECE8DE;
+          background:
+            #ECE8DE;
 
-          color: #7A7168;
+          color:
+            #7A7168;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
-          letter-spacing: 0.1em;
+          letter-spacing:
+            0.1em;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
+
+          transition:
+            background 320ms ease,
+            color 320ms ease;
         }
+
 
         .hl-arch-step.active
           .hl-arch-step-label {
-          background: #E9EEE0;
+          background:
+            #E9EEE0;
 
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
         }
 
+
         /* =====================================================
-           RIGHT STICKY STAGE
+           RIGHT VISUAL STAGE
            ===================================================== */
 
         .hl-arch-stage {
-          position: sticky;
+          position:
+            relative;
 
-          top: 0;
+          align-self:
+            center;
 
-          align-self: center;
+          width:
+            100%;
 
-          width: 100%;
+          height:
+            100vh;
 
-          height: 100vh;
+          min-height:
+            720px;
 
-          min-height: 100vh;
+          display:
+            flex;
 
-          display: flex;
+          align-items:
+            center;
 
-          flex-direction: column;
+          justify-content:
+            center;
 
-          align-items: center;
+          padding-top:
+            104px;
 
-          justify-content: center;
+          padding-bottom:
+            34px;
 
-          padding-top: 95px;
-
-          padding-bottom: 34px;
-
-          z-index: 8;
+          z-index:
+            10;
         }
 
+
+        /* =====================================================
+           ORBIT FIELD
+           ===================================================== */
+
         .hl-arch-stage-bg {
-          position: absolute;
+          position:
+            absolute;
 
-          top: 50%;
-          left: 50%;
+          left:
+            50%;
 
-          width: min(620px, 48vw);
+          top:
+            50%;
 
-          aspect-ratio: 1;
+          width:
+            min(
+              680px,
+              50vw
+            );
+
+          aspect-ratio:
+            1;
 
           transform:
-            translate(-50%, -50%);
+            translate(
+              -50%,
+              -50%
+            )
+            rotate(
+              ${
+                progress *
+                -14
+              }deg
+            );
 
           border:
             1px solid
-            rgba(111,125,85,0.13);
+            rgba(
+              111,
+              125,
+              85,
+              0.13
+            );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
 
-          pointer-events: none;
+          pointer-events:
+            none;
+
+          transition:
+            transform 140ms linear;
         }
+
 
         .hl-arch-stage-bg::before,
         .hl-arch-stage-bg::after {
           content: '';
 
-          position: absolute;
+          position:
+            absolute;
 
           border:
             1px dashed
-            rgba(111,125,85,0.12);
+            rgba(
+              111,
+              125,
+              85,
+              0.12
+            );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
         }
+
 
         .hl-arch-stage-bg::before {
-          inset: 15%;
+          inset:
+            15%;
         }
+
 
         .hl-arch-stage-bg::after {
-          inset: 30%;
+          inset:
+            31%;
 
-          border-style: solid;
+          border-style:
+            solid;
 
-          opacity: 0.6;
+          opacity:
+            0.55;
         }
 
+
         /* =====================================================
-           CARD
+           CENTRAL CARD
            ===================================================== */
 
         .hl-arch-card {
-          position: relative;
+          position:
+            relative;
 
-          align-self: center;
+          width:
+            min(
+              540px,
+              88%
+            );
 
-          width: min(510px, 90%);
+          min-height:
+            465px;
 
-          min-height: 425px;
-
-          margin: 0;
-
-          padding: 34px;
-
-          border-radius: 30px;
+          padding:
+            35px;
 
           border:
             1px solid
             var(--border);
 
+          border-radius:
+            30px;
+
           background:
-            rgba(255,255,255,0.88);
+            rgba(
+              255,
+              255,
+              255,
+              0.9
+            );
 
           box-shadow:
-            0 35px 90px
-            rgba(48,43,37,0.11),
-            0 10px 30px
-            rgba(48,43,37,0.05);
+            0 42px 100px
+            rgba(
+              48,
+              43,
+              37,
+              0.11
+            ),
 
-          overflow: hidden;
+            0 12px 30px
+            rgba(
+              48,
+              43,
+              37,
+              0.045
+            );
 
-          z-index: 3;
+          overflow:
+            hidden;
+
+          z-index:
+            5;
+
+          transform:
+            translate3d(
+              ${
+                progressToNext *
+                -6
+              }px,
+              ${
+                progressToNext *
+                -4
+              }px,
+              0
+            )
+            scale(
+              ${
+                1 -
+                progressToNext *
+                0.012
+              }
+            );
+
+          transition:
+            transform 500ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
         }
 
+
+        .hl-arch-card::before {
+          content: '';
+
+          position:
+            absolute;
+
+          width:
+            300px;
+
+          height:
+            300px;
+
+          right:
+            -150px;
+
+          top:
+            -150px;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.075
+            );
+
+          border-radius:
+            50%;
+
+          pointer-events:
+            none;
+        }
+
+
         .hl-arch-card-top {
-          display: flex;
+          display:
+            flex;
 
-          align-items: flex-start;
+          align-items:
+            flex-start;
 
-          justify-content: space-between;
+          justify-content:
+            space-between;
 
-          gap: 20px;
+          gap:
+            20px;
 
-          padding-bottom: 23px;
+          padding-bottom:
+            23px;
 
           border-bottom:
             1px solid
             #E8E2D7;
         }
 
+
         .hl-arch-card-index {
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
 
-          font-size: 9px;
+          font-size:
+            9px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
-          letter-spacing: 0.15em;
+          letter-spacing:
+            0.15em;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
         }
 
+
         .hl-arch-card-title {
-          margin-top: 8px;
+          margin-top:
+            8px;
 
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: 31px;
+          font-size:
+            31px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          letter-spacing: -0.04em;
+          letter-spacing:
+            -0.04em;
 
-          font-weight: 500;
+          font-weight:
+            500;
         }
 
-        .hl-arch-card-pill {
-          flex-shrink: 0;
 
-          padding: 8px 10px;
+        .hl-arch-card-pill {
+          flex-shrink:
+            0;
+
+          padding:
+            8px 10px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
-          color: #7D746B;
+          color:
+            #7D746B;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          font-weight: 800;
+          font-weight:
+            800;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
 
-          letter-spacing: 0.08em;
+          letter-spacing:
+            0.08em;
 
-          white-space: nowrap;
+          white-space:
+            nowrap;
         }
+
 
         .hl-arch-card-copy {
-          max-width: 420px;
+          max-width:
+            430px;
 
-          margin: 19px 0 0;
+          margin:
+            19px 0 0;
 
-          color: #6F665D;
+          color:
+            #6F665D;
 
-          font-size: 12px;
+          font-size:
+            12px;
 
-          line-height: 1.7;
+          line-height:
+            1.7;
         }
+
 
         /* =====================================================
            VISUAL AREA
            ===================================================== */
 
         .hl-visual {
-          position: absolute;
+          position:
+            absolute;
 
-          left: 34px;
-          right: 34px;
+          left:
+            35px;
 
-          top: 205px;
-          bottom: 34px;
+          right:
+            35px;
 
-          display: flex;
+          top:
+            206px;
 
-          align-items: center;
+          bottom:
+            34px;
 
-          justify-content: center;
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
         }
 
+
+        .hl-visual-stage {
+          width:
+            100%;
+
+          animation:
+            hlArchitectureStageIn
+            700ms
+            cubic-bezier(
+              0.16,
+              1,
+              0.3,
+              1
+            );
+        }
+
+
+        @keyframes hlArchitectureStageIn {
+          from {
+            opacity:
+              0;
+
+            transform:
+              translate3d(
+                0,
+                18px,
+                0
+              )
+              scale(
+                0.985
+              );
+          }
+
+          to {
+            opacity:
+              1;
+
+            transform:
+              translate3d(
+                0,
+                0,
+                0
+              )
+              scale(
+                1
+              );
+          }
+        }
+
+
         /* =====================================================
-           UPLOAD VISUAL
+           UPLOAD
            ===================================================== */
 
         .hl-upload-visual {
-          width: 100%;
+          width:
+            100%;
 
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             1fr
             auto
             1fr;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 16px;
+          gap:
+            16px;
         }
+
 
         .hl-file-box,
         .hl-storage-box {
-          min-width: 0;
+          min-width:
+            0;
 
-          padding: 20px;
+          padding:
+            20px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 19px;
+          border-radius:
+            19px;
 
-          background: #FAF8F3;
+          background:
+            #FAF8F3;
+
+          transition:
+            transform 250ms ease,
+            box-shadow 250ms ease;
         }
+
+
+        .hl-file-box:hover,
+        .hl-storage-box:hover {
+          transform:
+            translateY(
+              -3px
+            );
+
+          box-shadow:
+            0 14px 30px
+            rgba(
+              45,
+              40,
+              34,
+              0.07
+            );
+        }
+
 
         .hl-file-icon,
         .hl-storage-icon {
-          width: 39px;
-          height: 39px;
+          width:
+            39px;
 
-          display: grid;
+          height:
+            39px;
 
-          place-items: center;
+          display:
+            grid;
 
-          border-radius: 12px;
+          place-items:
+            center;
 
-          background: var(--espresso);
+          border-radius:
+            12px;
 
-          color: var(--cream);
+          background:
+            var(--espresso);
 
-          margin-bottom: 14px;
+          color:
+            var(--cream);
+
+          margin-bottom:
+            14px;
         }
+
 
         .hl-visual-title {
-          font-size: 11px;
+          font-size:
+            11px;
 
-          font-weight: 900;
+          font-weight:
+            900;
         }
+
 
         .hl-visual-sub {
-          margin-top: 5px;
+          margin-top:
+            5px;
 
-          color: #857B72;
+          color:
+            #857B72;
 
-          font-size: 9px;
+          font-size:
+            9px;
 
-          line-height: 1.45;
+          line-height:
+            1.45;
         }
+
 
         .hl-arrow {
-          color: var(--olive);
+          color:
+            var(--olive);
 
-          font-size: 18px;
+          font-size:
+            18px;
 
-          font-weight: 900;
+          font-weight:
+            900;
+
+          animation:
+            hlArchArrow
+            2.4s
+            ease-in-out
+            infinite;
         }
 
+
+        @keyframes hlArchArrow {
+          0%,
+          100% {
+            transform:
+              translateX(
+                0
+              );
+
+            opacity:
+              0.55;
+          }
+
+          50% {
+            transform:
+              translateX(
+                5px
+              );
+
+            opacity:
+              1;
+          }
+        }
+
+
         /* =====================================================
-           NORMALIZE VISUAL
+           NORMALIZE
            ===================================================== */
 
         .hl-normalize-visual {
-          width: 100%;
+          width:
+            100%;
 
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             0.75fr
             1fr;
 
-          gap: 13px;
+          gap:
+            13px;
         }
+
 
         .hl-document-mini,
         .hl-profile-mini {
-          min-height: 170px;
+          min-height:
+            170px;
 
-          padding: 16px;
+          padding:
+            16px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 17px;
+          border-radius:
+            17px;
 
-          background: #FAF8F3;
+          background:
+            #FAF8F3;
         }
+
 
         .hl-mini-heading {
-          margin-bottom: 12px;
+          margin-bottom:
+            12px;
 
-          color: #81786F;
+          color:
+            #81786F;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
-          letter-spacing: 0.1em;
+          letter-spacing:
+            0.1em;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
         }
+
 
         .hl-mini-line {
-          height: 7px;
+          height:
+            7px;
 
-          margin: 8px 0;
+          margin:
+            8px 0;
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
-          background: #E7E1D6;
+          background:
+            #E7E1D6;
         }
+
 
         .hl-mini-line.short {
-          width: 58%;
+          width:
+            58%;
         }
+
 
         .hl-mini-line.mid {
-          width: 76%;
+          width:
+            76%;
         }
+
 
         .hl-profile-tag {
-          display: inline-flex;
+          display:
+            inline-flex;
 
-          padding: 7px 8px;
+          padding:
+            7px 8px;
 
-          margin: 3px;
+          margin:
+            3px;
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
-          background: #ECEFE5;
+          background:
+            #ECEFE5;
 
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          font-weight: 800;
+          font-weight:
+            800;
         }
 
+
         /* =====================================================
-           EMBEDDING VISUAL
+           EMBEDDING
            ===================================================== */
 
         .hl-embed-visual {
-          width: 100%;
+          width:
+            100%;
 
-          display: flex;
+          display:
+            flex;
 
-          flex-direction: column;
+          flex-direction:
+            column;
 
-          justify-content: center;
+          justify-content:
+            center;
 
-          gap: 14px;
-
-          min-height: 0;
+          gap:
+            14px;
         }
+
 
         .hl-embedding-label {
-          margin: 0;
+          margin:
+            0;
 
-          color: #7F766D;
+          color:
+            #7F766D;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          letter-spacing: 0.1em;
+          letter-spacing:
+            0.1em;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
 
-          font-weight: 900;
+          font-weight:
+            900;
         }
 
+
         .hl-vector-field {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
-            repeat(8, minmax(0, 1fr));
+            repeat(
+              8,
+              minmax(
+                0,
+                1fr
+              )
+            );
 
-          grid-auto-rows: 16px;
+          grid-auto-rows:
+            16px;
 
-          gap: 6px;
+          gap:
+            6px;
 
-          width: 100%;
+          width:
+            100%;
 
-          padding: 14px;
+          padding:
+            14px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 17px;
+          border-radius:
+            17px;
 
-          background: #FAF8F3;
+          background:
+            #FAF8F3;
 
-          overflow: hidden;
-
-          flex-shrink: 0;
+          overflow:
+            hidden;
         }
 
+
         .hl-vector-cell {
-          width: 100%;
+          width:
+            100%;
 
-          height: 16px;
+          height:
+            16px;
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
-          background: #DFE5D4;
+          background:
+            #DFE5D4;
 
-          opacity: 0.55;
+          opacity:
+            0.55;
 
-          transform-origin: center;
+          transform-origin:
+            center;
 
           animation:
             hlArchitecturePulse
@@ -879,257 +1741,393 @@ export function ArchitectureFlow() {
             infinite;
         }
 
-        .hl-vector-cell:nth-child(2n) {
-          background: #CFD7BF;
 
-          animation-delay: 120ms;
+        .hl-vector-cell:nth-child(2n) {
+          background:
+            #CFD7BF;
+
+          animation-delay:
+            120ms;
         }
+
 
         .hl-vector-cell:nth-child(3n) {
-          background: #BFCBA7;
+          background:
+            #BFCBA7;
 
-          animation-delay: 240ms;
+          animation-delay:
+            240ms;
         }
+
 
         @keyframes hlArchitecturePulse {
           0%,
           100% {
-            transform: scaleY(0.72);
+            transform:
+              scaleY(
+                0.72
+              );
 
-            opacity: 0.45;
+            opacity:
+              0.45;
           }
 
           50% {
-            transform: scaleY(1);
+            transform:
+              scaleY(
+                1
+              );
 
-            opacity: 0.9;
+            opacity:
+              0.9;
           }
         }
 
+
         .hl-embed-meta {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
-            repeat(3, minmax(0, 1fr));
+            repeat(
+              3,
+              minmax(
+                0,
+                1fr
+              )
+            );
 
-          gap: 10px;
+          gap:
+            10px;
 
-          width: 100%;
-
-          margin: 0;
-
-          flex-shrink: 0;
+          width:
+            100%;
         }
+
 
         .hl-embed-stat {
-          min-width: 0;
+          min-width:
+            0;
 
-          padding: 11px;
+          padding:
+            11px;
 
-          border-radius: 11px;
+          border-radius:
+            11px;
 
-          background: #F0EEE7;
+          background:
+            #F0EEE7;
 
-          overflow: hidden;
+          overflow:
+            hidden;
         }
+
 
         .hl-embed-stat strong {
-          display: block;
+          display:
+            block;
 
-          font-size: 14px;
+          font-size:
+            14px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          white-space: nowrap;
+          white-space:
+            nowrap;
 
-          overflow: hidden;
+          overflow:
+            hidden;
 
-          text-overflow: ellipsis;
+          text-overflow:
+            ellipsis;
         }
+
 
         .hl-embed-stat span {
-          display: block;
+          display:
+            block;
 
-          margin-top: 5px;
+          margin-top:
+            5px;
 
-          color: #847B72;
+          color:
+            #847B72;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          line-height: 1.35;
+          line-height:
+            1.35;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
 
-          letter-spacing: 0.08em;
+          letter-spacing:
+            0.08em;
         }
 
+
         /* =====================================================
-           SEARCH VISUAL
+           SEARCH
            ===================================================== */
 
         .hl-search-visual {
-          width: 100%;
+          width:
+            100%;
         }
+
 
         .hl-query-box {
-          padding: 15px;
+          padding:
+            15px;
 
-          border-radius: 15px;
+          border-radius:
+            15px;
 
-          background: var(--espresso);
+          background:
+            var(--espresso);
 
-          color: var(--cream);
+          color:
+            var(--cream);
         }
+
 
         .hl-query-label {
-          color: #9C958B;
+          color:
+            #9C958B;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
 
-          letter-spacing: 0.1em;
+          letter-spacing:
+            0.1em;
 
-          font-weight: 900;
+          font-weight:
+            900;
         }
 
+
         .hl-query-text {
-          margin-top: 7px;
+          margin-top:
+            7px;
 
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: 18px;
+          font-size:
+            18px;
 
-          letter-spacing: -0.02em;
+          letter-spacing:
+            -0.02em;
         }
+
 
         .hl-search-results {
-          display: grid;
+          display:
+            grid;
 
-          gap: 8px;
+          gap:
+            8px;
 
-          margin-top: 12px;
+          margin-top:
+            12px;
         }
 
+
         .hl-search-result {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             31px
             1fr
             auto;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 10px;
+          gap:
+            10px;
 
-          padding: 10px;
+          padding:
+            10px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 13px;
+          border-radius:
+            13px;
 
-          background: #FAF8F3;
+          background:
+            #FAF8F3;
+
+          transition:
+            transform 250ms ease,
+            border-color 250ms ease;
         }
+
+
+        .hl-search-result:hover {
+          transform:
+            translateX(
+              3px
+            );
+
+          border-color:
+            rgba(
+              111,
+              125,
+              85,
+              0.3
+            );
+        }
+
 
         .hl-search-rank {
-          width: 29px;
-          height: 29px;
+          width:
+            29px;
 
-          display: grid;
+          height:
+            29px;
 
-          place-items: center;
+          display:
+            grid;
 
-          border-radius: 9px;
+          place-items:
+            center;
 
-          background: #ECE8DE;
+          border-radius:
+            9px;
 
-          color: #6F665D;
+          background:
+            #ECE8DE;
 
-          font-size: 9px;
+          color:
+            #6F665D;
 
-          font-weight: 900;
+          font-size:
+            9px;
+
+          font-weight:
+            900;
         }
+
 
         .hl-search-result:first-child
           .hl-search-rank {
-          background: #E8EDDE;
+          background:
+            #E8EDDE;
 
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
         }
+
 
         .hl-search-name {
-          font-size: 10px;
+          font-size:
+            10px;
 
-          font-weight: 900;
+          font-weight:
+            900;
         }
+
 
         .hl-search-role {
-          margin-top: 3px;
+          margin-top:
+            3px;
 
-          color: #857C73;
+          color:
+            #857C73;
 
-          font-size: 8px;
+          font-size:
+            8px;
         }
+
 
         .hl-search-score {
-          font-size: 11px;
+          font-size:
+            11px;
 
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
 
-          font-weight: 900;
+          font-weight:
+            900;
         }
 
+
         /* =====================================================
-           EXPLAIN VISUAL
+           EXPLAIN
            ===================================================== */
 
         .hl-explain-visual {
-          width: 100%;
+          width:
+            100%;
         }
 
+
         .hl-score-card {
-          display: flex;
+          display:
+            flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          justify-content: space-between;
+          justify-content:
+            space-between;
 
-          gap: 15px;
+          gap:
+            15px;
 
-          padding: 18px;
+          padding:
+            18px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 17px;
+          border-radius:
+            17px;
 
-          background: #FAF8F3;
+          background:
+            #FAF8F3;
         }
+
 
         .hl-score-main {
-          display: flex;
+          display:
+            flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 14px;
+          gap:
+            14px;
         }
 
+
         .hl-score-circle {
-          width: 72px;
-          height: 72px;
+          width:
+            72px;
 
-          display: grid;
+          height:
+            72px;
 
-          place-items: center;
+          display:
+            grid;
 
-          border-radius: 50%;
+          place-items:
+            center;
+
+          border-radius:
+            50%;
 
           background:
             radial-gradient(
@@ -1145,11 +2143,15 @@ export function ArchitectureFlow() {
             );
         }
 
-        .hl-score-circle span {
-          font-size: 16px;
 
-          font-weight: 900;
+        .hl-score-circle span {
+          font-size:
+            16px;
+
+          font-weight:
+            900;
         }
+
 
         .hl-score-name {
           font-family:
@@ -1157,887 +2159,1461 @@ export function ArchitectureFlow() {
             'Times New Roman',
             serif;
 
-          font-size: 19px;
+          font-size:
+            19px;
 
-          line-height: 1;
+          line-height:
+            1;
         }
+
 
         .hl-score-role {
-          margin-top: 5px;
+          margin-top:
+            5px;
 
-          color: #847B72;
+          color:
+            #847B72;
 
-          font-size: 9px;
+          font-size:
+            9px;
         }
 
-        .hl-evidence-list {
-          margin-top: 12px;
 
-          display: grid;
+        .hl-evidence-list {
+          margin-top:
+            12px;
+
+          display:
+            grid;
 
           grid-template-columns:
             1fr
             1fr;
 
-          gap: 7px;
+          gap:
+            7px;
         }
+
 
         .hl-evidence,
         .hl-gap {
-          padding: 10px;
+          padding:
+            10px;
 
-          border-radius: 11px;
+          border-radius:
+            11px;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          line-height: 1.45;
+          line-height:
+            1.45;
 
-          font-weight: 800;
+          font-weight:
+            800;
         }
+
 
         .hl-evidence {
-          background: #ECEFE5;
+          background:
+            #ECEFE5;
 
-          color: var(--olive-dark);
+          color:
+            var(--olive-dark);
         }
+
 
         .hl-gap {
-          background: #F3EAE1;
+          background:
+            #F3EAE1;
 
-          color: #8A6250;
+          color:
+            #8A6250;
         }
+
 
         /* =====================================================
-           PROGRESS
+           TRANSITION BETWEEN ACTIVE VISUALS
            ===================================================== */
 
-        .hl-progress-bar {
-          position: absolute;
-
-          left: 0;
-          right: 0;
-
-          bottom: -1px;
-
-          height: 3px;
-
-          background: #E3DDD0;
+        .hl-arch-visual-enter {
+          animation:
+            hlArchVisualEnter
+            650ms
+            cubic-bezier(
+              0.16,
+              1,
+              0.3,
+              1
+            );
         }
 
-        .hl-progress-fill {
-          height: 100%;
 
-          width: ${lineProgress * 100}%;
+        @keyframes hlArchVisualEnter {
+          from {
+            opacity:
+              0;
 
-          background: var(--olive);
+            transform:
+              translate3d(
+                0,
+                17px,
+                0
+              )
+              scale(
+                0.985
+              );
+          }
+
+          to {
+            opacity:
+              1;
+
+            transform:
+              translate3d(
+                0,
+                0,
+                0
+              )
+              scale(
+                1
+              );
+          }
+        }
+
+
+        /* =====================================================
+           PROGRESS TRACK
+           ===================================================== */
+
+        .hl-arch-track {
+          position:
+            absolute;
+
+          left:
+            calc(
+              100% - 6px
+            );
+
+          top:
+            50%;
+
+          width:
+            min(
+              500px,
+              40vw
+            );
+
+          height:
+            1px;
+
+          transform:
+            rotate(
+              -34deg
+            )
+            translateY(
+              -50%
+            );
+
+          transform-origin:
+            left center;
+
+          background:
+            linear-gradient(
+              90deg,
+              rgba(
+                111,
+                125,
+                85,
+                0.03
+              ),
+              rgba(
+                111,
+                125,
+                85,
+                0.13
+              ),
+              rgba(
+                111,
+                125,
+                85,
+                0.02
+              )
+            );
+
+          pointer-events:
+            none;
+
+          opacity:
+            0.7;
+        }
+
+
+        .hl-arch-progress-bar {
+          position:
+            absolute;
+
+          left:
+            0;
+
+          right:
+            0;
+
+          bottom:
+            -1px;
+
+          height:
+            3px;
+
+          background:
+            #E3DDD0;
+
+          z-index:
+            20;
+        }
+
+
+        .hl-arch-progress-fill {
+          height:
+            100%;
+
+          width:
+            ${lineProgress *
+            100}%;
+
+          background:
+            var(--olive);
+
+          transform-origin:
+            left center;
 
           transition:
-            width 80ms linear;
+            width 100ms
+            linear;
         }
 
-        .hl-progress-dots {
-          position: absolute;
 
-          left: 0;
-          right: 0;
+        .hl-arch-progress-dots {
+          position:
+            absolute;
 
-          bottom: -8px;
+          left:
+            0;
 
-          display: flex;
+          right:
+            0;
 
-          justify-content: space-between;
+          bottom:
+            -8px;
 
-          pointer-events: none;
+          display:
+            flex;
+
+          justify-content:
+            space-between;
+
+          pointer-events:
+            none;
+
+          z-index:
+            21;
         }
 
-        .hl-progress-dot {
-          width: 15px;
-          height: 15px;
 
-          border-radius: 50%;
+        .hl-arch-progress-dot {
+          width:
+            15px;
+
+          height:
+            15px;
+
+          border-radius:
+            50%;
 
           border:
             3px solid
             var(--cream);
 
-          background: #C9C2B5;
+          background:
+            #C9C2B5;
 
           box-shadow:
             0 0 0 1px
             var(--border);
 
           transition:
-            background 180ms ease,
-            transform 180ms ease;
+            background 200ms ease,
+            transform 200ms ease,
+            box-shadow 200ms ease;
         }
 
-        .hl-progress-dot.active {
-          background: var(--olive);
 
-          transform: scale(1.1);
+        .hl-arch-progress-dot.active {
+          background:
+            var(--olive);
+
+          transform:
+            scale(
+              1.1
+            );
+
+          box-shadow:
+            0 0 0 1px
+            var(--olive),
+            0 5px 15px
+            rgba(
+              111,
+              125,
+              85,
+              0.15
+            );
         }
+
 
         /* =====================================================
            FINAL NOTE
            ===================================================== */
 
         .hl-final-note {
-          position: absolute;
+          position:
+            absolute;
 
-          right: 0;
+          right:
+            0;
 
-          bottom: 3.5vh;
+          bottom:
+            4vh;
 
-          width: min(310px, 42%);
+          width:
+            min(
+              320px,
+              40%
+            );
 
-          padding-top: 13px;
+          padding-top:
+            14px;
 
           border-top:
             1px solid
             var(--border);
 
-          color: #887F75;
+          color:
+            #887F75;
 
-          font-size: 9px;
+          font-size:
+            9px;
 
-          line-height: 1.55;
+          line-height:
+            1.55;
 
-          text-align: right;
+          text-align:
+            right;
 
-          z-index: 12;
+          z-index:
+            14;
 
-          pointer-events: none;
+          pointer-events:
+            none;
+
+          opacity:
+            ${
+              0.7 +
+              progress *
+              0.25
+            };
         }
+
 
         .hl-final-note strong {
-          display: block;
+          display:
+            block;
 
-          margin-bottom: 3px;
+          margin-bottom:
+            4px;
 
-          color: var(--espresso);
+          color:
+            var(--espresso);
 
-          font-size: 11px;
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
 
-          font-weight: 800;
+          font-size:
+            18px;
+
+          line-height:
+            1.1;
+
+          font-weight:
+            500;
+
+          letter-spacing:
+            -0.02em;
         }
+
 
         /* =====================================================
            RESPONSIVE TABLET
            ===================================================== */
 
         @media (max-width: 950px) {
+
           .hl-architecture {
-            min-height: auto;
+            min-height:
+              auto;
           }
+
 
           .hl-arch-sticky {
-            position: relative;
+            position:
+              relative;
 
-            height: auto;
+            height:
+              auto;
 
-            min-height: auto;
+            min-height:
+              auto;
 
-            display: block;
+            display:
+              block;
 
             padding:
-              105px 0
-              120px;
+              115px 0
+              125px;
 
-            overflow: visible;
+            overflow:
+              visible;
           }
+
 
           .hl-arch-shell {
             width:
               min(
                 100% - 42px,
-                1180px
+                1210px
               );
 
-            height: auto;
+            height:
+              auto;
           }
+
 
           .hl-arch-intro {
-            position: relative;
+            position:
+              relative;
 
-            top: auto;
-            left: auto;
+            top:
+              auto;
 
-            max-width: 760px;
+            left:
+              auto;
 
-            margin-bottom: 65px;
+            width:
+              100%;
 
-            pointer-events: auto;
+            max-width:
+              760px;
 
-            opacity: 1 !important;
+            margin-bottom:
+              65px;
+
+            opacity:
+              1 !important;
+
+            transform:
+              none !important;
+
+            pointer-events:
+              auto;
           }
+
 
           .hl-arch-scene {
-            position: relative;
+            position:
+              relative;
 
-            inset: auto;
+            inset:
+              auto;
 
-            display: grid;
+            display:
+              grid;
 
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
 
-            gap: 50px;
-
-            padding: 0;
-          }
-
-          .hl-arch-nav {
-            padding-top: 0;
-          }
-
-          .hl-arch-stage {
-            position: relative;
-
-            top: auto;
-
-            height: auto;
-
-            min-height: 560px;
+            gap:
+              55px;
 
             padding:
-              10px 0 0;
-
-            justify-content: flex-start;
+              0;
           }
+
+
+          .hl-arch-nav {
+            padding:
+              0;
+
+            align-self:
+              auto;
+          }
+
+
+          .hl-arch-stage {
+            height:
+              auto;
+
+            min-height:
+              580px;
+
+            padding:
+              0;
+          }
+
 
           .hl-arch-stage-bg {
-            width: min(620px, 90vw);
+            width:
+              min(
+                620px,
+                90vw
+              );
           }
+
 
           .hl-arch-card {
             width:
               min(
-                560px,
-                94%
+                570px,
+                95%
               );
 
             margin:
-              0 auto
-              28px;
+              0 auto 30px;
           }
 
-          .hl-final-note {
-            position: relative;
 
-            right: auto;
-            bottom: auto;
+          .hl-final-note {
+            position:
+              relative;
+
+            right:
+              auto;
+
+            bottom:
+              auto;
 
             width:
               min(
-                560px,
-                94%
+                570px,
+                95%
               );
 
-            margin: 0 auto;
+            margin:
+              0 auto;
 
-            text-align: left;
+            text-align:
+              left;
           }
+
+
+          .hl-arch-track {
+            display:
+              none;
+          }
+
         }
+
 
         /* =====================================================
            MOBILE
            ===================================================== */
 
         @media (max-width: 620px) {
+
           .hl-arch-shell {
             width:
               min(
                 100% - 30px,
-                1180px
+                1210px
               );
           }
 
+
           .hl-arch-title {
-            font-size: 46px;
+            font-size:
+              48px;
           }
 
+
           .hl-arch-description {
-            font-size: 12px;
+            font-size:
+              12px;
           }
+
 
           .hl-arch-step {
             grid-template-columns:
               43px
-              minmax(0, 1fr);
+              minmax(
+                0,
+                1fr
+              );
 
-            min-height: 67px;
+            min-height:
+              71px;
           }
+
 
           .hl-arch-step-title {
-            font-size: 19px;
+            font-size:
+              19px;
           }
+
 
           .hl-arch-step-desc {
-            font-size: 8px;
+            font-size:
+              8px;
           }
+
+
+          .hl-arch-step-label {
+            font-size:
+              6.5px;
+          }
+
 
           .hl-arch-stage {
-            min-height: 555px;
+            min-height:
+              555px;
           }
+
 
           .hl-arch-stage-bg {
-            width: 100%;
+            width:
+              100%;
           }
+
 
           .hl-arch-card {
-            width: 94%;
+            width:
+              94%;
 
-            min-height: 420px;
+            min-height:
+              430px;
 
-            padding: 24px;
+            padding:
+              24px;
 
-            border-radius: 23px;
+            border-radius:
+              23px;
           }
+
 
           .hl-arch-card-title {
-            font-size: 27px;
+            font-size:
+              27px;
           }
+
 
           .hl-arch-card-pill {
-            max-width: 130px;
+            max-width:
+              130px;
 
-            overflow: hidden;
+            overflow:
+              hidden;
 
-            text-overflow: ellipsis;
+            text-overflow:
+              ellipsis;
           }
+
 
           .hl-visual {
-            left: 24px;
-            right: 24px;
+            left:
+              24px;
 
-            top: 195px;
+            right:
+              24px;
 
-            bottom: 24px;
+            top:
+              199px;
+
+            bottom:
+              24px;
           }
+
 
           .hl-upload-visual {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
+
 
           .hl-arrow {
-            transform: rotate(90deg);
+            transform:
+              rotate(
+                90deg
+              );
 
-            justify-self: center;
+            justify-self:
+              center;
           }
+
 
           .hl-normalize-visual {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
+
 
           .hl-profile-mini,
           .hl-document-mini {
-            min-height: 115px;
+            min-height:
+              115px;
           }
+
 
           .hl-vector-field {
             grid-template-columns:
-              repeat(6, minmax(0, 1fr));
+              repeat(
+                6,
+                minmax(
+                  0,
+                  1fr
+                )
+              );
 
-            grid-auto-rows: 13px;
+            grid-auto-rows:
+              13px;
 
-            gap: 5px;
+            gap:
+              5px;
 
-            padding: 12px;
+            padding:
+              12px;
           }
+
 
           .hl-vector-cell {
-            height: 13px;
+            height:
+              13px;
           }
+
 
           .hl-embed-meta {
             grid-template-columns:
-              repeat(3, minmax(0, 1fr));
+              repeat(
+                3,
+                minmax(
+                  0,
+                  1fr
+                )
+              );
 
-            gap: 7px;
+            gap:
+              7px;
           }
+
 
           .hl-embed-stat {
-            padding: 9px;
+            padding:
+              9px;
           }
+
 
           .hl-embed-stat strong {
-            font-size: 12px;
+            font-size:
+              12px;
           }
+
 
           .hl-embed-stat span {
-            font-size: 6px;
+            font-size:
+              6px;
 
-            line-height: 1.25;
+            line-height:
+              1.25;
           }
+
 
           .hl-evidence-list {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
+
 
           .hl-final-note {
-            width: 94%;
+            width:
+              94%;
 
-            padding-top: 13px;
+            padding-top:
+              13px;
 
-            text-align: left;
+            text-align:
+              left;
 
-            font-size: 8px;
+            font-size:
+              8px;
           }
+
+
+          .hl-final-note strong {
+            font-size:
+              16px;
+          }
+
         }
+
 
         /* =====================================================
            REDUCED MOTION
            ===================================================== */
 
-        @media (prefers-reduced-motion: reduce) {
-          .hl-vector-cell {
-            animation: none;
+        @media (
+          prefers-reduced-motion:
+            reduce
+        ) {
+
+          .hl-vector-cell,
+          .hl-arrow {
+            animation:
+              none;
           }
+
 
           .hl-arch-step-number,
           .hl-arch-step-title,
-          .hl-progress-dot {
-            transition: none;
+          .hl-arch-step-content,
+          .hl-arch-progress-dot,
+          .hl-arch-card,
+          .hl-visual-stage {
+            transition:
+              none !important;
           }
+
+
+          .hl-arch-card,
+          .hl-visual-stage {
+            animation:
+              none !important;
+          }
+
         }
+
       `}</style>
 
+
+      {/* =====================================================
+          STICKY EXPERIENCE
+         ===================================================== */}
+
       <div className="hl-arch-sticky">
+
         <div className="hl-arch-shell">
 
-          {/* =========================================
+          {/* ===================================================
               INTRO
-             ========================================= */}
+             =================================================== */}
 
-          <div
-            className="hl-arch-intro"
-            style={{
-              opacity:
-                1 -
-                Math.min(
-                  1,
-                  progress / 0.34
-                ) *
-                  0.55,
-            }}
-          >
+          <div className="hl-arch-intro">
+
             <div className="hl-arch-kicker">
+
               <span className="hl-arch-kicker-dot" />
+
               Behind the product
+
             </div>
 
+
             <h2 className="hl-arch-title">
+
               From resume
               <br />
-              to <em>hiring signal.</em>
+
+              to{' '}
+              <em>
+                hiring signal.
+              </em>
+
             </h2>
 
+
             <p className="hl-arch-description">
-              HireLabs moves through a simple five-stage pipeline: securely
-              ingest the resume, understand its meaning, create a searchable
-              representation, compare it against the role, and explain the
-              result.
+              HireLabs moves through a simple five-stage
+              pipeline: securely ingest the resume, understand
+              its meaning, create a searchable representation,
+              compare it against the role, and explain the result.
             </p>
+
           </div>
 
-          {/* =========================================
-              SCENE
-             ========================================= */}
+
+          {/* ===================================================
+              STORY SCENE
+             =================================================== */}
 
           <div className="hl-arch-scene">
 
-            {/* =======================================
+            {/* =================================================
                 LEFT PIPELINE
-               ======================================= */}
+               ================================================= */}
 
             <div className="hl-arch-nav">
-              {steps.map((step, index) => {
-                const isActive =
-                  index === activeIndex;
 
-                const isPassed =
-                  index < activeIndex;
+              {steps.map(
+                (step, index) => {
 
-                return (
-                  <div
-                    key={step.num}
-                    className={`hl-arch-step ${
-                      isActive || isPassed
-                        ? 'active'
-                        : ''
-                    }`}
-                  >
-                    <div className="hl-arch-step-marker">
-                      <div className="hl-arch-step-number">
-                        {step.num}
+                  const isActive =
+                    index ===
+                    activeStage;
+
+                  const isPassed =
+                    index <
+                    activeStage;
+
+                  const isCompleted =
+                    isPassed ||
+                    isActive;
+
+                  const stepProgress =
+                    index <
+                    activeStage
+                      ? 1
+                      : index ===
+                          activeStage
+                        ? progressToNext
+                        : 0;
+
+                  return (
+                    <div
+                      key={
+                        step.num
+                      }
+                      className={`hl-arch-step ${
+                        isCompleted
+                          ? 'active'
+                          : ''
+                      }`}
+                      style={{
+                        '--step-progress':
+                          stepProgress,
+                      }}
+                    >
+
+                      <div className="hl-arch-step-marker">
+
+                        <span className="hl-arch-progress-line" />
+
+                        <div className="hl-arch-step-number">
+                          {step.num}
+                        </div>
+
                       </div>
-                    </div>
 
-                    <div>
-                      <div className="hl-arch-step-title">
-                        {step.title}
+
+                      <div className="hl-arch-step-content">
+
+                        <div className="hl-arch-step-title">
+                          {step.title}
+                        </div>
+
+
+                        <p className="hl-arch-step-desc">
+                          {step.desc}
+                        </p>
+
+
+                        <span className="hl-arch-step-label">
+                          {step.label}
+                        </span>
+
                       </div>
 
-                      <p className="hl-arch-step-desc">
-                        {step.desc}
-                      </p>
-
-                      <span className="hl-arch-step-label">
-                        {step.label}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
+
             </div>
 
-            {/* =======================================
-                RIGHT FIXED VISUAL
-               ======================================= */}
+
+            {/* =================================================
+                RIGHT VISUAL
+               ================================================= */}
 
             <div className="hl-arch-stage">
 
               <div className="hl-arch-stage-bg" />
 
-              {/* ONE CARD — remains in the same place */}
+
               <div className="hl-arch-card">
 
                 <div className="hl-arch-card-top">
+
                   <div>
+
                     <div className="hl-arch-card-index">
+
                       Stage{' '}
+
                       {String(
-                        activeIndex + 1
-                      ).padStart(2, '0')}
+                        activeStage +
+                          1
+                      ).padStart(
+                        2,
+                        '0'
+                      )}
+
                     </div>
+
 
                     <div className="hl-arch-card-title">
-                      {steps[activeIndex].short}
+                      {activeStep.short}
                     </div>
+
                   </div>
+
 
                   <div className="hl-arch-card-pill">
-                    {steps[activeIndex].label}
+                    {activeStep.label}
                   </div>
+
                 </div>
 
+
                 <p className="hl-arch-card-copy">
-                  {steps[activeIndex].desc}
+                  {activeStep.desc}
                 </p>
 
-                {/* =================================
-                    STAGE VISUAL
-                   ================================= */}
 
                 <div className="hl-visual">
 
-                  {/* ==============================
-                      01 — UPLOAD
-                     ============================== */}
+                  {/* =================================================
+                      UPLOAD
+                     ================================================= */}
 
-                  {steps[activeIndex].visual ===
+                  {activeStep.visual ===
                     'upload' && (
-                    <div className="hl-upload-visual">
+                    <div
+                      className="hl-visual-stage"
+                      key="upload"
+                    >
 
-                      <div className="hl-file-box">
-                        <div className="hl-file-icon">
-                          <svg
-                            width="19"
-                            height="19"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <div className="hl-upload-visual">
 
-                            <polyline points="14 2 14 8 20 8" />
-                          </svg>
+                        <div className="hl-file-box">
+
+                          <div className="hl-file-icon">
+
+                            <svg
+                              width="19"
+                              height="19"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+
+                          </div>
+
+
+                          <div className="hl-visual-title">
+                            alex-mercer.pdf
+                          </div>
+
+
+                          <div className="hl-visual-sub">
+                            PDF · 2.4 MB
+                          </div>
+
                         </div>
 
-                        <div className="hl-visual-title">
-                          alex-mercer.pdf
+
+                        <div className="hl-arrow">
+                          →
                         </div>
 
-                        <div className="hl-visual-sub">
-                          PDF · 2.4 MB
-                        </div>
-                      </div>
 
-                      <div className="hl-arrow">
-                        →
-                      </div>
+                        <div className="hl-storage-box">
 
-                      <div className="hl-storage-box">
-                        <div className="hl-storage-icon">
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <path d="M3 7h18" />
-                            <path d="M5 7v13h14V7" />
-                            <path d="M8 3h8l2 4H6z" />
-                          </svg>
+                          <div className="hl-storage-icon">
+
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path d="M3 7h18" />
+
+                              <path d="M5 7v13h14V7" />
+
+                              <path d="M8 3h8l2 4H6z" />
+
+                            </svg>
+
+                          </div>
+
+
+                          <div className="hl-visual-title">
+                            Private storage
+                          </div>
+
+
+                          <div className="hl-visual-sub">
+                            user-scoped Supabase bucket
+                          </div>
+
                         </div>
 
-                        <div className="hl-visual-title">
-                          Private storage
-                        </div>
-
-                        <div className="hl-visual-sub">
-                          user-scoped Supabase bucket
-                        </div>
                       </div>
 
                     </div>
                   )}
 
-                  {/* ==============================
-                      02 — NORMALIZE
-                     ============================== */}
 
-                  {steps[activeIndex].visual ===
+                  {/* =================================================
+                      NORMALIZE
+                     ================================================= */}
+
+                  {activeStep.visual ===
                     'normalize' && (
-                    <div className="hl-normalize-visual">
+                    <div
+                      className="hl-visual-stage"
+                      key="normalize"
+                    >
 
-                      <div className="hl-document-mini">
-                        <div className="hl-mini-heading">
-                          Raw resume
+                      <div className="hl-normalize-visual">
+
+                        <div className="hl-document-mini">
+
+                          <div className="hl-mini-heading">
+                            Raw resume
+                          </div>
+
+                          <div className="hl-mini-line" />
+                          <div className="hl-mini-line mid" />
+                          <div className="hl-mini-line" />
+                          <div className="hl-mini-line short" />
+                          <div className="hl-mini-line mid" />
+                          <div className="hl-mini-line" />
+
                         </div>
 
-                        <div className="hl-mini-line" />
-                        <div className="hl-mini-line mid" />
-                        <div className="hl-mini-line" />
-                        <div className="hl-mini-line short" />
-                        <div className="hl-mini-line mid" />
-                        <div className="hl-mini-line" />
-                      </div>
 
-                      <div className="hl-profile-mini">
-                        <div className="hl-mini-heading">
-                          Gemini profile
+                        <div className="hl-profile-mini">
+
+                          <div className="hl-mini-heading">
+                            Gemini profile
+                          </div>
+
+
+                          <span className="hl-profile-tag">
+                            React
+                          </span>
+
+                          <span className="hl-profile-tag">
+                            PostgreSQL
+                          </span>
+
+                          <span className="hl-profile-tag">
+                            AI / ML
+                          </span>
+
+                          <span className="hl-profile-tag">
+                            8 yrs
+                          </span>
+
+                          <span className="hl-profile-tag">
+                            Next.js
+                          </span>
+
                         </div>
 
-                        <span className="hl-profile-tag">
-                          React
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          PostgreSQL
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          AI / ML
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          8 yrs
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          Next.js
-                        </span>
                       </div>
 
                     </div>
                   )}
 
-                  {/* ==============================
-                      03 — EMBED
-                     ============================== */}
 
-                  {steps[activeIndex].visual ===
+                  {/* =================================================
+                      EMBED
+                     ================================================= */}
+
+                  {activeStep.visual ===
                     'embed' && (
-                    <div className="hl-embed-visual">
+                    <div
+                      className="hl-visual-stage"
+                      key="embed"
+                    >
 
-                      <div className="hl-embedding-label">
-                        Gemini Embedding-002
-                      </div>
+                      <div className="hl-embed-visual">
 
-                      <div className="hl-vector-field">
-                        {Array.from({
-                          length: 40,
-                        }).map((_, index) => (
-                          <span
-                            className="hl-vector-cell"
-                            key={index}
-                          />
-                        ))}
-                      </div>
-
-                      <div className="hl-embed-meta">
-
-                        <div className="hl-embed-stat">
-                          <strong>
-                            1536
-                          </strong>
-
-                          <span>
-                            dimensions
-                          </span>
+                        <div className="hl-embedding-label">
+                          Gemini Embedding-002
                         </div>
 
-                        <div className="hl-embed-stat">
-                          <strong>
-                            Vector
-                          </strong>
 
-                          <span>
-                            representation
-                          </span>
+                        <div className="hl-vector-field">
+
+                          {Array.from({
+                            length: 40,
+                          }).map(
+                            (
+                              _,
+                              index
+                            ) => (
+                              <span
+                                className="hl-vector-cell"
+                                key={
+                                  index
+                                }
+                              />
+                            )
+                          )}
+
                         </div>
 
-                        <div className="hl-embed-stat">
-                          <strong>
-                            Searchable
-                          </strong>
 
-                          <span>
-                            signal
-                          </span>
-                        </div>
+                        <div className="hl-embed-meta">
 
-                      </div>
+                          <div className="hl-embed-stat">
 
-                    </div>
-                  )}
+                            <strong>
+                              1536
+                            </strong>
 
-                  {/* ==============================
-                      04 — SEARCH
-                     ============================== */}
-
-                  {steps[activeIndex].visual ===
-                    'search' && (
-                    <div className="hl-search-visual">
-
-                      <div className="hl-query-box">
-                        <div className="hl-query-label">
-                          Semantic query
-                        </div>
-
-                        <div className="hl-query-text">
-                          Senior Full-Stack AI Engineer
-                        </div>
-                      </div>
-
-                      <div className="hl-search-results">
-
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #1
-                          </div>
-
-                          <div>
-                            <div className="hl-search-name">
-                              Alex Mercer
-                            </div>
-
-                            <div className="hl-search-role">
-                              Lead Full-Stack AI Engineer
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            97.4%
-                          </div>
-                        </div>
-
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #2
-                          </div>
-
-                          <div>
-                            <div className="hl-search-name">
-                              Dr. Sarah Lin
-                            </div>
-
-                            <div className="hl-search-role">
-                              Staff ML &amp; Vector Systems Engineer
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            84.7%
-                          </div>
-                        </div>
-
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #3
-                          </div>
-
-                          <div>
-                            <div className="hl-search-name">
-                              Elena Rostova
-                            </div>
-
-                            <div className="hl-search-role">
-                              Principal Cloud Architect
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            71.2%
-                          </div>
-                        </div>
-
-                      </div>
-
-                    </div>
-                  )}
-
-                  {/* ==============================
-                      05 — EXPLAIN
-                     ============================== */}
-
-                  {steps[activeIndex].visual ===
-                    'explain' && (
-                    <div className="hl-explain-visual">
-
-                      <div className="hl-score-card">
-
-                        <div className="hl-score-main">
-
-                          <div className="hl-score-circle">
                             <span>
-                              97%
+                              dimensions
                             </span>
+
                           </div>
 
-                          <div>
-                            <div className="hl-score-name">
-                              Alex Mercer
-                            </div>
 
-                            <div className="hl-score-role">
-                              Lead Full-Stack AI Engineer
-                            </div>
+                          <div className="hl-embed-stat">
+
+                            <strong>
+                              Vector
+                            </strong>
+
+                            <span>
+                              representation
+                            </span>
+
+                          </div>
+
+
+                          <div className="hl-embed-stat">
+
+                            <strong>
+                              Searchable
+                            </strong>
+
+                            <span>
+                              signal
+                            </span>
+
                           </div>
 
                         </div>
 
                       </div>
 
-                      <div className="hl-evidence-list">
+                    </div>
+                  )}
 
-                        <div className="hl-evidence">
-                          ✓ Next.js App Router experience
+
+                  {/* =================================================
+                      SEARCH
+                     ================================================= */}
+
+                  {activeStep.visual ===
+                    'search' && (
+                    <div
+                      className="hl-visual-stage"
+                      key="search"
+                    >
+
+                      <div className="hl-search-visual">
+
+                        <div className="hl-query-box">
+
+                          <div className="hl-query-label">
+                            Semantic query
+                          </div>
+
+
+                          <div className="hl-query-text">
+                            Senior Full-Stack AI Engineer
+                          </div>
+
                         </div>
 
-                        <div className="hl-evidence">
-                          ✓ PostgreSQL + pgvector
+
+                        <div className="hl-search-results">
+
+                          <div className="hl-search-result">
+
+                            <div className="hl-search-rank">
+                              #1
+                            </div>
+
+
+                            <div>
+
+                              <div className="hl-search-name">
+                                Alex Mercer
+                              </div>
+
+
+                              <div className="hl-search-role">
+                                Lead Full-Stack AI Engineer
+                              </div>
+
+                            </div>
+
+
+                            <div className="hl-search-score">
+                              97.4%
+                            </div>
+
+                          </div>
+
+
+                          <div className="hl-search-result">
+
+                            <div className="hl-search-rank">
+                              #2
+                            </div>
+
+
+                            <div>
+
+                              <div className="hl-search-name">
+                                Dr. Sarah Lin
+                              </div>
+
+
+                              <div className="hl-search-role">
+                                Staff ML &amp; Vector Systems Engineer
+                              </div>
+
+                            </div>
+
+
+                            <div className="hl-search-score">
+                              84.7%
+                            </div>
+
+                          </div>
+
+
+                          <div className="hl-search-result">
+
+                            <div className="hl-search-rank">
+                              #3
+                            </div>
+
+
+                            <div>
+
+                              <div className="hl-search-name">
+                                Elena Rostova
+                              </div>
+
+
+                              <div className="hl-search-role">
+                                Principal Cloud Architect
+                              </div>
+
+                            </div>
+
+
+                            <div className="hl-search-score">
+                              71.2%
+                            </div>
+
+                          </div>
+
                         </div>
 
-                        <div className="hl-evidence">
-                          ✓ AI / ML background
+                      </div>
+
+                    </div>
+                  )}
+
+
+                  {/* =================================================
+                      EXPLAIN
+                     ================================================= */}
+
+                  {activeStep.visual ===
+                    'explain' && (
+                    <div
+                      className="hl-visual-stage"
+                      key="explain"
+                    >
+
+                      <div className="hl-explain-visual">
+
+                        <div className="hl-score-card">
+
+                          <div className="hl-score-main">
+
+                            <div className="hl-score-circle">
+
+                              <span>
+                                97%
+                              </span>
+
+                            </div>
+
+
+                            <div>
+
+                              <div className="hl-score-name">
+                                Alex Mercer
+                              </div>
+
+
+                              <div className="hl-score-role">
+                                Lead Full-Stack AI Engineer
+                              </div>
+
+                            </div>
+
+                          </div>
+
                         </div>
 
-                        <div className="hl-gap">
-                          Gap: limited Kubernetes experience
+
+                        <div className="hl-evidence-list">
+
+                          <div className="hl-evidence">
+                            ✓ Next.js App Router experience
+                          </div>
+
+
+                          <div className="hl-evidence">
+                            ✓ PostgreSQL + pgvector
+                          </div>
+
+
+                          <div className="hl-evidence">
+                            ✓ AI / ML background
+                          </div>
+
+
+                          <div className="hl-gap">
+                            Gap: limited Kubernetes experience
+                          </div>
+
                         </div>
 
                       </div>
@@ -2047,50 +3623,76 @@ export function ArchitectureFlow() {
 
                 </div>
 
-                {/* =================================
-                    CARD PROGRESS
-                   ================================= */}
 
-                <div className="hl-progress-bar">
+                {/* =================================================
+                    PROGRESS
+                   ================================================= */}
+
+                <div className="hl-arch-progress-bar">
+
                   <div
-                    className="hl-progress-fill"
+                    className="hl-arch-progress-fill"
                     style={{
-                      width: `${lineProgress * 100}%`,
+                      width:
+                        `${
+                          lineProgress *
+                          100
+                        }%`,
                     }}
                   />
+
                 </div>
 
-                <div className="hl-progress-dots">
-                  {steps.map((step, index) => (
-                    <span
-                      key={step.num}
-                      className={`hl-progress-dot ${
-                        index <= activeIndex
-                          ? 'active'
-                          : ''
-                      }`}
-                    />
-                  ))}
+
+                <div className="hl-arch-progress-dots">
+
+                  {steps.map(
+                    (
+                      step,
+                      index
+                    ) => (
+                      <span
+                        key={
+                          step.num
+                        }
+                        className={`hl-arch-progress-dot ${
+                          index <=
+                          activeIndex
+                            ? 'active'
+                            : ''
+                        }`}
+                      />
+                    )
+                  )}
+
                 </div>
 
               </div>
 
-              {/* =================================
-                  SEPARATE FINAL NOTE
-                 ================================= */}
+
+              {/* =================================================
+                  FINAL NOTE
+                 ================================================= */}
 
               <div className="hl-final-note">
+
                 <strong>
-                  One pipeline. One hiring signal.
+                  One pipeline.
+                  <br />
+                  One hiring signal.
                 </strong>
 
                 Built to keep the technical complexity
                 underneath a simple recruiting experience.
+
               </div>
 
             </div>
+
           </div>
+
         </div>
+
       </div>
     </section>
   );

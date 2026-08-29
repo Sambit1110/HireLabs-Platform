@@ -1,93 +1,137 @@
-import React, { useEffect, useRef, useState } from 'react';
+'use client';
+
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 export function SecuritySection() {
   const sectionRef = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
+
+  const [isVisible, setIsVisible] =
+    useState(false);
 
   useEffect(() => {
-    const section = sectionRef.current;
+    const section =
+      sectionRef.current;
 
     if (!section) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
+    const observer =
+      new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        },
+        {
+          threshold: 0.1,
+          rootMargin:
+            '0px 0px -8% 0px',
         }
-      },
-      {
-        threshold: 0.12,
-        rootMargin: '0px 0px -8% 0px',
-      }
-    );
+      );
 
     observer.observe(section);
 
-    return () => observer.disconnect();
+    return () =>
+      observer.disconnect();
   }, []);
 
   return (
     <section
       ref={sectionRef}
       className={`hl-security-section ${
-        isVisible ? 'is-visible' : ''
+        isVisible
+          ? 'is-visible'
+          : ''
       }`}
       id="security"
     >
       <style>{`
+
+        /* =====================================================
+           ROOT
+           ===================================================== */
+
         .hl-security-section {
           --cream: #F5F1E8;
           --cream-soft: #ECE6DA;
           --white: #FFFFFF;
+
           --espresso: #211C18;
           --espresso-soft: #625950;
+
           --olive: #6F7D55;
           --olive-dark: #596544;
+
           --taupe: #C8C0AF;
           --border: #DED7CA;
 
-          position: relative;
+          position:
+            relative;
 
           padding:
-            190px 0
-            180px;
+            195px 0
+            185px;
 
           background:
             linear-gradient(
               180deg,
               #F4EFE5 0%,
-              var(--cream) 100%
+              #F5F1E8 100%
             );
 
           color:
             var(--espresso);
 
-          overflow: hidden;
+          overflow:
+            hidden;
 
-          isolation: isolate;
+          isolation:
+            isolate;
         }
+
 
         .hl-security-section *,
-        .hl-security-section *::before,
-        .hl-security-section *::after {
-          box-sizing: border-box;
+        .hl-security-section
+          *::before,
+        .hl-security-section
+          *::after {
+          box-sizing:
+            border-box;
         }
 
+
         /* =====================================================
-           BACKGROUND
+           BACKGROUND ORBITS
            ===================================================== */
 
         .hl-security-section::before {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
-          width: 760px;
-          height: 760px;
+          width:
+            min(
+              900px,
+              82vw
+            );
 
-          right: -430px;
-          top: 8%;
+          height:
+            min(
+              900px,
+              82vw
+            );
+
+          right:
+            -430px;
+
+          top:
+            9%;
 
           border:
             1px solid
@@ -95,19 +139,26 @@ export function SecuritySection() {
               111,
               125,
               85,
-              0.085
+              0.075
             );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
+
+          opacity:
+            0;
 
           transform:
-            scale(0.9);
-
-          opacity: 0;
+            scale(
+              0.9
+            )
+            rotate(
+              -8deg
+            );
 
           transition:
-            opacity 1.3s ease,
-            transform 1.5s
+            opacity 1.4s ease,
+            transform 1.8s
               cubic-bezier(
                 0.16,
                 1,
@@ -115,19 +166,32 @@ export function SecuritySection() {
                 1
               );
 
-          z-index: -1;
+          pointer-events:
+            none;
+
+          z-index:
+            -1;
         }
 
+
         .hl-security-section::after {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
-          width: 470px;
-          height: 470px;
+          width:
+            520px;
 
-          left: -310px;
-          bottom: 5%;
+          height:
+            520px;
+
+          left:
+            -350px;
+
+          bottom:
+            6%;
 
           border:
             1px dashed
@@ -135,41 +199,64 @@ export function SecuritySection() {
               111,
               125,
               85,
-              0.065
+              0.06
             );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
-            scale(0.92);
+            scale(
+              0.93
+            );
 
           transition:
-            opacity 1.2s ease 180ms,
+            opacity 1.3s ease 150ms,
             transform 1.5s
               cubic-bezier(
                 0.16,
                 1,
                 0.3,
                 1
-              ) 180ms;
+              )
+              150ms;
 
-          z-index: -1;
+          pointer-events:
+            none;
+
+          z-index:
+            -1;
         }
+
 
         .hl-security-section.is-visible::before,
         .hl-security-section.is-visible::after {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
-            scale(1);
+            scale(
+              1
+            )
+            rotate(
+              0deg
+            );
         }
 
-        .hl-security-shell {
-          position: relative;
 
-          z-index: 1;
+        /* =====================================================
+           SHELL
+           ===================================================== */
+
+        .hl-security-shell {
+          position:
+            relative;
+
+          z-index:
+            2;
 
           width:
             min(
@@ -177,24 +264,29 @@ export function SecuritySection() {
               calc(100% - 48px)
             );
 
-          margin: 0 auto;
+          margin:
+            0 auto;
         }
+
 
         /* =====================================================
            INTRO
            ===================================================== */
 
         .hl-security-heading {
-          max-width: 820px;
+          max-width:
+            850px;
 
-          margin-bottom: 88px;
+          margin-bottom:
+            92px;
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              34px,
+              38px,
               0
             );
 
@@ -216,9 +308,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-heading {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -228,34 +322,49 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-kicker {
-          display: inline-flex;
+          display:
+            inline-flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 9px;
+          gap:
+            9px;
 
-          margin-bottom: 18px;
+          margin-bottom:
+            18px;
 
           color:
             var(--olive-dark);
 
-          font-size: 10px;
+          font-size:
+            10px;
 
-          line-height: 1;
+          line-height:
+            1;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
-          letter-spacing: 0.15em;
+          letter-spacing:
+            0.15em;
 
-          text-transform: uppercase;
+          text-transform:
+            uppercase;
         }
 
-        .hl-security-kicker-dot {
-          width: 7px;
-          height: 7px;
 
-          border-radius: 50%;
+        .hl-security-kicker-dot {
+          width:
+            7px;
+
+          height:
+            7px;
+
+          border-radius:
+            50%;
 
           background:
             var(--olive);
@@ -270,10 +379,13 @@ export function SecuritySection() {
             );
         }
 
-        .hl-security-title {
-          margin: 0;
 
-          max-width: 820px;
+        .hl-security-title {
+          margin:
+            0;
+
+          max-width:
+            850px;
 
           font-family:
             Georgia,
@@ -282,77 +394,104 @@ export function SecuritySection() {
 
           font-size:
             clamp(
-              48px,
+              50px,
               6vw,
-              78px
+              82px
             );
 
-          line-height: 0.94;
+          line-height:
+            0.92;
 
-          letter-spacing: -0.055em;
+          letter-spacing:
+            -0.058em;
 
-          font-weight: 500;
+          font-weight:
+            500;
         }
+
 
         .hl-security-title em {
           color:
             var(--olive);
 
-          font-style: italic;
+          font-style:
+            italic;
         }
 
+
         .hl-security-intro {
-          max-width: 680px;
+          max-width:
+            690px;
 
           margin:
-            24px 0 0;
+            26px 0 0;
 
           color:
             var(--espresso-soft);
 
-          font-size: 15px;
+          font-size:
+            15px;
 
-          line-height: 1.72;
+          line-height:
+            1.72;
         }
+
 
         /* =====================================================
            MAIN LAYOUT
            ===================================================== */
 
         .hl-security-layout {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
-            0.82fr
-            1.18fr;
+            minmax(
+              0,
+              0.82fr
+            )
+            minmax(
+              0,
+              1.18fr
+            );
 
-          gap: 18px;
+          gap:
+            18px;
 
-          align-items: stretch;
+          align-items:
+            stretch;
         }
 
+
         /* =====================================================
-           LEFT SECURITY ITEMS
+           LEFT INFO
            ===================================================== */
 
         .hl-security-info {
-          display: flex;
+          display:
+            flex;
 
-          flex-direction: column;
+          flex-direction:
+            column;
 
-          gap: 11px;
+          gap:
+            11px;
         }
 
-        .hl-security-item {
-          position: relative;
 
-          padding: 24px;
+        .hl-security-item {
+          position:
+            relative;
+
+          padding:
+            25px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 20px;
+          border-radius:
+            21px;
 
           background:
             rgba(
@@ -362,17 +501,18 @@ export function SecuritySection() {
               0.5
             );
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
-              -24px,
-              20px,
+              -28px,
+              22px,
               0
             );
 
           transition:
-            opacity 750ms
+            opacity 800ms
               cubic-bezier(
                 0.16,
                 1,
@@ -380,7 +520,7 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 850ms
+            transform 900ms
               cubic-bezier(
                 0.16,
                 1,
@@ -388,14 +528,16 @@ export function SecuritySection() {
                 1
               ),
 
-            background 250ms ease,
+            background 260ms ease,
 
-            box-shadow 250ms ease;
+            box-shadow 260ms ease;
         }
+
 
         .hl-security-section.is-visible
           .hl-security-item {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -405,23 +547,33 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-section.is-visible
-          .hl-security-item:nth-child(1) {
+          .hl-security-item:nth-child(
+            1
+          ) {
           transition-delay:
             220ms;
         }
 
-        .hl-security-section.is-visible
-          .hl-security-item:nth-child(2) {
-          transition-delay:
-            320ms;
-        }
 
         .hl-security-section.is-visible
-          .hl-security-item:nth-child(3) {
+          .hl-security-item:nth-child(
+            2
+          ) {
           transition-delay:
-            420ms;
+            340ms;
         }
+
+
+        .hl-security-section.is-visible
+          .hl-security-item:nth-child(
+            3
+          ) {
+          transition-delay:
+            460ms;
+        }
+
 
         .hl-security-item:hover {
           background:
@@ -429,11 +581,11 @@ export function SecuritySection() {
               255,
               255,
               255,
-              0.73
+              0.76
             );
 
           box-shadow:
-            0 18px 42px
+            0 18px 45px
             rgba(
               44,
               39,
@@ -442,29 +594,44 @@ export function SecuritySection() {
             );
 
           transform:
-            translateY(-3px);
+            translate3d(
+              0,
+              -3px,
+              0
+            );
         }
+
 
         .hl-security-item-top {
-          display: flex;
+          display:
+            flex;
 
-          align-items: flex-start;
+          align-items:
+            flex-start;
 
-          gap: 13px;
+          gap:
+            13px;
         }
 
+
         .hl-security-icon {
-          width: 40px;
-          height: 40px;
+          width:
+            41px;
+
+          height:
+            41px;
 
           flex:
-            0 0 40px;
+            0 0 41px;
 
-          display: grid;
+          display:
+            grid;
 
-          place-items: center;
+          place-items:
+            center;
 
-          border-radius: 13px;
+          border-radius:
+            13px;
 
           background:
             var(--espresso);
@@ -482,58 +649,75 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-item:hover
           .hl-security-icon {
           transform:
-            translateY(-2px)
-            rotate(-2deg);
+            translateY(
+              -2px
+            )
+            rotate(
+              -2deg
+            );
         }
+
 
         .hl-security-number {
           color:
             #A39A8D;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
           letter-spacing:
             0.12em;
         }
 
+
         .hl-security-item-title {
-          margin-top: 4px;
+          margin-top:
+            4px;
 
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: 20px;
+          font-size:
+            21px;
 
-          line-height: 1.05;
+          line-height:
+            1.04;
 
           letter-spacing:
-            -0.025em;
+            -0.028em;
         }
+
 
         .hl-security-item-text {
           margin:
-            14px 0 0 53px;
+            15px 0 0 54px;
 
           color:
             #756C63;
 
-          font-size: 10px;
+          font-size:
+            10px;
 
-          line-height: 1.65;
+          line-height:
+            1.68;
         }
+
 
         .hl-security-item-text code {
           padding:
             2px 5px;
 
-          border-radius: 5px;
+          border-radius:
+            5px;
 
           background:
             #ECE8DE;
@@ -546,25 +730,31 @@ export function SecuritySection() {
             Consolas,
             monospace;
 
-          font-size: 9px;
+          font-size:
+            9px;
         }
 
+
         /* =====================================================
-           DARK SECURITY OBJECT
+           LARGE SECURITY OBJECT
            ===================================================== */
 
         .hl-security-visual {
-          min-height: 635px;
+          position:
+            relative;
 
-          position: relative;
+          min-height:
+            655px;
 
-          padding: 31px;
+          padding:
+            32px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 27px;
+          border-radius:
+            29px;
 
           background:
             var(--espresso);
@@ -572,10 +762,11 @@ export function SecuritySection() {
           color:
             var(--cream);
 
-          overflow: hidden;
+          overflow:
+            hidden;
 
           box-shadow:
-            0 30px 78px
+            0 32px 85px
             rgba(
               37,
               32,
@@ -583,12 +774,13 @@ export function SecuritySection() {
               0.15
             );
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
+              32px,
               28px,
-              26px,
               0
             )
             scale(
@@ -597,7 +789,7 @@ export function SecuritySection() {
 
           transition:
             opacity 1050ms
-              320ms
+              340ms
               cubic-bezier(
                 0.16,
                 1,
@@ -606,7 +798,7 @@ export function SecuritySection() {
               ),
 
             transform 1150ms
-              320ms
+              340ms
               cubic-bezier(
                 0.16,
                 1,
@@ -615,9 +807,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-visual {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -630,16 +824,29 @@ export function SecuritySection() {
             );
         }
 
+
+        /* =====================================================
+           ORBIT DECORATION
+           ===================================================== */
+
         .hl-security-visual::before {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
-          width: 470px;
-          height: 470px;
+          width:
+            500px;
 
-          top: -180px;
-          right: -140px;
+          height:
+            500px;
+
+          top:
+            -195px;
+
+          right:
+            -155px;
 
           border:
             1px solid
@@ -650,25 +857,38 @@ export function SecuritySection() {
               0.08
             );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
 
           animation:
             hlSecurityOrbit
-            16s
+            18s
             linear
             infinite;
+
+          pointer-events:
+            none;
         }
 
+
         .hl-security-visual::after {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
-          width: 330px;
-          height: 330px;
+          width:
+            345px;
 
-          top: -112px;
-          right: -70px;
+          height:
+            345px;
+
+          top:
+            -120px;
+
+          right:
+            -75px;
 
           border:
             1px dashed
@@ -679,58 +899,79 @@ export function SecuritySection() {
               0.13
             );
 
-          border-radius: 50%;
+          border-radius:
+            50%;
 
           animation:
             hlSecurityOrbitReverse
-            22s
+            25s
             linear
             infinite;
+
+          pointer-events:
+            none;
         }
+
 
         @keyframes hlSecurityOrbit {
           from {
             transform:
-              rotate(0deg);
+              rotate(
+                0deg
+              );
           }
 
           to {
             transform:
-              rotate(360deg);
+              rotate(
+                360deg
+              );
           }
         }
+
 
         @keyframes hlSecurityOrbitReverse {
           from {
             transform:
-              rotate(360deg);
+              rotate(
+                360deg
+              );
           }
 
           to {
             transform:
-              rotate(0deg);
+              rotate(
+                0deg
+              );
           }
         }
 
+
         /* =====================================================
-           TERMINAL TOP
+           TERMINAL HEADER
            ===================================================== */
 
         .hl-security-visual-top {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 2;
+          z-index:
+            5;
 
-          display: flex;
+          display:
+            flex;
 
-          align-items: flex-start;
+          align-items:
+            flex-start;
 
           justify-content:
             space-between;
 
-          gap: 18px;
+          gap:
+            18px;
 
-          padding-bottom: 23px;
+          padding-bottom:
+            23px;
 
           border-bottom:
             1px solid
@@ -742,17 +983,22 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-terminal-label {
-          display: flex;
+          display:
+            flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 8px;
+          gap:
+            8px;
 
           color:
             #B0A89E;
 
-          font-size: 9px;
+          font-size:
+            9px;
 
           font-family:
             'SFMono-Regular',
@@ -760,11 +1006,16 @@ export function SecuritySection() {
             monospace;
         }
 
-        .hl-security-terminal-dot {
-          width: 6px;
-          height: 6px;
 
-          border-radius: 50%;
+        .hl-security-terminal-dot {
+          width:
+            6px;
+
+          height:
+            6px;
+
+          border-radius:
+            50%;
 
           background:
             #AEBB8D;
@@ -779,11 +1030,13 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-status {
           padding:
             7px 10px;
 
-          border-radius: 999px;
+          border-radius:
+            999px;
 
           background:
             rgba(
@@ -796,9 +1049,11 @@ export function SecuritySection() {
           color:
             #B7C59A;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
           letter-spacing:
             0.1em;
@@ -807,18 +1062,23 @@ export function SecuritySection() {
             uppercase;
         }
 
+
         /* =====================================================
-           CODE
+           CODE WINDOW
            ===================================================== */
 
         .hl-security-code {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 2;
+          z-index:
+            4;
 
-          margin-top: 28px;
+          margin-top:
+            28px;
 
-          padding: 22px;
+          padding:
+            22px;
 
           border:
             1px solid
@@ -829,7 +1089,8 @@ export function SecuritySection() {
               0.1
             );
 
-          border-radius: 18px;
+          border-radius:
+            18px;
 
           background:
             rgba(
@@ -839,18 +1100,19 @@ export function SecuritySection() {
               0.035
             );
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              16px,
+              18px,
               0
             );
 
           transition:
-            opacity 800ms
-              520ms
+            opacity 850ms
+              540ms
               cubic-bezier(
                 0.16,
                 1,
@@ -858,8 +1120,8 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 850ms
-              520ms
+            transform 900ms
+              540ms
               cubic-bezier(
                 0.16,
                 1,
@@ -868,9 +1130,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-code {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -880,24 +1144,31 @@ export function SecuritySection() {
             );
         }
 
-        .hl-security-code-header {
-          display: flex;
 
-          align-items: center;
+        .hl-security-code-header {
+          display:
+            flex;
+
+          align-items:
+            center;
 
           justify-content:
             space-between;
 
-          gap: 12px;
+          gap:
+            12px;
 
-          margin-bottom: 15px;
+          margin-bottom:
+            15px;
         }
+
 
         .hl-security-code-file {
           color:
             #938C82;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
           font-family:
             'SFMono-Regular',
@@ -905,13 +1176,16 @@ export function SecuritySection() {
             monospace;
         }
 
+
         .hl-security-code-lang {
           color:
             #776F66;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          font-weight: 800;
+          font-weight:
+            800;
 
           letter-spacing:
             0.08em;
@@ -920,8 +1194,10 @@ export function SecuritySection() {
             uppercase;
         }
 
+
         .hl-security-code pre {
-          margin: 0;
+          margin:
+            0;
 
           color:
             #D8D1C6;
@@ -931,9 +1207,11 @@ export function SecuritySection() {
             Consolas,
             monospace;
 
-          font-size: 9px;
+          font-size:
+            9px;
 
-          line-height: 1.8;
+          line-height:
+            1.8;
 
           white-space:
             pre-wrap;
@@ -942,44 +1220,52 @@ export function SecuritySection() {
             auto;
         }
 
+
         .hl-code-keyword {
           color:
             #B6C494;
         }
+
 
         .hl-code-function {
           color:
             #DDD2C2;
         }
 
+
         .hl-code-value {
           color:
             #D6BFA1;
         }
+
 
         /* =====================================================
            POLICY EXPLAINER
            ===================================================== */
 
         .hl-security-explainer {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 2;
+          z-index:
+            4;
 
-          margin-top: 24px;
+          margin-top:
+            24px;
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              16px,
+              18px,
               0
             );
 
           transition:
-            opacity 800ms
-              640ms
+            opacity 850ms
+              660ms
               cubic-bezier(
                 0.16,
                 1,
@@ -987,8 +1273,8 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 850ms
-              640ms
+            transform 900ms
+              660ms
               cubic-bezier(
                 0.16,
                 1,
@@ -997,9 +1283,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-explainer {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -1009,15 +1297,19 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-explainer-title {
-          margin-bottom: 11px;
+          margin-bottom:
+            11px;
 
           color:
             #9B9389;
 
-          font-size: 8px;
+          font-size:
+            8px;
 
-          font-weight: 900;
+          font-weight:
+            900;
 
           letter-spacing:
             0.12em;
@@ -1026,21 +1318,30 @@ export function SecuritySection() {
             uppercase;
         }
 
+
         .hl-security-flow {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             1fr
             auto
             1fr;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 9px;
+          gap:
+            9px;
         }
 
+
         .hl-security-node {
-          padding: 15px;
+          min-width:
+            0;
+
+          padding:
+            15px;
 
           border:
             1px solid
@@ -1051,7 +1352,8 @@ export function SecuritySection() {
               0.11
             );
 
-          border-radius: 14px;
+          border-radius:
+            14px;
 
           background:
             rgba(
@@ -1062,14 +1364,17 @@ export function SecuritySection() {
             );
 
           transition:
-            transform 280ms ease,
-            background 280ms ease,
-            border-color 280ms ease;
+            transform 250ms ease,
+            background 250ms ease,
+            border-color 250ms ease;
         }
+
 
         .hl-security-node:hover {
           transform:
-            translateY(-2px);
+            translateY(
+              -2px
+            );
 
           background:
             rgba(
@@ -1088,11 +1393,13 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-node-label {
           color:
             #7F786F;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
           text-transform:
             uppercase;
@@ -1104,33 +1411,46 @@ export function SecuritySection() {
             900;
         }
 
+
         .hl-security-node-value {
-          margin-top: 6px;
+          margin-top:
+            6px;
 
           color:
             #E9E2D8;
 
-          font-size: 11px;
+          font-size:
+            11px;
 
-          font-weight: 800;
+          font-weight:
+            800;
+
+          word-break:
+            break-word;
         }
 
+
         .hl-security-node-sub {
-          margin-top: 4px;
+          margin-top:
+            4px;
 
           color:
             #857E74;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          line-height: 1.4;
+          line-height:
+            1.4;
         }
+
 
         .hl-security-flow-arrow {
           color:
             #9EAB7E;
 
-          font-size: 16px;
+          font-size:
+            16px;
 
           animation:
             hlSecurityArrow
@@ -1139,54 +1459,68 @@ export function SecuritySection() {
             infinite;
         }
 
+
         @keyframes hlSecurityArrow {
           0%,
           100% {
-            opacity: 0.45;
+            opacity:
+              0.45;
 
             transform:
-              translateX(0);
+              translateX(
+                0
+              );
           }
 
           50% {
-            opacity: 1;
+            opacity:
+              1;
 
             transform:
-              translateX(4px);
+              translateX(
+                4px
+              );
           }
         }
+
 
         /* =====================================================
            ACCESS GRID
            ===================================================== */
 
         .hl-security-access {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 2;
+          z-index:
+            4;
 
-          margin-top: 14px;
-
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             1fr
             1fr;
 
-          gap: 8px;
+          gap:
+            8px;
 
-          opacity: 0;
+          margin-top:
+            14px;
+
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              12px,
+              13px,
               0
             );
 
           transition:
-            opacity 700ms
-              780ms
+            opacity 750ms
+              810ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1194,8 +1528,8 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 800ms
-              780ms
+            transform 850ms
+              810ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1204,9 +1538,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-access {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -1216,32 +1552,48 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-access-item {
-          display: flex;
+          min-width:
+            0;
 
-          align-items: center;
+          display:
+            flex;
 
-          gap: 8px;
+          align-items:
+            center;
 
-          min-height: 43px;
+          gap:
+            8px;
 
-          padding: 10px;
+          min-height:
+            45px;
 
-          border-radius: 11px;
+          padding:
+            10px;
 
-          font-size: 8px;
+          border-radius:
+            11px;
 
-          font-weight: 800;
+          font-size:
+            8px;
+
+          font-weight:
+            800;
 
           transition:
-            transform 250ms ease,
-            background 250ms ease;
+            transform 220ms ease,
+            background 220ms ease;
         }
+
 
         .hl-access-item:hover {
           transform:
-            translateY(-2px);
+            translateY(
+              -2px
+            );
         }
+
 
         .hl-access-item.allowed {
           background:
@@ -1256,6 +1608,7 @@ export function SecuritySection() {
             #B8C59A;
         }
 
+
         .hl-access-item.blocked {
           background:
             rgba(
@@ -1269,15 +1622,25 @@ export function SecuritySection() {
             #C69A89;
         }
 
+
         .hl-access-icon {
-          width: 20px;
-          height: 20px;
+          width:
+            20px;
 
-          display: grid;
+          height:
+            20px;
 
-          place-items: center;
+          flex:
+            0 0 20px;
 
-          border-radius: 7px;
+          display:
+            grid;
+
+          place-items:
+            center;
+
+          border-radius:
+            7px;
 
           background:
             rgba(
@@ -1287,19 +1650,24 @@ export function SecuritySection() {
               0.06
             );
 
-          font-size: 9px;
+          font-size:
+            9px;
         }
+
 
         /* =====================================================
            STATS
            ===================================================== */
 
         .hl-security-bottom {
-          position: relative;
+          position:
+            relative;
 
-          z-index: 2;
+          z-index:
+            4;
 
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             repeat(
@@ -1307,22 +1675,25 @@ export function SecuritySection() {
               1fr
             );
 
-          gap: 8px;
+          gap:
+            8px;
 
-          margin-top: 20px;
+          margin-top:
+            21px;
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              12px,
+              14px,
               0
             );
 
           transition:
-            opacity 700ms
-              900ms
+            opacity 750ms
+              940ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1330,8 +1701,8 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 800ms
-              900ms
+            transform 850ms
+              940ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1340,9 +1711,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-bottom {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -1352,8 +1725,13 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-stat {
-          padding: 13px;
+          min-width:
+            0;
+
+          padding:
+            13px;
 
           border:
             1px solid
@@ -1364,7 +1742,8 @@ export function SecuritySection() {
               0.1
             );
 
-          border-radius: 12px;
+          border-radius:
+            12px;
 
           background:
             rgba(
@@ -1375,42 +1754,54 @@ export function SecuritySection() {
             );
 
           transition:
-            transform 250ms ease,
-            background 250ms ease;
+            transform 230ms ease,
+            background 230ms ease;
         }
+
 
         .hl-security-stat:hover {
           transform:
-            translateY(-2px);
+            translateY(
+              -2px
+            );
 
           background:
             rgba(
               255,
               255,
               255,
-              0.04
+              0.045
             );
         }
 
+
         .hl-security-stat strong {
-          display: block;
+          display:
+            block;
 
-          font-size: 12px;
+          font-size:
+            12px;
 
-          line-height: 1;
+          line-height:
+            1;
         }
 
-        .hl-security-stat span {
-          display: block;
 
-          margin-top: 5px;
+        .hl-security-stat span {
+          display:
+            block;
+
+          margin-top:
+            5px;
 
           color:
             #80786F;
 
-          font-size: 7px;
+          font-size:
+            7px;
 
-          line-height: 1.4;
+          line-height:
+            1.4;
 
           text-transform:
             uppercase;
@@ -1419,42 +1810,48 @@ export function SecuritySection() {
             0.08em;
         }
 
+
         /* =====================================================
-           BOTTOM STATEMENT
+           FINAL STATEMENT
            ===================================================== */
 
         .hl-security-note {
-          display: grid;
+          display:
+            grid;
 
           grid-template-columns:
             0.9fr
             1.1fr;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 60px;
+          gap:
+            65px;
 
-          margin-top: 55px;
+          margin-top:
+            58px;
 
           padding:
-            26px 0 0;
+            28px 0 0;
 
           border-top:
             1px solid
             var(--border);
 
-          opacity: 0;
+          opacity:
+            0;
 
           transform:
             translate3d(
               0,
-              20px,
+              22px,
               0
             );
 
           transition:
-            opacity 800ms
-              1050ms
+            opacity 850ms
+              1080ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1462,8 +1859,8 @@ export function SecuritySection() {
                 1
               ),
 
-            transform 900ms
-              1050ms
+            transform 950ms
+              1080ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1472,9 +1869,11 @@ export function SecuritySection() {
               );
         }
 
+
         .hl-security-section.is-visible
           .hl-security-note {
-          opacity: 1;
+          opacity:
+            1;
 
           transform:
             translate3d(
@@ -1484,66 +1883,84 @@ export function SecuritySection() {
             );
         }
 
+
         .hl-security-note strong {
           font-family:
             Georgia,
             'Times New Roman',
             serif;
 
-          font-size: 27px;
+          font-size:
+            29px;
 
-          line-height: 1.05;
+          line-height:
+            1.02;
 
-          font-weight: 500;
+          font-weight:
+            500;
 
           letter-spacing:
-            -0.03em;
+            -0.035em;
         }
 
-        .hl-security-note p {
-          max-width: 480px;
 
-          margin: 0;
+        .hl-security-note p {
+          max-width:
+            500px;
+
+          margin:
+            0;
 
           color:
             #7A7168;
 
-          font-size: 10px;
+          font-size:
+            10px;
 
-          line-height: 1.65;
+          line-height:
+            1.7;
         }
+
 
         /* =====================================================
            TABLET
            ===================================================== */
 
         @media (max-width: 950px) {
+
           .hl-security-layout {
             grid-template-columns:
               1fr;
           }
 
+
           .hl-security-visual {
-            min-height: 560px;
+            min-height:
+              610px;
           }
+
 
           .hl-security-note {
             grid-template-columns:
               1fr
               1fr;
           }
+
         }
+
 
         /* =====================================================
            MOBILE
            ===================================================== */
 
         @media (max-width: 650px) {
+
           .hl-security-section {
             padding:
               115px 0
               125px;
           }
+
 
           .hl-security-shell {
             width:
@@ -1553,74 +1970,128 @@ export function SecuritySection() {
               );
           }
 
+
           .hl-security-heading {
-            margin-bottom: 55px;
+            margin-bottom:
+              55px;
           }
+
 
           .hl-security-title {
-            font-size: 46px;
+            font-size:
+              46px;
           }
+
 
           .hl-security-intro {
-            font-size: 14px;
+            font-size:
+              14px;
           }
+
 
           .hl-security-item {
-            padding: 19px;
+            padding:
+              20px;
           }
+
 
           .hl-security-item-text {
-            margin-left: 0;
+            margin-left:
+              0;
           }
+
 
           .hl-security-visual {
-            min-height: 660px;
+            min-height:
+              670px;
 
-            padding: 20px;
+            padding:
+              20px;
 
-            border-radius: 21px;
+            border-radius:
+              22px;
           }
+
+
+          .hl-security-code {
+            padding:
+              17px;
+          }
+
+
+          .hl-security-code pre {
+            font-size:
+              8px;
+
+            line-height:
+              1.7;
+          }
+
 
           .hl-security-flow {
             grid-template-columns:
               1fr;
           }
 
+
           .hl-security-flow-arrow {
-            justify-self: center;
+            justify-self:
+              center;
 
             transform:
-              rotate(90deg);
+              rotate(
+                90deg
+              );
           }
+
 
           .hl-security-access {
             grid-template-columns:
               1fr;
           }
 
+
           .hl-security-bottom {
             grid-template-columns:
               1fr;
           }
 
+
           .hl-security-note {
             grid-template-columns:
               1fr;
 
-            align-items:
-              flex-start;
-
-            gap: 15px;
+            gap:
+              16px;
           }
+
+
+          .hl-security-note strong {
+            font-size:
+              25px;
+          }
+
+
+          .hl-security-section::before {
+            width:
+              620px;
+
+            height:
+              620px;
+          }
+
         }
+
 
         /* =====================================================
            REDUCED MOTION
            ===================================================== */
 
         @media (
-          prefers-reduced-motion: reduce
+          prefers-reduced-motion:
+            reduce
         ) {
+
           .hl-security-section::before,
           .hl-security-section::after,
           .hl-security-heading,
@@ -1631,19 +2102,24 @@ export function SecuritySection() {
           .hl-security-access,
           .hl-security-bottom,
           .hl-security-note {
-            opacity: 1 !important;
+            opacity:
+              1 !important;
 
             transform:
               none !important;
 
-            transition: none !important;
+            transition:
+              none !important;
           }
+
 
           .hl-security-visual::before,
           .hl-security-visual::after,
           .hl-security-flow-arrow {
-            animation: none !important;
+            animation:
+              none !important;
           }
+
 
           .hl-security-item:hover,
           .hl-security-stat:hover,
@@ -1652,28 +2128,41 @@ export function SecuritySection() {
             transform:
               none !important;
           }
+
         }
+
       `}</style>
+
 
       <div className="hl-security-shell">
 
-        {/* =========================================
+        {/* ===================================================
             INTRO
-           ========================================= */}
+           =================================================== */}
 
         <div className="hl-security-heading">
 
           <div className="hl-security-kicker">
+
             <span className="hl-security-kicker-dot" />
 
             Security by design
+
           </div>
 
+
           <h2 className="hl-security-title">
+
             Your candidates belong
             <br />
-            to <em>your team.</em>
+
+            to{' '}
+            <em>
+              your team.
+            </em>
+
           </h2>
+
 
           <p className="hl-security-intro">
             HireLabs treats candidate data as private
@@ -1685,23 +2174,29 @@ export function SecuritySection() {
 
         </div>
 
-        {/* =========================================
-            MAIN SECURITY LAYOUT
-           ========================================= */}
+
+        {/* ===================================================
+            SECURITY LAYOUT
+           =================================================== */}
 
         <div className="hl-security-layout">
 
-          {/* =======================================
+          {/* =================================================
               LEFT INFORMATION
-             ======================================= */}
+             ================================================= */}
 
           <div className="hl-security-info">
+
+            {/* -----------------------------------------------
+                DATABASE
+               ----------------------------------------------- */}
 
             <article className="hl-security-item">
 
               <div className="hl-security-item-top">
 
                 <div className="hl-security-icon">
+
                   <svg
                     width="20"
                     height="20"
@@ -1710,9 +2205,11 @@ export function SecuritySection() {
                     stroke="currentColor"
                     strokeWidth="1.7"
                   >
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6-8-4 8-10 8-10 8-10 8-10z" />
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8-4 8-10 8-10 8-10 8-10z" />
                   </svg>
+
                 </div>
+
 
                 <div>
 
@@ -1720,28 +2217,37 @@ export function SecuritySection() {
                     01 · DATABASE
                   </div>
 
+
                   <div className="hl-security-item-title">
-                    Row Level Security, everywhere it matters.
+                    Row Level Security,
+                    everywhere it matters.
                   </div>
 
                 </div>
 
               </div>
 
+
               <div className="hl-security-item-text">
-                Application tables enforce RLS at the database
-                layer. Candidate vectors are filtered by the
-                authenticated user instead of relying only on
-                application-side checks.
+                Application tables enforce RLS at the
+                database layer. Candidate vectors are
+                filtered by the authenticated user instead
+                of relying only on application-side checks.
               </div>
 
             </article>
+
+
+            {/* -----------------------------------------------
+                STORAGE
+               ----------------------------------------------- */}
 
             <article className="hl-security-item">
 
               <div className="hl-security-item-top">
 
                 <div className="hl-security-icon">
+
                   <svg
                     width="20"
                     height="20"
@@ -1759,14 +2265,18 @@ export function SecuritySection() {
                     />
 
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+
                   </svg>
+
                 </div>
+
 
                 <div>
 
                   <div className="hl-security-number">
                     02 · STORAGE
                   </div>
+
 
                   <div className="hl-security-item-title">
                     Private resume storage.
@@ -1775,6 +2285,7 @@ export function SecuritySection() {
                 </div>
 
               </div>
+
 
               <div className="hl-security-item-text">
                 Resume PDF/DOCX files use{' '}
@@ -1787,11 +2298,17 @@ export function SecuritySection() {
 
             </article>
 
+
+            {/* -----------------------------------------------
+                DECISIONS
+               ----------------------------------------------- */}
+
             <article className="hl-security-item">
 
               <div className="hl-security-item-top">
 
                 <div className="hl-security-icon">
+
                   <svg
                     width="20"
                     height="20"
@@ -1807,8 +2324,11 @@ export function SecuritySection() {
                     />
 
                     <path d="M12 7v5l3 2" />
+
                   </svg>
+
                 </div>
+
 
                 <div>
 
@@ -1816,13 +2336,16 @@ export function SecuritySection() {
                     03 · DECISIONS
                   </div>
 
+
                   <div className="hl-security-item-title">
-                    AI supports people, not the other way around.
+                    AI supports people,
+                    not the other way around.
                   </div>
 
                 </div>
 
               </div>
+
 
               <div className="hl-security-item-text">
                 Match scores are presented as decision
@@ -1835,19 +2358,27 @@ export function SecuritySection() {
 
           </div>
 
-          {/* =======================================
-              SECURITY VISUAL
-             ======================================= */}
+
+          {/* =================================================
+              DARK SECURITY OBJECT
+             ================================================= */}
 
           <div className="hl-security-visual">
+
+            {/* -----------------------------------------------
+                HEADER
+               ----------------------------------------------- */}
 
             <div className="hl-security-visual-top">
 
               <div className="hl-security-terminal-label">
+
                 <span className="hl-security-terminal-dot" />
 
                 supabase / database policy
+
               </div>
+
 
               <div className="hl-security-status">
                 policy active
@@ -1855,9 +2386,10 @@ export function SecuritySection() {
 
             </div>
 
-            {/* ===================================
+
+            {/* -----------------------------------------------
                 CODE
-               =================================== */}
+               ----------------------------------------------- */}
 
             <div className="hl-security-code">
 
@@ -1867,11 +2399,13 @@ export function SecuritySection() {
                   candidate_embeddings.sql
                 </span>
 
+
                 <span className="hl-security-code-lang">
                   PostgreSQL
                 </span>
 
               </div>
+
 
               <pre>
 <span className="hl-code-keyword">
@@ -1913,15 +2447,17 @@ user_id = auth.uid();
 
             </div>
 
-            {/* ===================================
-                POLICY EXPLAINER
-               =================================== */}
+
+            {/* -----------------------------------------------
+                POLICY EXPLANATION
+               ----------------------------------------------- */}
 
             <div className="hl-security-explainer">
 
               <div className="hl-security-explainer-title">
                 What the policy means
               </div>
+
 
               <div className="hl-security-flow">
 
@@ -1931,9 +2467,11 @@ user_id = auth.uid();
                     Request
                   </div>
 
+
                   <div className="hl-security-node-value">
                     Authenticated recruiter
                   </div>
+
 
                   <div className="hl-security-node-sub">
                     Has a valid auth.uid()
@@ -1941,9 +2479,11 @@ user_id = auth.uid();
 
                 </div>
 
+
                 <div className="hl-security-flow-arrow">
                   →
                 </div>
+
 
                 <div className="hl-security-node">
 
@@ -1951,9 +2491,11 @@ user_id = auth.uid();
                     Database
                   </div>
 
+
                   <div className="hl-security-node-value">
                     auth.uid() = user_id
                   </div>
+
 
                   <div className="hl-security-node-sub">
                     Policy decides what can be returned
@@ -1963,51 +2505,69 @@ user_id = auth.uid();
 
               </div>
 
+
+              {/* ---------------------------------------------
+                  ACCESS
+                 --------------------------------------------- */}
+
               <div className="hl-security-access">
 
                 <div className="hl-access-item allowed">
+
                   <span className="hl-access-icon">
                     ✓
                   </span>
 
                   Own candidate vectors
+
                 </div>
 
+
                 <div className="hl-access-item allowed">
+
                   <span className="hl-access-icon">
                     ✓
                   </span>
 
                   Own resume files
+
                 </div>
 
+
                 <div className="hl-access-item blocked">
+
                   <span className="hl-access-icon">
                     ×
                   </span>
 
                   Another user's vectors
+
                 </div>
 
+
                 <div className="hl-access-item blocked">
+
                   <span className="hl-access-icon">
                     ×
                   </span>
 
                   Another user's files
+
                 </div>
 
               </div>
 
             </div>
 
-            {/* ===================================
-                BOTTOM STATS
-               =================================== */}
+
+            {/* -----------------------------------------------
+                STATS
+               ----------------------------------------------- */}
 
             <div className="hl-security-bottom">
 
               <div className="hl-security-stat">
+
                 <strong>
                   RLS
                 </strong>
@@ -2015,9 +2575,12 @@ user_id = auth.uid();
                 <span>
                   Database-level isolation
                 </span>
+
               </div>
 
+
               <div className="hl-security-stat">
+
                 <strong>
                   Private
                 </strong>
@@ -2025,9 +2588,12 @@ user_id = auth.uid();
                 <span>
                   Scoped storage paths
                 </span>
+
               </div>
 
+
               <div className="hl-security-stat">
+
                 <strong>
                   Human
                 </strong>
@@ -2035,22 +2601,26 @@ user_id = auth.uid();
                 <span>
                   Decision support model
                 </span>
+
               </div>
 
             </div>
 
           </div>
+
         </div>
 
-        {/* =========================================
+
+        {/* ===================================================
             FINAL STATEMENT
-           ========================================= */}
+           =================================================== */}
 
         <div className="hl-security-note">
 
           <strong>
             Security should feel invisible.
           </strong>
+
 
           <p>
             The recruiting experience stays simple because
@@ -2062,6 +2632,7 @@ user_id = auth.uid();
         </div>
 
       </div>
+
     </section>
   );
 }
