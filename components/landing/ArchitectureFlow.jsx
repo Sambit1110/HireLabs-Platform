@@ -16,7 +16,7 @@ export function ArchitectureFlow() {
       title: 'Secure Upload',
       short: 'Start with the source',
       desc:
-        'PDF/DOCX uploaded to a user-scoped private Supabase Storage bucket.',
+        'PDF/DOCX uploaded to user-scoped private Supabase Storage bucket.',
       label: 'PRIVATE INPUT',
       visual: 'upload',
     },
@@ -59,53 +59,44 @@ export function ArchitectureFlow() {
   ];
 
   useEffect(() => {
-    let frame = null;
+    let rafId = null;
 
     const updateProgress = () => {
       const section = sectionRef.current;
 
       if (!section) {
+        rafId = null;
         return;
       }
 
-      const rect =
-        section.getBoundingClientRect();
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
 
-      const viewportHeight =
-        window.innerHeight;
-
-      const totalDistance =
-        Math.max(
-          section.offsetHeight -
-            viewportHeight,
-          1
-        );
+      const totalDistance = Math.max(
+        section.offsetHeight - viewportHeight,
+        1
+      );
 
       const nextProgress = Math.min(
         1,
         Math.max(
           0,
-          -rect.top /
-            totalDistance
+          -rect.top / totalDistance
         )
       );
 
-      setProgress(
-        nextProgress
-      );
-
-      frame = null;
+      setProgress(nextProgress);
+      rafId = null;
     };
 
     const handleScroll = () => {
-      if (frame !== null) {
+      if (rafId !== null) {
         return;
       }
 
-      frame =
-        window.requestAnimationFrame(
-          updateProgress
-        );
+      rafId = window.requestAnimationFrame(
+        updateProgress
+      );
     };
 
     updateProgress();
@@ -113,9 +104,7 @@ export function ArchitectureFlow() {
     window.addEventListener(
       'scroll',
       handleScroll,
-      {
-        passive: true,
-      }
+      { passive: true }
     );
 
     window.addEventListener(
@@ -134,10 +123,8 @@ export function ArchitectureFlow() {
         handleScroll
       );
 
-      if (frame !== null) {
-        window.cancelAnimationFrame(
-          frame
-        );
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
       }
     };
   }, []);
@@ -145,42 +132,16 @@ export function ArchitectureFlow() {
   const activeIndex = Math.min(
     steps.length - 1,
     Math.floor(
-      progress *
-        steps.length
+      progress * steps.length
     )
   );
-
-  const stagePosition =
-    progress *
-    (steps.length - 1);
-
-  const activeStage =
-    Math.min(
-      steps.length - 1,
-      Math.floor(
-        stagePosition
-      )
-    );
-
-  const localProgress =
-    stagePosition -
-    activeStage;
-
-  const progressToNext =
-    Math.min(
-      1,
-      Math.max(
-        0,
-        localProgress
-      )
-    );
 
   const lineProgress =
     progress *
     (steps.length - 1);
 
   const activeStep =
-    steps[activeStage];
+    steps[activeIndex];
 
   return (
     <section
@@ -189,6 +150,7 @@ export function ArchitectureFlow() {
       id="architecture"
     >
       <style>{`
+
         /* =====================================================
            ROOT
            ===================================================== */
@@ -209,35 +171,36 @@ export function ArchitectureFlow() {
 
           position: relative;
 
-          min-height:
-            430vh;
+          min-height: 430vh;
 
           background:
             linear-gradient(
               180deg,
               #F5F1E8 0%,
-              #F2ECE2 100%
+              #F3EEE4 100%
             );
 
           color:
             var(--espresso);
 
-          overflow: clip;
+          overflow: visible;
 
           isolation: isolate;
         }
 
 
         .hl-architecture *,
-        .hl-architecture *::before,
-        .hl-architecture *::after {
+        .hl-architecture
+          *::before,
+        .hl-architecture
+          *::after {
           box-sizing:
             border-box;
         }
 
 
         /* =====================================================
-           AMBIENT FIELD
+           AMBIENT RING
            ===================================================== */
 
         .hl-architecture::before {
@@ -247,21 +210,21 @@ export function ArchitectureFlow() {
 
           width:
             min(
-              900px,
-              80vw
+              860px,
+              76vw
             );
 
           height:
             min(
-              900px,
-              80vw
+              860px,
+              76vw
             );
 
-          right:
-            -390px;
-
           top:
-            12vh;
+            10vh;
+
+          right:
+            -370px;
 
           border:
             1px solid
@@ -286,16 +249,16 @@ export function ArchitectureFlow() {
           position: absolute;
 
           width:
-            520px;
+            480px;
 
           height:
-            520px;
+            480px;
 
           left:
-            -350px;
+            -300px;
 
           bottom:
-            8vh;
+            6vh;
 
           border:
             1px dashed
@@ -303,7 +266,7 @@ export function ArchitectureFlow() {
               111,
               125,
               85,
-              0.065
+              0.06
             );
 
           border-radius:
@@ -325,7 +288,7 @@ export function ArchitectureFlow() {
 
           height: 100vh;
 
-          min-height: 720px;
+          min-height: 680px;
 
           display:
             flex;
@@ -333,9 +296,11 @@ export function ArchitectureFlow() {
           align-items:
             center;
 
-          overflow: hidden;
+          overflow:
+            visible;
 
-          isolation: isolate;
+          isolation:
+            isolate;
         }
 
 
@@ -344,12 +309,15 @@ export function ArchitectureFlow() {
 
           width:
             min(
-              1210px,
-              calc(100% - 64px)
+              1180px,
+              calc(100% - 56px)
             );
 
           height:
-            100vh;
+            100%;
+
+          min-height:
+            680px;
 
           margin:
             0 auto;
@@ -361,50 +329,41 @@ export function ArchitectureFlow() {
            ===================================================== */
 
         .hl-arch-intro {
-          position: absolute;
+          position:
+            absolute;
 
-          z-index: 12;
-
-          left: 0;
+          left:
+            0;
 
           top:
-            8.5vh;
+            7vh;
 
-          width:
-            min(
-              650px,
-              52%
-            );
+          z-index:
+            20;
+
+          max-width:
+            670px;
 
           pointer-events:
             none;
 
           opacity:
-            ${
-              1 -
-              Math.min(
-                1,
-                progress /
-                  0.34
-              ) *
-                0.54
-            };
+            1;
 
           transform:
-            translate3d(
-              0,
-              ${
-                progress *
-                -18
-              }px,
+            translateY(
               0
             );
+
+          transition:
+            opacity 180ms linear,
+            transform 180ms ease;
         }
 
 
         .hl-arch-kicker {
           display:
-            inline-flex;
+            flex;
 
           align-items:
             center;
@@ -413,7 +372,7 @@ export function ArchitectureFlow() {
             9px;
 
           margin-bottom:
-            18px;
+            17px;
 
           color:
             var(--olive-dark);
@@ -441,6 +400,9 @@ export function ArchitectureFlow() {
 
           height:
             7px;
+
+          flex:
+            0 0 7px;
 
           border-radius:
             50%;
@@ -470,16 +432,16 @@ export function ArchitectureFlow() {
 
           font-size:
             clamp(
-              52px,
-              6vw,
-              82px
+              48px,
+              5.4vw,
+              76px
             );
 
           line-height:
-            0.92;
+            0.96;
 
           letter-spacing:
-            -0.058em;
+            -0.055em;
 
           font-weight:
             500;
@@ -500,7 +462,7 @@ export function ArchitectureFlow() {
             610px;
 
           margin:
-            24px 0 0;
+            20px 0 0;
 
           color:
             var(--espresso-soft);
@@ -509,25 +471,27 @@ export function ArchitectureFlow() {
             14px;
 
           line-height:
-            1.72;
+            1.7;
         }
 
 
         /* =====================================================
-           MAIN STORY GRID
+           SCENE
            ===================================================== */
 
         .hl-arch-scene {
-          position: absolute;
+          position:
+            absolute;
 
-          inset: 0;
+          inset:
+            0;
 
           display:
             grid;
 
           grid-template-columns:
             minmax(
-              300px,
+              290px,
               0.78fr
             )
             minmax(
@@ -537,19 +501,19 @@ export function ArchitectureFlow() {
 
           gap:
             clamp(
-              55px,
-              8vw,
-              120px
+              50px,
+              7vw,
+              105px
             );
 
           align-items:
-            center;
+            stretch;
 
           padding-top:
-            155px;
+            120px;
 
           padding-bottom:
-            40px;
+            24px;
         }
 
 
@@ -561,13 +525,14 @@ export function ArchitectureFlow() {
           position:
             relative;
 
-          z-index: 12;
+          z-index:
+            15;
 
           align-self:
             center;
 
           padding-top:
-            112px;
+            72px;
         }
 
 
@@ -589,10 +554,10 @@ export function ArchitectureFlow() {
             15px;
 
           min-height:
-            88px;
+            84px;
 
           padding-bottom:
-            23px;
+            21px;
         }
 
 
@@ -609,25 +574,23 @@ export function ArchitectureFlow() {
 
 
         .hl-arch-step-marker::before {
-          content: '';
+          content:
+            '';
 
           position:
             absolute;
 
           top:
-            34px;
+            33px;
 
           bottom:
-            -4px;
+            -1px;
 
           width:
             1px;
 
           background:
-            var(--border);
-
-          opacity:
-            0.95;
+            #D8D1C5;
         }
 
 
@@ -635,51 +598,6 @@ export function ArchitectureFlow() {
           .hl-arch-step-marker::before {
           display:
             none;
-        }
-
-
-        .hl-arch-progress-line {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            34px;
-
-          bottom:
-            -4px;
-
-          width:
-            2px;
-
-          transform:
-            translateX(-50%)
-            scaleY(
-              var(
-                --step-progress,
-                0
-              )
-            );
-
-          transform-origin:
-            top center;
-
-          background:
-            var(--olive);
-
-          opacity:
-            0.6;
-
-          transition:
-            transform 300ms
-            cubic-bezier(
-              0.16,
-              1,
-              0.3,
-              1
-            );
         }
 
 
@@ -691,10 +609,10 @@ export function ArchitectureFlow() {
             2;
 
           width:
-            37px;
+            36px;
 
           height:
-            37px;
+            36px;
 
           display:
             grid;
@@ -722,17 +640,17 @@ export function ArchitectureFlow() {
             900;
 
           transition:
-            background 320ms ease,
-            color 320ms ease,
-            border-color 320ms ease,
-            transform 320ms
+            background 260ms ease,
+            color 260ms ease,
+            border-color 260ms ease,
+            transform 260ms
               cubic-bezier(
                 0.16,
                 1,
                 0.3,
                 1
               ),
-            box-shadow 320ms ease;
+            box-shadow 260ms ease;
         }
 
 
@@ -749,11 +667,11 @@ export function ArchitectureFlow() {
 
           transform:
             scale(
-              1.11
+              1.08
             );
 
           box-shadow:
-            0 12px 28px
+            0 10px 25px
             rgba(
               33,
               28,
@@ -768,14 +686,16 @@ export function ArchitectureFlow() {
             0;
 
           opacity:
-            0.42;
+            0.38;
 
           transform:
-            translateX(0);
+            translateX(
+              0
+            );
 
           transition:
-            opacity 320ms ease,
-            transform 320ms
+            opacity 260ms ease,
+            transform 300ms
               cubic-bezier(
                 0.16,
                 1,
@@ -792,7 +712,7 @@ export function ArchitectureFlow() {
 
           transform:
             translateX(
-              5px
+              4px
             );
         }
 
@@ -816,7 +736,7 @@ export function ArchitectureFlow() {
             -0.03em;
 
           transition:
-            color 320ms ease;
+            color 260ms ease;
         }
 
 
@@ -832,7 +752,7 @@ export function ArchitectureFlow() {
             330px;
 
           margin:
-            7px 0 0;
+            6px 0 0;
 
           color:
             #847B72;
@@ -847,10 +767,10 @@ export function ArchitectureFlow() {
 
         .hl-arch-step-label {
           display:
-            inline-flex;
+            inline-block;
 
           margin-top:
-            9px;
+            8px;
 
           padding:
             6px 8px;
@@ -880,8 +800,8 @@ export function ArchitectureFlow() {
             uppercase;
 
           transition:
-            background 320ms ease,
-            color 320ms ease;
+            background 260ms ease,
+            color 260ms ease;
         }
 
 
@@ -904,16 +824,16 @@ export function ArchitectureFlow() {
             relative;
 
           align-self:
-            center;
+            stretch;
 
           width:
             100%;
 
           height:
-            100vh;
+            100%;
 
           min-height:
-            720px;
+            0;
 
           display:
             flex;
@@ -925,10 +845,13 @@ export function ArchitectureFlow() {
             center;
 
           padding-top:
-            104px;
+            72px;
 
           padding-bottom:
-            34px;
+            22px;
+
+          overflow:
+            visible;
 
           z-index:
             10;
@@ -936,23 +859,23 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           ORBIT FIELD
+           ORBIT
            ===================================================== */
 
         .hl-arch-stage-bg {
           position:
             absolute;
 
-          left:
+          top:
             50%;
 
-          top:
+          left:
             50%;
 
           width:
             min(
-              680px,
-              50vw
+              600px,
+              46vw
             );
 
           aspect-ratio:
@@ -962,12 +885,6 @@ export function ArchitectureFlow() {
             translate(
               -50%,
               -50%
-            )
-            rotate(
-              ${
-                progress *
-                -14
-              }deg
             );
 
           border:
@@ -986,13 +903,14 @@ export function ArchitectureFlow() {
             none;
 
           transition:
-            transform 140ms linear;
+            transform 200ms linear;
         }
 
 
         .hl-arch-stage-bg::before,
         .hl-arch-stage-bg::after {
-          content: '';
+          content:
+            '';
 
           position:
             absolute;
@@ -1003,7 +921,7 @@ export function ArchitectureFlow() {
               111,
               125,
               85,
-              0.12
+              0.11
             );
 
           border-radius:
@@ -1030,24 +948,36 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           CENTRAL CARD
+           CARD
            ===================================================== */
 
         .hl-arch-card {
           position:
             relative;
 
+          z-index:
+            4;
+
           width:
             min(
-              540px,
-              88%
+              530px,
+              90%
+            );
+
+          height:
+            min(
+              470px,
+              calc(100vh - 148px)
             );
 
           min-height:
-            465px;
+            430px;
+
+          max-height:
+            470px;
 
           padding:
-            35px;
+            32px;
 
           border:
             1px solid
@@ -1061,11 +991,11 @@ export function ArchitectureFlow() {
               255,
               255,
               255,
-              0.9
+              0.93
             );
 
           box-shadow:
-            0 42px 100px
+            0 36px 90px
             rgba(
               48,
               43,
@@ -1073,42 +1003,32 @@ export function ArchitectureFlow() {
               0.11
             ),
 
-            0 12px 30px
+            0 10px 30px
             rgba(
               48,
               43,
               37,
-              0.045
+              0.05
             );
 
           overflow:
             hidden;
 
-          z-index:
-            5;
+          display:
+            flex;
+
+          flex-direction:
+            column;
 
           transform:
             translate3d(
-              ${
-                progressToNext *
-                -6
-              }px,
-              ${
-                progressToNext *
-                -4
-              }px,
+              0,
+              0,
               0
-            )
-            scale(
-              ${
-                1 -
-                progressToNext *
-                0.012
-              }
             );
 
           transition:
-            transform 500ms
+            transform 350ms
               cubic-bezier(
                 0.16,
                 1,
@@ -1119,22 +1039,23 @@ export function ArchitectureFlow() {
 
 
         .hl-arch-card::before {
-          content: '';
+          content:
+            '';
 
           position:
             absolute;
 
           width:
-            300px;
+            310px;
 
           height:
-            300px;
+            310px;
 
           right:
-            -150px;
+            -160px;
 
           top:
-            -150px;
+            -160px;
 
           border:
             1px solid
@@ -1142,7 +1063,7 @@ export function ArchitectureFlow() {
               111,
               125,
               85,
-              0.075
+              0.07
             );
 
           border-radius:
@@ -1153,7 +1074,17 @@ export function ArchitectureFlow() {
         }
 
 
+        /* =====================================================
+           CARD HEADER
+           ===================================================== */
+
         .hl-arch-card-top {
+          position:
+            relative;
+
+          z-index:
+            2;
+
           display:
             flex;
 
@@ -1164,10 +1095,10 @@ export function ArchitectureFlow() {
             space-between;
 
           gap:
-            20px;
+            18px;
 
           padding-bottom:
-            23px;
+            21px;
 
           border-bottom:
             1px solid
@@ -1206,7 +1137,7 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            31px;
+            30px;
 
           line-height:
             1;
@@ -1220,8 +1151,17 @@ export function ArchitectureFlow() {
 
 
         .hl-arch-card-pill {
-          flex-shrink:
-            0;
+          flex:
+            0 0 auto;
+
+          max-width:
+            170px;
+
+          overflow:
+            hidden;
+
+          text-overflow:
+            ellipsis;
 
           padding:
             8px 10px;
@@ -1257,11 +1197,20 @@ export function ArchitectureFlow() {
 
 
         .hl-arch-card-copy {
+          position:
+            relative;
+
+          z-index:
+            2;
+
+          flex:
+            0 0 auto;
+
           max-width:
             430px;
 
           margin:
-            19px 0 0;
+            18px 0 0;
 
           color:
             #6F665D;
@@ -1270,12 +1219,12 @@ export function ArchitectureFlow() {
             12px;
 
           line-height:
-            1.7;
+            1.68;
         }
 
 
         /* =====================================================
-           VISUAL AREA
+           VISUAL CONTAINER
            ===================================================== */
 
         .hl-visual {
@@ -1283,16 +1232,16 @@ export function ArchitectureFlow() {
             absolute;
 
           left:
-            35px;
+            32px;
 
           right:
-            35px;
+            32px;
 
           top:
-            206px;
+            184px;
 
           bottom:
-            34px;
+            50px;
 
           display:
             flex;
@@ -1302,60 +1251,17 @@ export function ArchitectureFlow() {
 
           justify-content:
             center;
-        }
 
+          overflow:
+            visible;
 
-        .hl-visual-stage {
-          width:
-            100%;
-
-          animation:
-            hlArchitectureStageIn
-            700ms
-            cubic-bezier(
-              0.16,
-              1,
-              0.3,
-              1
-            );
-        }
-
-
-        @keyframes hlArchitectureStageIn {
-          from {
-            opacity:
-              0;
-
-            transform:
-              translate3d(
-                0,
-                18px,
-                0
-              )
-              scale(
-                0.985
-              );
-          }
-
-          to {
-            opacity:
-              1;
-
-            transform:
-              translate3d(
-                0,
-                0,
-                0
-              )
-              scale(
-                1
-              );
-          }
+          z-index:
+            2;
         }
 
 
         /* =====================================================
-           UPLOAD
+           UPLOAD VISUAL
            ===================================================== */
 
         .hl-upload-visual {
@@ -1366,15 +1272,21 @@ export function ArchitectureFlow() {
             grid;
 
           grid-template-columns:
-            1fr
+            minmax(
+              0,
+              1fr
+            )
             auto
-            1fr;
+            minmax(
+              0,
+              1fr
+            );
 
           align-items:
             center;
 
           gap:
-            16px;
+            15px;
         }
 
 
@@ -1384,39 +1296,17 @@ export function ArchitectureFlow() {
             0;
 
           padding:
-            20px;
+            19px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            19px;
+            18px;
 
           background:
             #FAF8F3;
-
-          transition:
-            transform 250ms ease,
-            box-shadow 250ms ease;
-        }
-
-
-        .hl-file-box:hover,
-        .hl-storage-box:hover {
-          transform:
-            translateY(
-              -3px
-            );
-
-          box-shadow:
-            0 14px 30px
-            rgba(
-              45,
-              40,
-              34,
-              0.07
-            );
         }
 
 
@@ -1434,6 +1324,9 @@ export function ArchitectureFlow() {
           place-items:
             center;
 
+          margin-bottom:
+            13px;
+
           border-radius:
             12px;
 
@@ -1442,9 +1335,6 @@ export function ArchitectureFlow() {
 
           color:
             var(--cream);
-
-          margin-bottom:
-            14px;
         }
 
 
@@ -1477,14 +1367,14 @@ export function ArchitectureFlow() {
             var(--olive);
 
           font-size:
-            18px;
+            20px;
 
           font-weight:
             900;
 
           animation:
             hlArchArrow
-            2.4s
+            2.2s
             ease-in-out
             infinite;
         }
@@ -1499,13 +1389,13 @@ export function ArchitectureFlow() {
               );
 
             opacity:
-              0.55;
+              0.5;
           }
 
           50% {
             transform:
               translateX(
-                5px
+                4px
               );
 
             opacity:
@@ -1526,18 +1416,18 @@ export function ArchitectureFlow() {
             grid;
 
           grid-template-columns:
-            0.75fr
+            0.78fr
             1fr;
 
           gap:
-            13px;
+            12px;
         }
 
 
         .hl-document-mini,
         .hl-profile-mini {
           min-height:
-            170px;
+            160px;
 
           padding:
             16px;
@@ -1630,7 +1520,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           EMBEDDING
+           EMBED VISUAL
            ===================================================== */
 
         .hl-embed-visual {
@@ -1647,7 +1537,10 @@ export function ArchitectureFlow() {
             center;
 
           gap:
-            14px;
+            13px;
+
+          min-height:
+            0;
         }
 
 
@@ -1712,6 +1605,9 @@ export function ArchitectureFlow() {
 
           overflow:
             hidden;
+
+          flex-shrink:
+            0;
         }
 
 
@@ -1798,10 +1694,13 @@ export function ArchitectureFlow() {
             );
 
           gap:
-            10px;
+            9px;
 
           width:
             100%;
+
+          flex-shrink:
+            0;
         }
 
 
@@ -1869,7 +1768,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           SEARCH
+           SEARCH VISUAL
            ===================================================== */
 
         .hl-search-visual {
@@ -1923,6 +1822,9 @@ export function ArchitectureFlow() {
           font-size:
             18px;
 
+          line-height:
+            1.1;
+
           letter-spacing:
             -0.02em;
         }
@@ -1933,10 +1835,10 @@ export function ArchitectureFlow() {
             grid;
 
           gap:
-            8px;
+            7px;
 
           margin-top:
-            12px;
+            11px;
         }
 
 
@@ -1946,7 +1848,10 @@ export function ArchitectureFlow() {
 
           grid-template-columns:
             31px
-            1fr
+            minmax(
+              0,
+              1fr
+            )
             auto;
 
           align-items:
@@ -1969,8 +1874,8 @@ export function ArchitectureFlow() {
             #FAF8F3;
 
           transition:
-            transform 250ms ease,
-            border-color 250ms ease;
+            transform 220ms ease,
+            border-color 220ms ease;
         }
 
 
@@ -2048,15 +1953,18 @@ export function ArchitectureFlow() {
 
           font-size:
             8px;
+
+          line-height:
+            1.35;
         }
 
 
         .hl-search-score {
-          font-size:
-            11px;
-
           color:
             var(--olive-dark);
+
+          font-size:
+            11px;
 
           font-weight:
             900;
@@ -2064,7 +1972,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           EXPLAIN
+           EXPLAIN VISUAL
            ===================================================== */
 
         .hl-explain-visual {
@@ -2119,6 +2027,9 @@ export function ArchitectureFlow() {
 
           height:
             72px;
+
+          flex:
+            0 0 72px;
 
           display:
             grid;
@@ -2176,13 +2087,13 @@ export function ArchitectureFlow() {
 
           font-size:
             9px;
+
+          line-height:
+            1.35;
         }
 
 
         .hl-evidence-list {
-          margin-top:
-            12px;
-
           display:
             grid;
 
@@ -2192,6 +2103,9 @@ export function ArchitectureFlow() {
 
           gap:
             7px;
+
+          margin-top:
+            11px;
         }
 
 
@@ -2233,134 +2147,21 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           TRANSITION BETWEEN ACTIVE VISUALS
+           PROGRESS — INSIDE CARD
            ===================================================== */
 
-        .hl-arch-visual-enter {
-          animation:
-            hlArchVisualEnter
-            650ms
-            cubic-bezier(
-              0.16,
-              1,
-              0.3,
-              1
-            );
-        }
-
-
-        @keyframes hlArchVisualEnter {
-          from {
-            opacity:
-              0;
-
-            transform:
-              translate3d(
-                0,
-                17px,
-                0
-              )
-              scale(
-                0.985
-              );
-          }
-
-          to {
-            opacity:
-              1;
-
-            transform:
-              translate3d(
-                0,
-                0,
-                0
-              )
-              scale(
-                1
-              );
-          }
-        }
-
-
-        /* =====================================================
-           PROGRESS TRACK
-           ===================================================== */
-
-        .hl-arch-track {
+        .hl-progress-bar {
           position:
             absolute;
 
           left:
-            calc(
-              100% - 6px
-            );
-
-          top:
-            50%;
-
-          width:
-            min(
-              500px,
-              40vw
-            );
-
-          height:
-            1px;
-
-          transform:
-            rotate(
-              -34deg
-            )
-            translateY(
-              -50%
-            );
-
-          transform-origin:
-            left center;
-
-          background:
-            linear-gradient(
-              90deg,
-              rgba(
-                111,
-                125,
-                85,
-                0.03
-              ),
-              rgba(
-                111,
-                125,
-                85,
-                0.13
-              ),
-              rgba(
-                111,
-                125,
-                85,
-                0.02
-              )
-            );
-
-          pointer-events:
-            none;
-
-          opacity:
-            0.7;
-        }
-
-
-        .hl-arch-progress-bar {
-          position:
-            absolute;
-
-          left:
-            0;
+            24px;
 
           right:
-            0;
+            24px;
 
           bottom:
-            -1px;
+            18px;
 
           height:
             3px;
@@ -2368,43 +2169,47 @@ export function ArchitectureFlow() {
           background:
             #E3DDD0;
 
+          border-radius:
+            999px;
+
+          overflow:
+            hidden;
+
           z-index:
-            20;
+            10;
         }
 
 
-        .hl-arch-progress-fill {
+        .hl-progress-fill {
           height:
             100%;
 
           width:
-            ${lineProgress *
-            100}%;
+            ${lineProgress * 100}%;
 
           background:
             var(--olive);
 
-          transform-origin:
-            left center;
+          border-radius:
+            inherit;
 
           transition:
-            width 100ms
-            linear;
+            width 90ms linear;
         }
 
 
-        .hl-arch-progress-dots {
+        .hl-progress-dots {
           position:
             absolute;
 
           left:
-            0;
+            24px;
 
           right:
-            0;
+            24px;
 
           bottom:
-            -8px;
+            10px;
 
           display:
             flex;
@@ -2416,23 +2221,26 @@ export function ArchitectureFlow() {
             none;
 
           z-index:
-            21;
+            11;
         }
 
 
-        .hl-arch-progress-dot {
+        .hl-progress-dot {
           width:
             15px;
 
           height:
             15px;
 
-          border-radius:
-            50%;
+          flex:
+            0 0 15px;
 
           border:
             3px solid
-            var(--cream);
+            #FFFFFF;
+
+          border-radius:
+            50%;
 
           background:
             #C9C2B5;
@@ -2442,31 +2250,24 @@ export function ArchitectureFlow() {
             var(--border);
 
           transition:
-            background 200ms ease,
-            transform 200ms ease,
-            box-shadow 200ms ease;
+            background 180ms ease,
+            transform 180ms ease,
+            box-shadow 180ms ease;
         }
 
 
-        .hl-arch-progress-dot.active {
+        .hl-progress-dot.active {
           background:
             var(--olive);
 
           transform:
             scale(
-              1.1
+              1.08
             );
 
           box-shadow:
             0 0 0 1px
-            var(--olive),
-            0 5px 15px
-            rgba(
-              111,
-              125,
-              85,
-              0.15
-            );
+            var(--olive);
         }
 
 
@@ -2482,16 +2283,16 @@ export function ArchitectureFlow() {
             0;
 
           bottom:
-            4vh;
+            2.8vh;
 
           width:
             min(
-              320px,
+              310px,
               40%
             );
 
           padding-top:
-            14px;
+            12px;
 
           border-top:
             1px solid
@@ -2510,17 +2311,10 @@ export function ArchitectureFlow() {
             right;
 
           z-index:
-            14;
+            18;
 
           pointer-events:
             none;
-
-          opacity:
-            ${
-              0.7 +
-              progress *
-              0.25
-            };
         }
 
 
@@ -2529,7 +2323,7 @@ export function ArchitectureFlow() {
             block;
 
           margin-bottom:
-            4px;
+            3px;
 
           color:
             var(--espresso);
@@ -2543,18 +2337,18 @@ export function ArchitectureFlow() {
             18px;
 
           line-height:
-            1.1;
+            1.05;
 
           font-weight:
             500;
 
           letter-spacing:
-            -0.02em;
+            -0.025em;
         }
 
 
         /* =====================================================
-           RESPONSIVE TABLET
+           TABLET
            ===================================================== */
 
         @media (max-width: 950px) {
@@ -2579,7 +2373,7 @@ export function ArchitectureFlow() {
               block;
 
             padding:
-              115px 0
+              110px 0
               125px;
 
             overflow:
@@ -2591,11 +2385,14 @@ export function ArchitectureFlow() {
             width:
               min(
                 100% - 42px,
-                1210px
+                1180px
               );
 
             height:
               auto;
+
+            min-height:
+              0;
           }
 
 
@@ -2609,14 +2406,11 @@ export function ArchitectureFlow() {
             left:
               auto;
 
-            width:
-              100%;
-
             max-width:
               760px;
 
             margin-bottom:
-              65px;
+              60px;
 
             opacity:
               1 !important;
@@ -2636,14 +2430,11 @@ export function ArchitectureFlow() {
             inset:
               auto;
 
-            display:
-              grid;
-
             grid-template-columns:
               1fr;
 
             gap:
-              55px;
+              45px;
 
             padding:
               0;
@@ -2651,11 +2442,8 @@ export function ArchitectureFlow() {
 
 
           .hl-arch-nav {
-            padding:
+            padding-top:
               0;
-
-            align-self:
-              auto;
           }
 
 
@@ -2664,10 +2452,16 @@ export function ArchitectureFlow() {
               auto;
 
             min-height:
-              580px;
+              570px;
 
             padding:
               0;
+
+            align-items:
+              center;
+
+            justify-content:
+              flex-start;
           }
 
 
@@ -2683,12 +2477,22 @@ export function ArchitectureFlow() {
           .hl-arch-card {
             width:
               min(
-                570px,
-                95%
+                560px,
+                94%
               );
 
+            height:
+              470px;
+
+            min-height:
+              430px;
+
+            max-height:
+              none;
+
             margin:
-              0 auto 30px;
+              0 auto
+              25px;
           }
 
 
@@ -2704,8 +2508,8 @@ export function ArchitectureFlow() {
 
             width:
               min(
-                570px,
-                95%
+                560px,
+                94%
               );
 
             margin:
@@ -2713,12 +2517,6 @@ export function ArchitectureFlow() {
 
             text-align:
               left;
-          }
-
-
-          .hl-arch-track {
-            display:
-              none;
           }
 
         }
@@ -2734,14 +2532,14 @@ export function ArchitectureFlow() {
             width:
               min(
                 100% - 30px,
-                1210px
+                1180px
               );
           }
 
 
           .hl-arch-title {
             font-size:
-              48px;
+              46px;
           }
 
 
@@ -2760,7 +2558,7 @@ export function ArchitectureFlow() {
               );
 
             min-height:
-              71px;
+              68px;
           }
 
 
@@ -2776,15 +2574,9 @@ export function ArchitectureFlow() {
           }
 
 
-          .hl-arch-step-label {
-            font-size:
-              6.5px;
-          }
-
-
           .hl-arch-stage {
             min-height:
-              555px;
+              560px;
           }
 
 
@@ -2798,11 +2590,14 @@ export function ArchitectureFlow() {
             width:
               94%;
 
+            height:
+              auto;
+
             min-height:
               430px;
 
             padding:
-              24px;
+              23px;
 
             border-radius:
               23px;
@@ -2811,34 +2606,28 @@ export function ArchitectureFlow() {
 
           .hl-arch-card-title {
             font-size:
-              27px;
+              26px;
           }
 
 
           .hl-arch-card-pill {
             max-width:
-              130px;
-
-            overflow:
-              hidden;
-
-            text-overflow:
-              ellipsis;
+              125px;
           }
 
 
           .hl-visual {
             left:
-              24px;
+              23px;
 
             right:
-              24px;
+              23px;
 
             top:
-              199px;
+              188px;
 
             bottom:
-              24px;
+              48px;
           }
 
 
@@ -2865,10 +2654,10 @@ export function ArchitectureFlow() {
           }
 
 
-          .hl-profile-mini,
-          .hl-document-mini {
+          .hl-document-mini,
+          .hl-profile-mini {
             min-height:
-              115px;
+              110px;
           }
 
 
@@ -2889,7 +2678,7 @@ export function ArchitectureFlow() {
               5px;
 
             padding:
-              12px;
+              11px;
           }
 
 
@@ -2900,29 +2689,20 @@ export function ArchitectureFlow() {
 
 
           .hl-embed-meta {
-            grid-template-columns:
-              repeat(
-                3,
-                minmax(
-                  0,
-                  1fr
-                )
-              );
-
             gap:
-              7px;
+              6px;
           }
 
 
           .hl-embed-stat {
             padding:
-              9px;
+              8px;
           }
 
 
           .hl-embed-stat strong {
             font-size:
-              12px;
+              11px;
           }
 
 
@@ -2931,7 +2711,7 @@ export function ArchitectureFlow() {
               6px;
 
             line-height:
-              1.25;
+              1.2;
           }
 
 
@@ -2941,15 +2721,33 @@ export function ArchitectureFlow() {
           }
 
 
+          .hl-progress-bar {
+            left:
+              20px;
+
+            right:
+              20px;
+
+            bottom:
+              18px;
+          }
+
+
+          .hl-progress-dots {
+            left:
+              20px;
+
+            right:
+              20px;
+
+            bottom:
+              10px;
+          }
+
+
           .hl-final-note {
             width:
               94%;
-
-            padding-top:
-              13px;
-
-            text-align:
-              left;
 
             font-size:
               8px;
@@ -2976,24 +2774,16 @@ export function ArchitectureFlow() {
           .hl-vector-cell,
           .hl-arrow {
             animation:
-              none;
-          }
-
-
-          .hl-arch-step-number,
-          .hl-arch-step-title,
-          .hl-arch-step-content,
-          .hl-arch-progress-dot,
-          .hl-arch-card,
-          .hl-visual-stage {
-            transition:
               none !important;
           }
 
 
-          .hl-arch-card,
-          .hl-visual-stage {
-            animation:
+          .hl-arch-step-number,
+          .hl-arch-step-content,
+          .hl-arch-step-title,
+          .hl-progress-dot,
+          .hl-arch-card {
+            transition:
               none !important;
           }
 
@@ -3004,7 +2794,7 @@ export function ArchitectureFlow() {
 
       {/* =====================================================
           STICKY EXPERIENCE
-         ===================================================== */}
+          ===================================================== */}
 
       <div className="hl-arch-sticky">
 
@@ -3014,7 +2804,23 @@ export function ArchitectureFlow() {
               INTRO
              =================================================== */}
 
-          <div className="hl-arch-intro">
+          <div
+            className="hl-arch-intro"
+            style={{
+              opacity:
+                1 -
+                Math.min(
+                  1,
+                  progress / 0.34
+                ) *
+                  0.55,
+
+              transform:
+                `translateY(${
+                  progress * -14
+                }px)`,
+            }}
+          >
 
             <div className="hl-arch-kicker">
 
@@ -3031,6 +2837,7 @@ export function ArchitectureFlow() {
               <br />
 
               to{' '}
+
               <em>
                 hiring signal.
               </em>
@@ -3039,10 +2846,12 @@ export function ArchitectureFlow() {
 
 
             <p className="hl-arch-description">
+
               HireLabs moves through a simple five-stage
               pipeline: securely ingest the resume, understand
               its meaning, create a searchable representation,
               compare it against the role, and explain the result.
+
             </p>
 
           </div>
@@ -3061,28 +2870,18 @@ export function ArchitectureFlow() {
             <div className="hl-arch-nav">
 
               {steps.map(
-                (step, index) => {
+                (
+                  step,
+                  index
+                ) => {
 
                   const isActive =
                     index ===
-                    activeStage;
+                    activeIndex;
 
                   const isPassed =
                     index <
-                    activeStage;
-
-                  const isCompleted =
-                    isPassed ||
-                    isActive;
-
-                  const stepProgress =
-                    index <
-                    activeStage
-                      ? 1
-                      : index ===
-                          activeStage
-                        ? progressToNext
-                        : 0;
+                    activeIndex;
 
                   return (
                     <div
@@ -3090,22 +2889,21 @@ export function ArchitectureFlow() {
                         step.num
                       }
                       className={`hl-arch-step ${
-                        isCompleted
+                        isActive ||
+                        isPassed
                           ? 'active'
                           : ''
                       }`}
-                      style={{
-                        '--step-progress':
-                          stepProgress,
-                      }}
                     >
 
                       <div className="hl-arch-step-marker">
 
-                        <span className="hl-arch-progress-line" />
-
                         <div className="hl-arch-step-number">
-                          {step.num}
+
+                          {
+                            step.num
+                          }
+
                         </div>
 
                       </div>
@@ -3114,17 +2912,29 @@ export function ArchitectureFlow() {
                       <div className="hl-arch-step-content">
 
                         <div className="hl-arch-step-title">
-                          {step.title}
+
+                          {
+                            step.title
+                          }
+
                         </div>
 
 
                         <p className="hl-arch-step-desc">
-                          {step.desc}
+
+                          {
+                            step.desc
+                          }
+
                         </p>
 
 
                         <span className="hl-arch-step-label">
-                          {step.label}
+
+                          {
+                            step.label
+                          }
+
                         </span>
 
                       </div>
@@ -3143,10 +2953,22 @@ export function ArchitectureFlow() {
 
             <div className="hl-arch-stage">
 
-              <div className="hl-arch-stage-bg" />
+              <div
+                className="hl-arch-stage-bg"
+                style={{
+                  transform:
+                    `translate(-50%, -50%) rotate(${
+                      progress * -14
+                    }deg)`,
+                }}
+              />
 
 
               <div className="hl-arch-card">
+
+                {/* =============================================
+                    CARD HEADER
+                   ============================================= */}
 
                 <div className="hl-arch-card-top">
 
@@ -3157,7 +2979,7 @@ export function ArchitectureFlow() {
                       Stage{' '}
 
                       {String(
-                        activeStage +
+                        activeIndex +
                           1
                       ).padStart(
                         2,
@@ -3168,108 +2990,130 @@ export function ArchitectureFlow() {
 
 
                     <div className="hl-arch-card-title">
-                      {activeStep.short}
+
+                      {
+                        activeStep.short
+                      }
+
                     </div>
 
                   </div>
 
 
                   <div className="hl-arch-card-pill">
-                    {activeStep.label}
+
+                    {
+                      activeStep.label
+                    }
+
                   </div>
 
                 </div>
 
 
+                {/* =============================================
+                    DESCRIPTION
+                   ============================================= */}
+
                 <p className="hl-arch-card-copy">
-                  {activeStep.desc}
+
+                  {
+                    activeStep.desc
+                  }
+
                 </p>
 
 
+                {/* =============================================
+                    VISUAL AREA
+                   ============================================= */}
+
                 <div className="hl-visual">
 
-                  {/* =================================================
-                      UPLOAD
-                     ================================================= */}
+                  {/* =========================================
+                      STAGE 01
+                     ========================================= */}
 
                   {activeStep.visual ===
                     'upload' && (
+
                     <div
-                      className="hl-visual-stage"
+                      className="hl-upload-visual"
                       key="upload"
                     >
 
-                      <div className="hl-upload-visual">
+                      <div className="hl-file-box">
 
-                        <div className="hl-file-box">
+                        <div className="hl-file-icon">
 
-                          <div className="hl-file-icon">
+                          <svg
+                            width="19"
+                            height="19"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            aria-hidden="true"
+                          >
 
-                            <svg
-                              width="19"
-                              height="19"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            >
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 
-                              <polyline points="14 2 14 8 20 8" />
-                            </svg>
+                            <polyline
+                              points="14 2 14 8 20 8"
+                            />
 
-                          </div>
-
-
-                          <div className="hl-visual-title">
-                            alex-mercer.pdf
-                          </div>
-
-
-                          <div className="hl-visual-sub">
-                            PDF · 2.4 MB
-                          </div>
+                          </svg>
 
                         </div>
 
 
-                        <div className="hl-arrow">
-                          →
+                        <div className="hl-visual-title">
+                          alex-mercer.pdf
                         </div>
 
 
-                        <div className="hl-storage-box">
+                        <div className="hl-visual-sub">
+                          PDF · 2.4 MB
+                        </div>
 
-                          <div className="hl-storage-icon">
-
-                            <svg
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                            >
-                              <path d="M3 7h18" />
-
-                              <path d="M5 7v13h14V7" />
-
-                              <path d="M8 3h8l2 4H6z" />
-
-                            </svg>
-
-                          </div>
+                      </div>
 
 
-                          <div className="hl-visual-title">
-                            Private storage
-                          </div>
+                      <div className="hl-arrow">
+                        →
+                      </div>
 
 
-                          <div className="hl-visual-sub">
-                            user-scoped Supabase bucket
-                          </div>
+                      <div className="hl-storage-box">
 
+                        <div className="hl-storage-icon">
+
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            aria-hidden="true"
+                          >
+
+                            <path d="M3 7h18" />
+                            <path d="M5 7v13h14V7" />
+                            <path d="M8 3h8l2 4H6z" />
+
+                          </svg>
+
+                        </div>
+
+
+                        <div className="hl-visual-title">
+                          Private storage
+                        </div>
+
+
+                        <div className="hl-visual-sub">
+                          user-scoped Supabase bucket
                         </div>
 
                       </div>
@@ -3278,63 +3122,61 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =================================================
-                      NORMALIZE
-                     ================================================= */}
+                  {/* =========================================
+                      STAGE 02
+                     ========================================= */}
 
                   {activeStep.visual ===
                     'normalize' && (
+
                     <div
-                      className="hl-visual-stage"
+                      className="hl-normalize-visual"
                       key="normalize"
                     >
 
-                      <div className="hl-normalize-visual">
+                      <div className="hl-document-mini">
 
-                        <div className="hl-document-mini">
-
-                          <div className="hl-mini-heading">
-                            Raw resume
-                          </div>
-
-                          <div className="hl-mini-line" />
-                          <div className="hl-mini-line mid" />
-                          <div className="hl-mini-line" />
-                          <div className="hl-mini-line short" />
-                          <div className="hl-mini-line mid" />
-                          <div className="hl-mini-line" />
-
+                        <div className="hl-mini-heading">
+                          Raw resume
                         </div>
 
 
-                        <div className="hl-profile-mini">
+                        <div className="hl-mini-line" />
+                        <div className="hl-mini-line mid" />
+                        <div className="hl-mini-line" />
+                        <div className="hl-mini-line short" />
+                        <div className="hl-mini-line mid" />
+                        <div className="hl-mini-line" />
 
-                          <div className="hl-mini-heading">
-                            Gemini profile
-                          </div>
+                      </div>
 
 
-                          <span className="hl-profile-tag">
-                            React
-                          </span>
+                      <div className="hl-profile-mini">
 
-                          <span className="hl-profile-tag">
-                            PostgreSQL
-                          </span>
-
-                          <span className="hl-profile-tag">
-                            AI / ML
-                          </span>
-
-                          <span className="hl-profile-tag">
-                            8 yrs
-                          </span>
-
-                          <span className="hl-profile-tag">
-                            Next.js
-                          </span>
-
+                        <div className="hl-mini-heading">
+                          Gemini profile
                         </div>
+
+
+                        <span className="hl-profile-tag">
+                          React
+                        </span>
+
+                        <span className="hl-profile-tag">
+                          PostgreSQL
+                        </span>
+
+                        <span className="hl-profile-tag">
+                          AI / ML
+                        </span>
+
+                        <span className="hl-profile-tag">
+                          8 yrs
+                        </span>
+
+                        <span className="hl-profile-tag">
+                          Next.js
+                        </span>
 
                       </div>
 
@@ -3342,84 +3184,82 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =================================================
-                      EMBED
-                     ================================================= */}
+                  {/* =========================================
+                      STAGE 03
+                     ========================================= */}
 
                   {activeStep.visual ===
                     'embed' && (
+
                     <div
-                      className="hl-visual-stage"
+                      className="hl-embed-visual"
                       key="embed"
                     >
 
-                      <div className="hl-embed-visual">
+                      <div className="hl-embedding-label">
+                        Gemini Embedding-002
+                      </div>
 
-                        <div className="hl-embedding-label">
-                          Gemini Embedding-002
+
+                      <div className="hl-vector-field">
+
+                        {Array.from({
+                          length:
+                            40,
+                        }).map(
+                          (
+                            _,
+                            index
+                          ) => (
+                            <span
+                              className="hl-vector-cell"
+                              key={
+                                index
+                              }
+                            />
+                          )
+                        )}
+
+                      </div>
+
+
+                      <div className="hl-embed-meta">
+
+                        <div className="hl-embed-stat">
+
+                          <strong>
+                            1536
+                          </strong>
+
+                          <span>
+                            dimensions
+                          </span>
+
                         </div>
 
 
-                        <div className="hl-vector-field">
+                        <div className="hl-embed-stat">
 
-                          {Array.from({
-                            length: 40,
-                          }).map(
-                            (
-                              _,
-                              index
-                            ) => (
-                              <span
-                                className="hl-vector-cell"
-                                key={
-                                  index
-                                }
-                              />
-                            )
-                          )}
+                          <strong>
+                            Vector
+                          </strong>
+
+                          <span>
+                            representation
+                          </span>
 
                         </div>
 
 
-                        <div className="hl-embed-meta">
+                        <div className="hl-embed-stat">
 
-                          <div className="hl-embed-stat">
+                          <strong>
+                            Searchable
+                          </strong>
 
-                            <strong>
-                              1536
-                            </strong>
-
-                            <span>
-                              dimensions
-                            </span>
-
-                          </div>
-
-
-                          <div className="hl-embed-stat">
-
-                            <strong>
-                              Vector
-                            </strong>
-
-                            <span>
-                              representation
-                            </span>
-
-                          </div>
-
-
-                          <div className="hl-embed-stat">
-
-                            <strong>
-                              Searchable
-                            </strong>
-
-                            <span>
-                              signal
-                            </span>
-
-                          </div>
+                          <span>
+                            signal
+                          </span>
 
                         </div>
 
@@ -3429,116 +3269,113 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =================================================
-                      SEARCH
-                     ================================================= */}
+                  {/* =========================================
+                      STAGE 04
+                     ========================================= */}
 
                   {activeStep.visual ===
                     'search' && (
+
                     <div
-                      className="hl-visual-stage"
+                      className="hl-search-visual"
                       key="search"
                     >
 
-                      <div className="hl-search-visual">
+                      <div className="hl-query-box">
 
-                        <div className="hl-query-box">
+                        <div className="hl-query-label">
+                          Semantic query
+                        </div>
 
-                          <div className="hl-query-label">
-                            Semantic query
+
+                        <div className="hl-query-text">
+                          Senior Full-Stack AI Engineer
+                        </div>
+
+                      </div>
+
+
+                      <div className="hl-search-results">
+
+                        <div className="hl-search-result">
+
+                          <div className="hl-search-rank">
+                            #1
                           </div>
 
 
-                          <div className="hl-query-text">
-                            Senior Full-Stack AI Engineer
+                          <div>
+
+                            <div className="hl-search-name">
+                              Alex Mercer
+                            </div>
+
+
+                            <div className="hl-search-role">
+                              Lead Full-Stack AI Engineer
+                            </div>
+
+                          </div>
+
+
+                          <div className="hl-search-score">
+                            97.4%
                           </div>
 
                         </div>
 
 
-                        <div className="hl-search-results">
+                        <div className="hl-search-result">
 
-                          <div className="hl-search-result">
+                          <div className="hl-search-rank">
+                            #2
+                          </div>
 
-                            <div className="hl-search-rank">
-                              #1
+
+                          <div>
+
+                            <div className="hl-search-name">
+                              Dr. Sarah Lin
                             </div>
 
 
-                            <div>
-
-                              <div className="hl-search-name">
-                                Alex Mercer
-                              </div>
-
-
-                              <div className="hl-search-role">
-                                Lead Full-Stack AI Engineer
-                              </div>
-
-                            </div>
-
-
-                            <div className="hl-search-score">
-                              97.4%
+                            <div className="hl-search-role">
+                              Staff ML &amp; Vector Systems Engineer
                             </div>
 
                           </div>
 
 
-                          <div className="hl-search-result">
+                          <div className="hl-search-score">
+                            84.7%
+                          </div>
 
-                            <div className="hl-search-rank">
-                              #2
+                        </div>
+
+
+                        <div className="hl-search-result">
+
+                          <div className="hl-search-rank">
+                            #3
+                          </div>
+
+
+                          <div>
+
+                            <div className="hl-search-name">
+                              Elena Rostova
                             </div>
 
 
-                            <div>
-
-                              <div className="hl-search-name">
-                                Dr. Sarah Lin
-                              </div>
-
-
-                              <div className="hl-search-role">
-                                Staff ML &amp; Vector Systems Engineer
-                              </div>
-
-                            </div>
-
-
-                            <div className="hl-search-score">
-                              84.7%
+                            <div className="hl-search-role">
+                              Principal Cloud Architect
                             </div>
 
                           </div>
 
 
-                          <div className="hl-search-result">
-
-                            <div className="hl-search-rank">
-                              #3
-                            </div>
-
-
-                            <div>
-
-                              <div className="hl-search-name">
-                                Elena Rostova
-                              </div>
-
-
-                              <div className="hl-search-role">
-                                Principal Cloud Architect
-                              </div>
-
-                            </div>
-
-
-                            <div className="hl-search-score">
-                              71.2%
-                            </div>
-
+                          <div className="hl-search-score">
+                            71.2%
                           </div>
 
                         </div>
@@ -3549,71 +3386,68 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =================================================
-                      EXPLAIN
-                     ================================================= */}
+                  {/* =========================================
+                      STAGE 05
+                     ========================================= */}
 
                   {activeStep.visual ===
                     'explain' && (
+
                     <div
-                      className="hl-visual-stage"
+                      className="hl-explain-visual"
                       key="explain"
                     >
 
-                      <div className="hl-explain-visual">
+                      <div className="hl-score-card">
 
-                        <div className="hl-score-card">
+                        <div className="hl-score-main">
 
-                          <div className="hl-score-main">
+                          <div className="hl-score-circle">
 
-                            <div className="hl-score-circle">
+                            <span>
+                              97%
+                            </span>
 
-                              <span>
-                                97%
-                              </span>
+                          </div>
 
+
+                          <div>
+
+                            <div className="hl-score-name">
+                              Alex Mercer
                             </div>
 
 
-                            <div>
-
-                              <div className="hl-score-name">
-                                Alex Mercer
-                              </div>
-
-
-                              <div className="hl-score-role">
-                                Lead Full-Stack AI Engineer
-                              </div>
-
+                            <div className="hl-score-role">
+                              Lead Full-Stack AI Engineer
                             </div>
 
                           </div>
 
                         </div>
 
-
-                        <div className="hl-evidence-list">
-
-                          <div className="hl-evidence">
-                            ✓ Next.js App Router experience
-                          </div>
+                      </div>
 
 
-                          <div className="hl-evidence">
-                            ✓ PostgreSQL + pgvector
-                          </div>
+                      <div className="hl-evidence-list">
+
+                        <div className="hl-evidence">
+                          ✓ Next.js App Router experience
+                        </div>
 
 
-                          <div className="hl-evidence">
-                            ✓ AI / ML background
-                          </div>
+                        <div className="hl-evidence">
+                          ✓ PostgreSQL + pgvector
+                        </div>
 
 
-                          <div className="hl-gap">
-                            Gap: limited Kubernetes experience
-                          </div>
+                        <div className="hl-evidence">
+                          ✓ AI / ML background
+                        </div>
 
+
+                        <div className="hl-gap">
+                          Gap: limited Kubernetes experience
                         </div>
 
                       </div>
@@ -3624,27 +3458,24 @@ export function ArchitectureFlow() {
                 </div>
 
 
-                {/* =================================================
+                {/* =============================================
                     PROGRESS
-                   ================================================= */}
+                   ============================================= */}
 
-                <div className="hl-arch-progress-bar">
+                <div className="hl-progress-bar">
 
                   <div
-                    className="hl-arch-progress-fill"
+                    className="hl-progress-fill"
                     style={{
                       width:
-                        `${
-                          lineProgress *
-                          100
-                        }%`,
+                        `${lineProgress * 100}%`,
                     }}
                   />
 
                 </div>
 
 
-                <div className="hl-arch-progress-dots">
+                <div className="hl-progress-dots">
 
                   {steps.map(
                     (
@@ -3655,7 +3486,7 @@ export function ArchitectureFlow() {
                         key={
                           step.num
                         }
-                        className={`hl-arch-progress-dot ${
+                        className={`hl-progress-dot ${
                           index <=
                           activeIndex
                             ? 'active'
@@ -3670,9 +3501,9 @@ export function ArchitectureFlow() {
               </div>
 
 
-              {/* =================================================
+              {/* ===============================================
                   FINAL NOTE
-                 ================================================= */}
+                 =============================================== */}
 
               <div className="hl-final-note">
 
@@ -3681,6 +3512,7 @@ export function ArchitectureFlow() {
                   <br />
                   One hiring signal.
                 </strong>
+
 
                 Built to keep the technical complexity
                 underneath a simple recruiting experience.
@@ -3694,6 +3526,7 @@ export function ArchitectureFlow() {
         </div>
 
       </div>
+
     </section>
   );
 }

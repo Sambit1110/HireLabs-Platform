@@ -1,60 +1,33 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
 import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 
 export function HeroSection({
   onExploreClick,
   onViewArchClick,
 }) {
-  const sectionRef = useRef(null);
-  const [progress, setProgress] = useState(0);
+  const sectionRef =
+    useRef(null);
 
-  const stages = [
-    {
-      number: '01',
-      label: 'RAW RESUME',
-      title: 'Start with the source.',
-      description:
-        'A resume begins as an unstructured document full of experience, skills, and context.',
-    },
-    {
-      number: '02',
-      label: 'UNDERSTANDING',
-      title: 'Read between the lines.',
-      description:
-        'HireLabs extracts the parts that matter: skills, seniority, experience, and technical context.',
-    },
-    {
-      number: '03',
-      label: 'VECTOR SIGNAL',
-      title: 'Turn meaning into a signal.',
-      description:
-        'The candidate becomes a high-dimensional representation designed for semantic search.',
-    },
-    {
-      number: '04',
-      label: 'SEMANTIC SEARCH',
-      title: 'Find the right match.',
-      description:
-        'Instead of relying on exact keywords, the system compares meaning between the role and the candidate.',
-    },
-    {
-      number: '05',
-      label: 'DECISION SUPPORT',
-      title: 'Make the result useful.',
-      description:
-        'Candidates are ranked with evidence and qualification gaps so recruiters can make better decisions.',
-    },
-  ];
+  const [scrollProgress, setScrollProgress] =
+    useState(0);
 
   useEffect(() => {
     let rafId = null;
 
     const updateProgress = () => {
-      const section = sectionRef.current;
+      const section =
+        sectionRef.current;
 
       if (!section) {
+        rafId = null;
         return;
       }
 
@@ -64,27 +37,26 @@ export function HeroSection({
       const viewportHeight =
         window.innerHeight;
 
-      const scrollDistance =
+      const totalDistance =
         Math.max(
           section.offsetHeight -
             viewportHeight,
           1
         );
 
-      const rawProgress =
-        -rect.top /
-        scrollDistance;
-
       const nextProgress =
         Math.min(
           1,
           Math.max(
             0,
-            rawProgress
+            -rect.top /
+              totalDistance
           )
         );
 
-      setProgress(nextProgress);
+      setScrollProgress(
+        nextProgress
+      );
 
       rafId = null;
     };
@@ -147,378 +119,322 @@ export function HeroSection({
       )
     );
 
-  const stageProgress =
-    progress *
-    (stages.length - 1);
-
-  const activeStage =
-    Math.min(
-      stages.length - 1,
-      Math.floor(stageProgress)
-    );
-
-  const localStageProgress =
-    stageProgress -
-    activeStage;
-
-  const smoothStage =
-    clamp(
-      localStageProgress
-    );
+  const heroProgress =
+    clamp(scrollProgress);
 
   /*
-   * Intro fades slightly as the visual
-   * story takes over.
+   * ==========================================================
+   * HERO STORY TIMELINE
+   * ==========================================================
+   *
+   * 0.00 - 0.20
+   * Resume is introduced.
+   *
+   * 0.20 - 0.52
+   * Resume transforms and the match card enters.
+   *
+   * 0.52 - 0.70
+   * Match card exits.
+   *
+   * 0.52 - 0.80
+   * Vector/detail layer enters.
+   *
+   * 0.72 - 1.00
+   * Metrics / final state.
    */
-  const heroIntro =
+
+  const introProgress =
+    clamp(
+      heroProgress / 0.28
+    );
+
+  const transformProgress =
+    clamp(
+      (heroProgress - 0.18) /
+        0.42
+    );
+
+  const detailProgress =
+    clamp(
+      (heroProgress - 0.52) /
+        0.28
+    );
+
+  const metricsProgress =
+    clamp(
+      (heroProgress - 0.72) /
+        0.28
+    );
+
+
+  /*
+   * ==========================================================
+   * RESUME
+   * ==========================================================
+   */
+
+  const resumeScale =
+    1 -
+    transformProgress *
+      0.18;
+
+  const resumeY =
+    transformProgress *
+    -70;
+
+  const resumeOpacity =
+    1 -
+    transformProgress *
+      0.72;
+
+
+  /*
+   * ==========================================================
+   * MATCH CARD
+   * ==========================================================
+   *
+   * Important fix:
+   *
+   * The card does NOT simply use transformProgress as its
+   * opacity anymore.
+   *
+   * It has an explicit ENTER range and EXIT range.
+   */
+
+  const insightEnter =
+    clamp(
+      (heroProgress - 0.22) /
+        0.16
+    );
+
+  const insightExit =
     1 -
     clamp(
-      progress / 0.28
-    ) *
-      0.45;
+      (heroProgress - 0.56) /
+        0.18
+    );
+
+  const insightVisibility =
+    insightEnter *
+    clamp(
+      insightExit
+    );
+
+  const insightY =
+    90 -
+    insightEnter *
+      90;
+
+  const insightScale =
+    0.92 +
+    insightEnter *
+      0.08;
+
+  const insightOpacity =
+    insightVisibility;
+
 
   /*
-   * Large central scene movement.
+   * ==========================================================
+   * DETAIL CARD
+   * ==========================================================
    */
-  const sceneScale =
-    1 +
-    progress *
-      0.035;
 
-  const sceneY =
-    progress *
-    -16;
+  const detailY =
+    45 -
+    detailProgress *
+      45;
+
+  const detailOpacity =
+    detailProgress;
+
 
   /*
-   * Text overlay on the left.
+   * ==========================================================
+   * Z-INDEX / VISIBILITY
+   * ==========================================================
+   *
+   * This ensures the black match card is genuinely absent from
+   * the visual stack before and after its animation window.
    */
-  const textY =
-    progress *
-    -24;
 
-  /*
-   * Stage-specific transitions.
-   */
-  const stageFade =
-    smoothStage >
-    0.78
-      ? 1 -
-        ((smoothStage -
-          0.78) /
-          0.22)
-      : 1;
+  const insightIsVisible =
+    insightOpacity >
+    0.012;
 
-  const nextStageFade =
-    smoothStage < 0.22
-      ? smoothStage /
-        0.22
-      : 1;
-
-  const currentStage =
-    stages[activeStage];
-
-  /*
-   * Progress around the five-step
-   * story.
-   */
-  const progressPercent =
-    progress * 100;
-
-  /*
-   * Decorative vector particles.
-   */
-  const particles =
-    Array.from({
-      length: 72,
-    });
 
   return (
-    <section
-      ref={sectionRef}
-      className="hl-story-hero"
-      id="heroSection"
-    >
+    <>
       <style>{`
 
-        /* ======================================================
-           ROOT
-           ====================================================== */
+        /* =====================================================
+           HERO ROOT
+           ===================================================== */
 
-        .hl-story-hero {
-          --cream: #F5F1E8;
-          --cream-soft: #ECE6DA;
-          --white: #FFFFFF;
+        .hirelabs-hero {
+          --hl-cream: #F5F1E8;
+          --hl-cream-soft: #EEE9DD;
+          --hl-white: #FFFFFF;
 
-          --espresso: #211C18;
-          --espresso-soft: #625950;
+          --hl-espresso: #211C18;
+          --hl-espresso-soft: #5E554D;
 
-          --olive: #6F7D55;
-          --olive-dark: #596544;
+          --hl-olive: #6F7D55;
+          --hl-olive-dark: #596544;
 
-          --taupe: #C8C0AF;
-          --border: #DED7CA;
+          --hl-taupe: #C8C0AF;
+          --hl-border: #DED7CA;
 
           position: relative;
 
-          min-height: 480vh;
+          min-height:
+            300vh;
 
           background:
             linear-gradient(
               180deg,
-              #F7F2E8 0%,
-              #F5F1E8 48%,
-              #EFE9DE 100%
+              #F5F1E8 0%,
+              #F4EFE6 100%
             );
 
           color:
-            var(--espresso);
+            var(--hl-espresso);
 
-          overflow: clip;
+          overflow:
+            clip;
 
-          isolation: isolate;
+          isolation:
+            isolate;
         }
 
 
-        .hl-story-hero *,
-        .hl-story-hero *::before,
-        .hl-story-hero *::after {
-          box-sizing: border-box;
+        .hirelabs-hero *,
+        .hirelabs-hero
+          *::before,
+        .hirelabs-hero
+          *::after {
+          box-sizing:
+            border-box;
         }
 
 
-        /* ======================================================
-           STICKY VIEW
-           ====================================================== */
+        /* =====================================================
+           STICKY HERO SCENE
+           ===================================================== */
 
-        .hl-story-sticky {
-          position: sticky;
-
-          top: 0;
-
-          height: 100vh;
-
-          min-height: 680px;
-
-          overflow: hidden;
-
-          display: flex;
-
-          align-items: center;
-
-          isolation: isolate;
-        }
-
-
-        /* ======================================================
-           GRAIN
-           ====================================================== */
-
-        .hl-story-grain {
-          position: absolute;
-
-          inset: 0;
-
-          z-index: 0;
-
-          pointer-events: none;
-
-          opacity: 0.16;
-
-          background-image:
-            radial-gradient(
-              rgba(
-                33,
-                28,
-                24,
-                0.13
-              )
-              0.5px,
-              transparent
-              0.5px
-            );
-
-          background-size:
-            7px 7px;
-
-          mask-image:
-            linear-gradient(
-              to bottom,
-              black,
-              transparent
-              94%
-            );
-        }
-
-
-        /* ======================================================
-           BACKGROUND RINGS
-           ====================================================== */
-
-        .hl-story-ring {
-          position: absolute;
-
-          border:
-            1px solid
-            rgba(
-              111,
-              125,
-              85,
-              0.11
-            );
-
-          border-radius:
-            50%;
-
-          pointer-events: none;
-
-          z-index: 0;
-        }
-
-
-        .hl-story-ring.one {
-          width:
-            min(
-              900px,
-              78vw
-            );
-
-          aspect-ratio: 1;
-
-          right:
-            -260px;
+        .hl-hero-sticky {
+          position:
+            sticky;
 
           top:
-            -240px;
-
-          transform:
-            rotate(
-              ${progress * -12}deg
-            );
-        }
-
-
-        .hl-story-ring.two {
-          width:
-            min(
-              640px,
-              58vw
-            );
-
-          aspect-ratio: 1;
-
-          right:
-            -120px;
-
-          top:
-            -100px;
-
-          border-style:
-            dashed;
-
-          transform:
-            rotate(
-              ${progress * 18}deg
-            );
-        }
-
-
-        .hl-story-ring.three {
-          width:
-            430px;
+            0;
 
           height:
-            430px;
+            100vh;
 
-          left:
-            -280px;
+          min-height:
+            680px;
 
-          bottom:
-            -240px;
+          display:
+            flex;
 
-          border-style:
-            dashed;
+          align-items:
+            center;
 
-          opacity:
-            0.5;
+          overflow:
+            hidden;
+
+          isolation:
+            isolate;
         }
 
 
-        /* ======================================================
-           MAIN WRAPPER
-           ====================================================== */
+        .hl-hero-container {
+          position:
+            relative;
 
-        .hl-story-shell {
-          position: relative;
-
-          z-index: 2;
+          z-index:
+            2;
 
           width:
             min(
-              1320px,
+              1240px,
               calc(100% - 64px)
             );
 
-          height: 100%;
+          height:
+            100%;
 
-          margin: 0 auto;
+          margin:
+            0 auto;
         }
 
 
-        /* ======================================================
-           TOP META
-           ====================================================== */
+        /* =====================================================
+           TOP LINE
+           ===================================================== */
 
-        .hl-story-meta {
-          position: absolute;
+        .hl-hero-topline {
+          position:
+            absolute;
+
+          left:
+            0;
+
+          right:
+            0;
 
           top:
-            34px;
+            7.5vh;
 
-          left: 0;
+          display:
+            flex;
 
-          right: 0;
-
-          display: flex;
-
-          align-items: center;
+          align-items:
+            center;
 
           justify-content:
             space-between;
 
-          gap: 20px;
+          gap:
+            24px;
 
-          z-index: 12;
-
-          opacity:
-            ${heroIntro};
+          z-index:
+            12;
         }
 
 
-        .hl-story-meta-left {
-          display: inline-flex;
+        .hl-eyebrow {
+          display:
+            inline-flex;
 
-          align-items: center;
+          align-items:
+            center;
 
-          gap: 10px;
+          gap:
+            10px;
 
-          color:
-            var(--espresso-soft);
+          font-size:
+            11px;
 
-          font-size: 9px;
-
-          line-height: 1;
-
-          font-weight: 800;
+          line-height:
+            1;
 
           letter-spacing:
-            0.15em;
+            0.16em;
 
           text-transform:
             uppercase;
+
+          font-weight:
+            800;
+
+          color:
+            var(--hl-espresso-soft);
         }
 
 
-        .hl-story-meta-dot {
+        .hl-eyebrow-dot {
           width:
             7px;
 
@@ -526,10 +442,10 @@ export function HeroSection({
             7px;
 
           border-radius:
-            50%;
+            999px;
 
           background:
-            var(--olive);
+            var(--hl-olive);
 
           box-shadow:
             0 0 0 4px
@@ -537,18 +453,18 @@ export function HeroSection({
               111,
               125,
               85,
-              0.11
+              0.12
             );
         }
 
 
-        .hl-story-meta-pill {
+        .hl-version {
           padding:
             8px 11px;
 
           border:
             1px solid
-            var(--border);
+            var(--hl-border);
 
           border-radius:
             999px;
@@ -561,101 +477,135 @@ export function HeroSection({
               0.46
             );
 
+          font-size:
+            10px;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
+
+          font-weight:
+            700;
+
           color:
-            #766D63;
+            var(--hl-espresso-soft);
+
+          white-space:
+            nowrap;
+        }
+
+
+        /* =====================================================
+           HERO GRID
+           ===================================================== */
+
+        .hl-hero-grid {
+          position:
+            absolute;
+
+          inset:
+            0;
+
+          display:
+            grid;
+
+          grid-template-columns:
+            minmax(
+              0,
+              1.02fr
+            )
+            minmax(
+              420px,
+              0.98fr
+            );
+
+          gap:
+            clamp(
+              48px,
+              7vw,
+              120px
+            );
+
+          align-items:
+            center;
+
+          padding-top:
+            68px;
+
+          padding-bottom:
+            80px;
+        }
+
+
+        /* =====================================================
+           LEFT COPY
+           ===================================================== */
+
+        .hl-copy {
+          position:
+            relative;
+
+          z-index:
+            10;
+
+          max-width:
+            690px;
+
+          transform:
+            translateY(
+              ${
+                introProgress *
+                -16
+              }px
+            );
+
+          opacity:
+            ${
+              1 -
+              introProgress *
+              0.06
+            };
+
+          transition:
+            opacity 120ms linear;
+        }
+
+
+        .hl-kicker {
+          display:
+            inline-block;
+
+          margin-bottom:
+            24px;
+
+          color:
+            var(--hl-olive-dark);
 
           font-size:
-            8px;
+            12px;
+
+          line-height:
+            1;
 
           font-weight:
             800;
 
           letter-spacing:
-            0.08em;
+            0.11em;
 
           text-transform:
             uppercase;
         }
 
 
-        /* ======================================================
-           INTRO COPY
-           ====================================================== */
+        .hl-title {
+          margin:
+            0;
 
-        .hl-story-copy {
-          position: absolute;
-
-          z-index: 10;
-
-          left: 0;
-
-          top:
-            50%;
-
-          width:
-            min(
-              590px,
-              48%
-            );
-
-          transform:
-            translate3d(
-              0,
-              calc(
-                -50% +
-                ${textY}px
-              ),
-              0
-            );
-
-          opacity:
-            ${heroIntro};
-        }
-
-
-        .hl-story-kicker {
-          display: inline-flex;
-
-          align-items: center;
-
-          gap: 9px;
-
-          margin-bottom:
-            22px;
-
-          color:
-            var(--olive-dark);
-
-          font-size:
-            10px;
-
-          line-height: 1;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            0.14em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-story-kicker-line {
-          width:
-            28px;
-
-          height:
-            1px;
-
-          background:
-            var(--olive);
-        }
-
-
-        .hl-story-title {
-          margin: 0;
+          max-width:
+            760px;
 
           font-family:
             Georgia,
@@ -664,712 +614,142 @@ export function HeroSection({
 
           font-size:
             clamp(
-              58px,
-              7vw,
-              98px
+              52px,
+              6.3vw,
+              92px
             );
 
           line-height:
-            0.9;
+            0.94;
 
           letter-spacing:
-            -0.06em;
+            -0.055em;
 
           font-weight:
             500;
         }
 
 
-        .hl-story-title em {
+        .hl-title-line {
+          display:
+            block;
+        }
+
+
+        .hl-title-accent {
           color:
-            var(--olive);
+            var(--hl-olive);
 
           font-style:
             italic;
         }
 
 
-        .hl-story-description {
+        .hl-description {
           max-width:
-            530px;
+            600px;
 
           margin:
-            27px 0 0;
+            32px 0 0;
 
           color:
-            var(--espresso-soft);
+            var(--hl-espresso-soft);
 
           font-size:
-            15px;
+            clamp(
+              15px,
+              1.35vw,
+              18px
+            );
 
           line-height:
-            1.72;
+            1.7;
         }
 
 
-        .hl-story-actions {
-          display: flex;
-
-          align-items: center;
-
-          flex-wrap: wrap;
-
-          gap: 11px;
-
-          margin-top:
-            31px;
-        }
-
-
-        .hl-story-note {
-          margin-top:
-            18px;
-
-          color:
-            #857C73;
-
-          font-size:
-            9px;
-
-          line-height:
-            1.5;
-
-          letter-spacing:
-            0.03em;
-        }
-
-
-        /* ======================================================
-           STORY STAGE
-           ====================================================== */
-
-        .hl-story-stage {
-          position: absolute;
-
-          right:
-            -20px;
-
-          top: 0;
-
-          width:
-            65%;
-
-          height:
-            100%;
-
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            center;
-
-          transform:
-            translate3d(
-              0,
-              ${sceneY}px,
-              0
-            )
-            scale(
-              ${sceneScale}
-            );
-
-          transform-origin:
-            center center;
-
-          will-change:
-            transform;
-        }
-
-
-        /* ======================================================
-           CENTRAL VISUAL FRAME
-           ====================================================== */
-
-        .hl-story-frame {
-          position: relative;
-
-          width:
-            min(
-              720px,
-              100%
-            );
-
-          height:
-            min(
-              650px,
-              76vh
-            );
-
-          border:
-            1px solid
-            rgba(
-              222,
-              215,
-              202,
-              0.9
-            );
-
-          border-radius:
-            34px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.52
-            );
-
-          box-shadow:
-            0 35px 100px
-            rgba(
-              47,
-              41,
-              35,
-              0.07
-            );
-
-          overflow:
-            hidden;
-        }
-
-
-        /* ======================================================
-           FRAME TOP
-           ====================================================== */
-
-        .hl-story-frame-top {
-          position: absolute;
-
-          top: 0;
-
-          left: 0;
-
-          right: 0;
-
-          height:
-            63px;
-
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            space-between;
-
-          padding:
-            0 22px;
-
-          border-bottom:
-            1px solid
-            var(--border);
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.38
-            );
-
-          z-index: 20;
-        }
-
-
-        .hl-story-frame-status {
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          gap: 8px;
-
-          color:
-            #746B62;
-
-          font-size:
-            8px;
-
-          font-weight:
-            800;
-
-          letter-spacing:
-            0.1em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-story-frame-status-dot {
-          width:
-            6px;
-
-          height:
-            6px;
-
-          border-radius:
-            50%;
-
-          background:
-            var(--olive);
-        }
-
-
-        .hl-story-frame-stage {
-          color:
-            var(--olive-dark);
-
-          font-size:
-            8px;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            0.1em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        /* ======================================================
-           VISUAL CANVAS
-           ====================================================== */
-
-        .hl-story-canvas {
-          position: absolute;
-
-          inset:
-            63px 0 0 0;
-
-          overflow:
-            hidden;
-        }
-
-
-        .hl-story-canvas::before {
-          content:
-            '';
-
-          position: absolute;
-
-          width:
-            520px;
-
-          height:
-            520px;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
-
-          border:
-            1px solid
-            rgba(
-              111,
-              125,
-              85,
-              0.1
-            );
-
-          border-radius:
-            50%;
-
-          pointer-events:
-            none;
-        }
-
-
-        .hl-story-canvas::after {
-          content:
-            '';
-
-          position: absolute;
-
-          width:
-            370px;
-
-          height:
-            370px;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
-
-          border:
-            1px dashed
-            rgba(
-              111,
-              125,
-              85,
-              0.08
-            );
-
-          border-radius:
-            50%;
-
-          pointer-events:
-            none;
-        }
-
-
-        /* ======================================================
-           STAGE LABEL
-           ====================================================== */
-
-        .hl-stage-label {
-          position:
-            absolute;
-
-          top:
-            32px;
-
-          left:
-            32px;
-
-          z-index:
-            15;
-
-          padding:
-            7px 9px;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius:
-            999px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.7
-            );
-
-          color:
-            #736A61;
-
-          font-size:
-            7px;
-
-          line-height:
-            1;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            0.1em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-stage-title {
-          position:
-            absolute;
-
-          left:
-            32px;
-
-          bottom:
-            35px;
-
-          z-index:
-            15;
-
-          max-width:
-            250px;
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            28px;
-
-          line-height:
-            0.98;
-
-          letter-spacing:
-            -0.035em;
-        }
-
-
-        .hl-stage-description {
-          position:
-            absolute;
-
-          right:
-            31px;
-
-          bottom:
-            36px;
-
-          z-index:
-            15;
-
-          max-width:
-            220px;
-
-          color:
-            #776E65;
-
-          font-size:
-            9px;
-
-          line-height:
-            1.55;
-
-          text-align:
-            right;
-        }
-
-
-        /* ======================================================
-           COMMON DOCUMENT
-           ====================================================== */
-
-        .hl-scene-document {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          width:
-            390px;
-
-          min-height:
-            480px;
-
-          padding:
-            26px;
-
-          background:
-            #FFFFFF;
-
-          border:
-            1px solid
-            var(--border);
-
-          border-radius:
-            13px;
-
-          box-shadow:
-            0 30px 75px
-            rgba(
-              40,
-              35,
-              30,
-              0.12
-            );
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            )
-            rotate(
-              -3deg
-            );
-
-          transition:
-            transform 900ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-            opacity 600ms ease;
-        }
-
-
-        .hl-document-name {
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            23px;
-
-          letter-spacing:
-            -0.03em;
-        }
-
-
-        .hl-document-role {
-          margin-top:
-            6px;
-
-          color:
-            #7E756C;
-
-          font-size:
-            9px;
-        }
-
-
-        .hl-document-rule {
-          height:
-            1px;
-
-          margin:
-            18px 0;
-
-          background:
-            #E8E2D7;
-        }
-
-
-        .hl-document-label {
-          margin-bottom:
-            9px;
-
-          color:
-            #8A8177;
-
-          font-size:
-            7px;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            0.1em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-document-line {
-          height:
-            7px;
-
-          margin:
-            8px 0;
-
-          border-radius:
-            999px;
-
-          background:
-            #E8E3D9;
-        }
-
-
-        .hl-document-line.long {
-          width:
-            94%;
-        }
-
-
-        .hl-document-line.medium {
-          width:
-            77%;
-        }
-
-
-        .hl-document-line.short {
-          width:
-            53%;
-        }
-
-
-        .hl-document-skills {
+        .hl-actions {
           display:
             flex;
 
           flex-wrap:
             wrap;
 
+          align-items:
+            center;
+
           gap:
-            6px;
+            12px;
 
           margin-top:
-            12px;
+            34px;
         }
 
 
-        .hl-document-skill {
-          padding:
-            7px 8px;
-
-          border-radius:
-            999px;
-
-          background:
-            #F1EDE4;
+        .hl-quiet-note {
+          margin-top:
+            22px;
 
           color:
-            #665E56;
+            #7A7168;
 
           font-size:
-            7px;
+            12px;
 
-          font-weight:
-            800;
+          line-height:
+            1.5;
         }
 
 
-        /* ======================================================
-           EXTRACTED SIGNALS
-           ====================================================== */
+        /* =====================================================
+           PRODUCT STAGE
+           ===================================================== */
 
-        .hl-extraction-layer {
+        .hl-product-stage {
           position:
-            absolute;
+            relative;
 
-          inset:
-            0;
+          width:
+            100%;
+
+          min-height:
+            min(
+              650px,
+              72vh
+            );
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            center;
+
+          isolation:
+            isolate;
 
           z-index:
-            8;
-
-          pointer-events:
-            none;
+            4;
         }
 
 
-        .hl-extraction-tag {
+        /* =====================================================
+           ORBIT
+           ===================================================== */
+
+        .hl-product-orbit {
           position:
             absolute;
 
-          padding:
-            8px 10px;
+          width:
+            min(
+              620px,
+              52vw
+            );
+
+          aspect-ratio:
+            1;
 
           border:
             1px solid
@@ -1377,188 +757,43 @@ export function HeroSection({
               111,
               125,
               85,
-              0.2
+              0.15
             );
 
           border-radius:
-            10px;
+            50%;
 
-          background:
-            rgba(
-              246,
-              244,
-              237,
-              0.94
+          transform:
+            rotate(-14deg)
+            scale(
+              ${
+                1 -
+                detailProgress *
+                0.05
+              }
             );
-
-          color:
-            #626B50;
-
-          font-size:
-            8px;
-
-          font-weight:
-            800;
-
-          box-shadow:
-            0 10px 22px
-            rgba(
-              48,
-              42,
-              36,
-              0.07
-            );
-        }
-
-
-        .hl-extraction-tag.one {
-          left:
-            20%;
-
-          top:
-            25%;
-        }
-
-
-        .hl-extraction-tag.two {
-          right:
-            15%;
-
-          top:
-            34%;
-        }
-
-
-        .hl-extraction-tag.three {
-          left:
-            25%;
-
-          bottom:
-            33%;
-        }
-
-
-        .hl-extraction-tag.four {
-          right:
-            20%;
-
-          bottom:
-            25%;
-        }
-
-
-        /* ======================================================
-           PARTICLE FIELD
-           ====================================================== */
-
-        .hl-particle-field {
-          position:
-            absolute;
-
-          inset:
-            0;
 
           z-index:
-            5;
+            0;
 
           pointer-events:
             none;
         }
 
 
-        .hl-particle {
+        .hl-product-orbit::before,
+        .hl-product-orbit::after {
+          content:
+            '';
+
           position:
             absolute;
 
-          width:
-            5px;
-
-          height:
-            5px;
-
-          border-radius:
-            50%;
-
-          background:
-            var(--olive);
-
-          opacity:
-            calc(
-              0.18 +
-              var(--particle-opacity)
-            );
-
-          transform:
-            translate3d(
-              var(--particle-x),
-              var(--particle-y),
-              0
-            )
-            scale(
-              var(--particle-scale)
-            );
-
-          transition:
-            transform 900ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-            opacity 500ms ease;
-        }
-
-
-        /* ======================================================
-           VECTOR GRID
-           ====================================================== */
-
-        .hl-story-vector-grid {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            46%;
-
-          width:
-            490px;
-
-          height:
-            260px;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
-
-          display:
-            grid;
-
-          grid-template-columns:
-            repeat(
-              10,
-              1fr
-            );
-
-          grid-template-rows:
-            repeat(
-              6,
-              1fr
-            );
-
-          gap:
-            8px;
-
-          padding:
-            20px;
+          inset:
+            12%;
 
           border:
-            1px solid
+            1px dashed
             rgba(
               111,
               125,
@@ -1567,489 +802,107 @@ export function HeroSection({
             );
 
           border-radius:
-            20px;
-
-          background:
-            rgba(
-              250,
-              248,
-              243,
-              0.72
-            );
-
-          box-shadow:
-            0 22px 50px
-            rgba(
-              48,
-              43,
-              37,
-              0.06
-            );
+            50%;
         }
 
 
-        .hl-vector-dot {
-          width:
-            100%;
+        .hl-product-orbit::after {
+          inset:
+            25%;
 
-          height:
-            100%;
+          border-style:
+            solid;
+
+          opacity:
+            0.45;
+        }
+
+
+        /* =====================================================
+           RESUME CARD
+           ===================================================== */
+
+        .hl-resume-card {
+          position:
+            relative;
+
+          width:
+            min(
+              450px,
+              90%
+            );
 
           min-height:
-            8px;
-
-          border-radius:
-            999px;
-
-          background:
-            var(--olive);
-
-          opacity:
-            calc(
-              0.18 +
-              var(--vector-opacity)
-            );
-
-          transform:
-            scaleY(
-              var(--vector-scale)
-            );
-
-          transform-origin:
-            center;
-
-          animation:
-            hlVectorPulse
-            3.6s
-            ease-in-out
-            infinite;
-        }
-
-
-        .hl-vector-dot:nth-child(
-          3n
-        ) {
-          animation-delay:
-            150ms;
-        }
-
-
-        .hl-vector-dot:nth-child(
-          5n
-        ) {
-          animation-delay:
-            310ms;
-        }
-
-
-        @keyframes hlVectorPulse {
-          0%,
-          100% {
-            transform:
-              scaleY(
-                calc(
-                  var(
-                    --vector-scale
-                  ) *
-                  0.82
-                )
-              );
-          }
-
-          50% {
-            transform:
-              scaleY(
-                var(
-                  --vector-scale
-                )
-              );
-          }
-        }
-
-
-        /* ======================================================
-           VECTOR CORE
-           ====================================================== */
-
-        .hl-vector-core {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          width:
-            95px;
-
-          height:
-            95px;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            )
-            scale(
-              ${0.65 +
-              clamp(
-                (progress -
-                  0.38) /
-                  0.18
-              ) *
-                0.35}
-            );
-
-          border:
-            1px solid
-            rgba(
-              111,
-              125,
-              85,
-              0.35
-            );
-
-          border-radius:
-            50%;
-
-          box-shadow:
-            0 0 0 18px
-              rgba(
-                111,
-                125,
-                85,
-                0.055
-              ),
-
-            0 0 0 38px
-              rgba(
-                111,
-                125,
-                85,
-                0.025
-              );
-
-          opacity:
-            clamp(
-              (progress -
-                0.34) /
-                0.16,
-              0,
-              1
-            );
-
-          transition:
-            transform 500ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              );
-        }
-
-
-        .hl-vector-core::before {
-          content:
-            '';
-
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          width:
-            18px;
-
-          height:
-            18px;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
-
-          border-radius:
-            50%;
-
-          background:
-            var(--olive);
-
-          box-shadow:
-            0 0 28px
-            rgba(
-              111,
-              125,
-              85,
-              0.3
-            );
-        }
-
-
-        /* ======================================================
-           SEARCH CONNECTION
-           ====================================================== */
-
-        .hl-search-path {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            50%;
-
-          width:
-            470px;
-
-          height:
-            180px;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
-
-          pointer-events:
-            none;
-
-          opacity:
-            clamp(
-              (progress -
-                0.48) /
-                0.16,
-              0,
-              1
-            );
-        }
-
-
-        .hl-search-path svg {
-          width:
-            100%;
-
-          height:
-            100%;
-
-          overflow:
-            visible;
-        }
-
-
-        .hl-search-path path {
-          fill:
-            none;
-
-          stroke:
-            var(--olive);
-
-          stroke-width:
-            1.5;
-
-          stroke-dasharray:
-            8 9;
-
-          stroke-linecap:
-            round;
-
-          animation:
-            hlSearchFlow
-            3s
-            linear
-            infinite;
-        }
-
-
-        @keyframes hlSearchFlow {
-          to {
-            stroke-dashoffset:
-              -80;
-          }
-        }
-
-
-        .hl-search-node {
-          position:
-            absolute;
-
-          top:
-            50%;
-
-          transform:
-            translateY(
-              -50%
-            );
-
-          padding:
-            13px 15px;
-
-          border:
-            1px solid
-            rgba(
-              111,
-              125,
-              85,
-              0.18
-            );
-
-          border-radius:
-            14px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.86
-            );
-
-          box-shadow:
-            0 15px 35px
-            rgba(
-              47,
-              42,
-              37,
-              0.07
-            );
-        }
-
-
-        .hl-search-node.left {
-          left:
-            -12px;
-        }
-
-
-        .hl-search-node.right {
-          right:
-            -12px;
-        }
-
-
-        .hl-search-node-label {
-          display:
-            block;
-
-          color:
-            #877E74;
-
-          font-size:
-            7px;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            0.1em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-search-node-title {
-          margin-top:
-            6px;
-
-          color:
-            var(--espresso);
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            14px;
-        }
-
-
-        /* ======================================================
-           FINAL MATCH CARD
-           ====================================================== */
-
-        .hl-match-result {
-          position:
-            absolute;
-
-          left:
-            50%;
-
-          top:
-            46%;
-
-          width:
             540px;
 
-          transform:
-            translate(
-              -50%,
-              -50%
-            )
-            scale(
-              ${0.94 +
-              clamp(
-                (progress -
-                  0.66) /
-                  0.2
-              ) *
-                0.06}
-            );
+          padding:
+            28px;
 
-          opacity:
-            clamp(
-              (progress -
-                0.63) /
-                0.16,
-              0,
-              1
-            );
+          border-radius:
+            26px;
 
-          z-index:
-            10;
+          background:
+            var(--hl-white);
 
           border:
             1px solid
-            rgba(
-              245,
-              241,
-              232,
-              0.14
-            );
-
-          border-radius:
-            22px;
-
-          background:
-            var(--espresso);
-
-          color:
-            var(--cream);
-
-          padding:
-            21px;
+            var(--hl-border);
 
           box-shadow:
-            0 35px 85px
+            0 30px 80px
             rgba(
-              33,
-              28,
-              24,
-              0.19
+              49,
+              43,
+              36,
+              0.12
+            ),
+
+            0 8px 24px
+            rgba(
+              49,
+              43,
+              36,
+              0.05
             );
+
+          transform:
+            translate3d(
+              0,
+              ${
+                resumeY
+              }px,
+              0
+            )
+            scale(
+              ${
+                resumeScale
+              }
+            )
+            rotate(
+              ${
+                transformProgress *
+                -1.8
+              }deg
+            );
+
+          opacity:
+            ${
+              resumeOpacity
+            };
+
+          z-index:
+            3;
+
+          overflow:
+            hidden;
+
+          will-change:
+            transform,
+            opacity;
         }
 
 
-        .hl-match-top {
+        .hl-resume-top {
           display:
             flex;
 
@@ -2060,11 +913,472 @@ export function HeroSection({
             space-between;
 
           gap:
-            14px;
+            20px;
+
+          padding-bottom:
+            22px;
+
+          border-bottom:
+            1px solid
+            #E9E4DA;
         }
 
 
-        .hl-match-person {
+        .hl-resume-name {
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            24px;
+
+          line-height:
+            1;
+
+          letter-spacing:
+            -0.03em;
+        }
+
+
+        .hl-resume-role {
+          margin-top:
+            7px;
+
+          color:
+            #7B7269;
+
+          font-size:
+            11px;
+        }
+
+
+        .hl-resume-mark {
+          width:
+            43px;
+
+          height:
+            43px;
+
+          display:
+            grid;
+
+          place-items:
+            center;
+
+          flex:
+            0 0 43px;
+
+          border-radius:
+            14px;
+
+          background:
+            var(--hl-espresso);
+
+          color:
+            var(--hl-cream);
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            17px;
+        }
+
+
+        .hl-resume-section {
+          margin-top:
+            25px;
+        }
+
+
+        .hl-resume-section-label {
+          margin-bottom:
+            13px;
+
+          color:
+            #8A8177;
+
+          font-size:
+            9px;
+
+          line-height:
+            1;
+
+          letter-spacing:
+            0.14em;
+
+          text-transform:
+            uppercase;
+
+          font-weight:
+            800;
+        }
+
+
+        .hl-resume-line {
+          height:
+            9px;
+
+          border-radius:
+            999px;
+
+          margin:
+            9px 0;
+
+          background:
+            #EAE5DA;
+        }
+
+
+        .hl-resume-line.short {
+          width:
+            58%;
+        }
+
+
+        .hl-resume-line.medium {
+          width:
+            77%;
+        }
+
+
+        .hl-resume-line.long {
+          width:
+            92%;
+        }
+
+
+        .hl-resume-skills {
+          display:
+            flex;
+
+          flex-wrap:
+            wrap;
+
+          gap:
+            8px;
+        }
+
+
+        .hl-skill {
+          padding:
+            8px 10px;
+
+          border-radius:
+            999px;
+
+          background:
+            #F2EEE4;
+
+          border:
+            1px solid
+            #E4DED2;
+
+          color:
+            #5F574F;
+
+          font-size:
+            10px;
+
+          font-weight:
+            700;
+        }
+
+
+        .hl-resume-footer {
+          position:
+            absolute;
+
+          left:
+            28px;
+
+          right:
+            28px;
+
+          bottom:
+            26px;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            space-between;
+
+          gap:
+            16px;
+
+          padding-top:
+            18px;
+
+          border-top:
+            1px solid
+            #E9E4DA;
+
+          color:
+            #8A8177;
+
+          font-size:
+            10px;
+        }
+
+
+        /* =====================================================
+           MATCH / INSIGHT CARD
+           ===================================================== */
+
+        .hl-transform-layer {
+          position:
+            absolute;
+
+          width:
+            min(
+              420px,
+              82%
+            );
+
+          transform:
+            translate3d(
+              0,
+              ${
+                insightY
+              }px,
+              0
+            )
+            scale(
+              ${
+                insightScale
+              }
+            );
+
+          opacity:
+            ${
+              insightOpacity
+            };
+
+          visibility:
+            ${
+              insightIsVisible
+                ? 'visible'
+                : 'hidden'
+            };
+
+          pointer-events:
+            none;
+
+          z-index:
+            ${
+              insightIsVisible
+                ? 8
+                : 1
+            };
+
+          transition:
+            opacity 120ms linear,
+            visibility 0s linear
+              ${
+                insightIsVisible
+                  ? '0s'
+                  : '120ms'
+              };
+
+          will-change:
+            transform,
+            opacity;
+        }
+
+
+        .hl-transform-layer.is-hidden {
+          visibility:
+            hidden;
+
+          opacity:
+            0;
+
+          pointer-events:
+            none;
+
+          z-index:
+            1;
+        }
+
+
+        .hl-insight-card {
+          width:
+            100%;
+
+          padding:
+            24px;
+
+          border-radius:
+            24px;
+
+          background:
+            var(--hl-espresso);
+
+          color:
+            var(--hl-cream);
+
+          box-shadow:
+            0 36px 90px
+            rgba(
+              33,
+              28,
+              24,
+              0.2
+            );
+        }
+
+
+        .hl-insight-header {
+          display:
+            flex;
+
+          align-items:
+            flex-start;
+
+          justify-content:
+            space-between;
+
+          gap:
+            20px;
+        }
+
+
+        .hl-insight-label {
+          font-size:
+            9px;
+
+          line-height:
+            1;
+
+          letter-spacing:
+            0.14em;
+
+          text-transform:
+            uppercase;
+
+          color:
+            #BEB8AE;
+
+          font-weight:
+            800;
+        }
+
+
+        .hl-insight-title {
+          margin-top:
+            9px;
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            24px;
+
+          letter-spacing:
+            -0.03em;
+        }
+
+
+        .hl-score {
+          min-width:
+            84px;
+
+          text-align:
+            right;
+        }
+
+
+        .hl-score-number {
+          display:
+            block;
+
+          color:
+            #B9C69A;
+
+          font-size:
+            28px;
+
+          line-height:
+            1;
+
+          font-weight:
+            800;
+
+          letter-spacing:
+            -0.04em;
+        }
+
+
+        .hl-score-label {
+          margin-top:
+            5px;
+
+          color:
+            #9D978D;
+
+          font-size:
+            9px;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing:
+            0.08em;
+        }
+
+
+        .hl-insight-divider {
+          height:
+            1px;
+
+          margin:
+            20px 0;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.13
+            );
+        }
+
+
+        .hl-match-grid {
+          display:
+            grid;
+
+          gap:
+            11px;
+        }
+
+
+        .hl-match-row {
+          display:
+            grid;
+
+          grid-template-columns:
+            1fr
+            auto;
+
+          gap:
+            15px;
+
+          align-items:
+            center;
+        }
+
+
+        .hl-match-left {
           display:
             flex;
 
@@ -2072,16 +1386,22 @@ export function HeroSection({
             center;
 
           gap:
+            9px;
+
+          color:
+            #E2DDD3;
+
+          font-size:
             11px;
         }
 
 
-        .hl-match-avatar {
+        .hl-check {
           width:
-            42px;
+            18px;
 
           height:
-            42px;
+            18px;
 
           display:
             grid;
@@ -2090,315 +1410,179 @@ export function HeroSection({
             center;
 
           border-radius:
-            13px;
-
-          background:
-            #F1EDE4;
-
-          color:
-            var(--espresso);
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            15px;
-        }
-
-
-        .hl-match-name {
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            19px;
-        }
-
-
-        .hl-match-role {
-          margin-top:
-            4px;
-
-          color:
-            #9C958B;
-
-          font-size:
-            8px;
-        }
-
-
-        .hl-match-score {
-          text-align:
-            right;
-        }
-
-
-        .hl-match-score-value {
-          display:
-            block;
-
-          color:
-            #B8C697;
-
-          font-size:
-            27px;
-
-          line-height:
-            1;
-
-          font-weight:
-            900;
-
-          letter-spacing:
-            -0.04em;
-        }
-
-
-        .hl-match-score-label {
-          display:
-            block;
-
-          margin-top:
-            4px;
-
-          color:
-            #8E877D;
-
-          font-size:
-            7px;
-
-          letter-spacing:
-            0.08em;
-
-          text-transform:
-            uppercase;
-        }
-
-
-        .hl-match-divider {
-          height:
-            1px;
-
-          margin:
-            19px 0;
-
-          background:
-            rgba(
-              245,
-              241,
-              232,
-              0.11
-            );
-        }
-
-
-        .hl-match-evidence {
-          display:
-            grid;
-
-          grid-template-columns:
-            1fr
-            1fr;
-
-          gap:
-            7px;
-        }
-
-
-        .hl-match-evidence-item {
-          padding:
-            9px 10px;
-
-          border-radius:
-            10px;
+            50%;
 
           background:
             rgba(
               111,
               125,
               85,
-              0.13
+              0.3
             );
 
           color:
-            #B7C398;
+            #C2D19F;
 
           font-size:
-            8px;
+            10px;
 
           font-weight:
             800;
         }
 
 
-        .hl-match-footer {
-          display:
-            flex;
-
-          justify-content:
-            space-between;
-
-          align-items:
-            center;
-
-          gap:
-            10px;
-
-          margin-top:
-            13px;
-
+        .hl-match-value {
           color:
-            #827A71;
+            #AAA39A;
 
           font-size:
-            7px;
+            10px;
 
-          text-transform:
-            uppercase;
-
-          letter-spacing:
-            0.08em;
+          font-weight:
+            700;
         }
 
 
-        /* ======================================================
-           STAGE TRANSITION COVER
-           ====================================================== */
+        /* =====================================================
+           DETAIL CARD
+           ===================================================== */
 
-        .hl-stage-transition {
-          position:
-            absolute;
-
-          inset:
-            0;
-
-          z-index:
-            25;
-
-          pointer-events:
-            none;
-
-          background:
-            var(--cream);
-
-          opacity:
-            clamp(
-              0,
-              ${Math.max(
-                0,
-                smoothStage -
-                  0.78
-              ) *
-                5},
-              1
-            );
-
-          transition:
-            opacity 250ms ease;
-        }
-
-
-        /* ======================================================
-           PROGRESS INDICATOR
-           ====================================================== */
-
-        .hl-story-progress {
+        .hl-detail-card {
           position:
             absolute;
 
           right:
-            0;
+            -24px;
 
-          top:
-            50%;
+          bottom:
+            40px;
 
-          transform:
-            translateY(
-              -50%
+          width:
+            235px;
+
+          padding:
+            18px;
+
+          border-radius:
+            18px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.94
             );
 
-          display:
-            flex;
+          border:
+            1px solid
+            var(--hl-border);
 
-          flex-direction:
-            column;
+          box-shadow:
+            0 22px 55px
+            rgba(
+              49,
+              43,
+              36,
+              0.12
+            );
 
-          gap:
-            8px;
+          transform:
+            translate3d(
+              ${
+                detailY
+              }px,
+              0,
+              0
+            );
+
+          opacity:
+            ${
+              detailOpacity
+            };
 
           z-index:
-            20;
+            9;
+
+          backdrop-filter:
+            blur(14px);
+
+          will-change:
+            transform,
+            opacity;
         }
 
 
-        .hl-story-progress-item {
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          gap:
-            7px;
-
+        .hl-detail-label {
           color:
-            #988F84;
+            #8A8177;
 
           font-size:
-            7px;
+            8px;
+
+          line-height:
+            1;
+
+          letter-spacing:
+            0.14em;
+
+          text-transform:
+            uppercase;
 
           font-weight:
             800;
-
-          letter-spacing:
-            0.1em;
-
-          transition:
-            color 250ms ease;
         }
 
 
-        .hl-story-progress-line {
-          width:
-            15px;
+        .hl-detail-title {
+          margin-top:
+            7px;
 
-          height:
-            1px;
+          font-size:
+            13px;
+
+          font-weight:
+            800;
+        }
+
+
+        .hl-vector {
+          margin-top:
+            13px;
+
+          padding:
+            11px;
+
+          border-radius:
+            11px;
 
           background:
-            #D4CDBF;
+            #F4F0E7;
 
-          transition:
-            width 300ms ease,
-            background 300ms ease;
-        }
-
-
-        .hl-story-progress-item.active {
           color:
-            var(--olive-dark);
+            #696158;
+
+          font-family:
+            'SFMono-Regular',
+            Consolas,
+            monospace;
+
+          font-size:
+            8px;
+
+          line-height:
+            1.65;
+
+          overflow:
+            hidden;
         }
 
 
-        .hl-story-progress-item.active
-          .hl-story-progress-line {
-          width:
-            28px;
+        /* =====================================================
+           BOTTOM METRICS
+           ===================================================== */
 
-          background:
-            var(--olive);
-        }
-
-
-        /* ======================================================
-           BOTTOM LABEL
-           ====================================================== */
-
-        .hl-story-bottom {
+        .hl-hero-bottom {
           position:
             absolute;
 
@@ -2409,10 +1593,10 @@ export function HeroSection({
             0;
 
           bottom:
-            26px;
+            30px;
 
           z-index:
-            20;
+            12;
 
           display:
             flex;
@@ -2424,121 +1608,381 @@ export function HeroSection({
             space-between;
 
           gap:
-            20px;
+            30px;
+
+          width:
+            min(
+              1240px,
+              calc(100% - 64px)
+            );
+
+          margin:
+            0 auto;
+        }
+
+
+        .hl-bottom-copy {
+          max-width:
+            330px;
 
           color:
-            #837A70;
+            #82796F;
+
+          font-size:
+            11px;
+
+          line-height:
+            1.5;
+
+          opacity:
+            ${
+              1 -
+              metricsProgress *
+              0.2
+            };
+        }
+
+
+        .hl-metrics {
+          display:
+            flex;
+
+          align-items:
+            stretch;
+
+          gap:
+            0;
+
+          border:
+            1px solid
+            var(--hl-border);
+
+          border-radius:
+            18px;
+
+          overflow:
+            hidden;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.48
+            );
+
+          backdrop-filter:
+            blur(12px);
+        }
+
+
+        .hl-metric {
+          min-width:
+            145px;
+
+          padding:
+            15px 18px;
+
+          border-right:
+            1px solid
+            var(--hl-border);
+        }
+
+
+        .hl-metric:last-child {
+          border-right:
+            0;
+        }
+
+
+        .hl-metric-number {
+          display:
+            block;
+
+          font-size:
+            18px;
+
+          line-height:
+            1;
+
+          font-weight:
+            800;
+
+          letter-spacing:
+            -0.03em;
+        }
+
+
+        .hl-metric-label {
+          display:
+            block;
+
+          margin-top:
+            6px;
+
+          color:
+            #857D74;
 
           font-size:
             9px;
 
           line-height:
-            1.45;
-
-          opacity:
-            ${1 -
-            progress *
-              0.45};
-        }
-
-
-        .hl-story-bottom-left {
-          max-width:
-            300px;
-        }
-
-
-        .hl-story-bottom-right {
-          display:
-            inline-flex;
-
-          align-items:
-            center;
-
-          gap:
-            8px;
+            1.3;
 
           text-transform:
             uppercase;
 
           letter-spacing:
             0.08em;
+        }
+
+
+        /* =====================================================
+           SCROLL INDICATOR
+           ===================================================== */
+
+        .hl-scroll-indicator {
+          position:
+            absolute;
+
+          right:
+            24px;
+
+          top:
+            50%;
+
+          transform:
+            translateY(
+              -50%
+            );
+
+          z-index:
+            11;
+
+          writing-mode:
+            vertical-rl;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            10px;
+
+          color:
+            #8B8278;
+
+          font-size:
+            9px;
+
+          letter-spacing:
+            0.15em;
+
+          text-transform:
+            uppercase;
 
           font-weight:
             800;
         }
 
 
-        .hl-story-scroll-line {
+        .hl-scroll-line {
           width:
-            44px;
+            1px;
 
           height:
-            1px;
+            62px;
 
           background:
             linear-gradient(
-              90deg,
-              var(--olive),
+              to bottom,
+              var(--hl-taupe),
               transparent
             );
         }
 
 
-        /* ======================================================
+        /* =====================================================
+           FLOATING DOTS
+           ===================================================== */
+
+        .hl-floating-dot {
+          position:
+            absolute;
+
+          border-radius:
+            50%;
+
+          background:
+            var(--hl-olive);
+
+          opacity:
+            0.28;
+
+          filter:
+            blur(1px);
+
+          pointer-events:
+            none;
+        }
+
+
+        .hl-floating-dot.one {
+          width:
+            8px;
+
+          height:
+            8px;
+
+          left:
+            8%;
+
+          top:
+            27%;
+
+          z-index:
+            1;
+        }
+
+
+        .hl-floating-dot.two {
+          width:
+            5px;
+
+          height:
+            5px;
+
+          left:
+            46%;
+
+          top:
+            12%;
+
+          opacity:
+            0.16;
+
+          z-index:
+            1;
+        }
+
+
+        .hl-floating-dot.three {
+          width:
+            6px;
+
+          height:
+            6px;
+
+          right:
+            10%;
+
+          top:
+            32%;
+
+          opacity:
+            0.18;
+
+          z-index:
+            1;
+        }
+
+
+        /* =====================================================
+           FILM GRAIN
+           ===================================================== */
+
+        .hl-grain {
+          position:
+            absolute;
+
+          inset:
+            0;
+
+          z-index:
+            0;
+
+          pointer-events:
+            none;
+
+          opacity:
+            0.18;
+
+          background-image:
+            radial-gradient(
+              rgba(
+                33,
+                28,
+                24,
+                0.12
+              )
+              0.6px,
+              transparent
+              0.6px
+            );
+
+          background-size:
+            6px 6px;
+
+          mask-image:
+            linear-gradient(
+              to bottom,
+              black,
+              transparent 92%
+            );
+        }
+
+
+        /* =====================================================
            TABLET
-           ====================================================== */
+           ===================================================== */
 
-        @media (max-width: 1050px) {
+        @media (max-width: 1100px) {
 
-          .hl-story-copy {
-            width:
-              45%;
-          }
-
-          .hl-story-title {
-            font-size:
-              clamp(
-                50px,
-                6vw,
-                76px
+          .hl-hero-grid {
+            grid-template-columns:
+              minmax(
+                0,
+                1fr
+              )
+              minmax(
+                360px,
+                0.85fr
               );
+
+            gap:
+              48px;
           }
 
-          .hl-story-stage {
-            width:
-              62%;
-          }
 
-          .hl-story-frame {
-            width:
-              670px;
-
-            height:
-              610px;
-          }
-
-          .hl-story-progress {
+          .hl-detail-card {
             right:
-              2px;
+              -8px;
+          }
+
+
+          .hl-metric {
+            min-width:
+              125px;
           }
 
         }
 
 
-        /* ======================================================
-           MOBILE / STACK
-           ====================================================== */
+        /* =====================================================
+           TABLET / MOBILE LAYOUT
+           ===================================================== */
 
-        @media (max-width: 800px) {
+        @media (max-width: 860px) {
 
-          .hl-story-hero {
+          .hirelabs-hero {
             min-height:
               auto;
           }
 
 
-          .hl-story-sticky {
+          .hl-hero-sticky {
             position:
               relative;
 
@@ -2547,121 +1991,113 @@ export function HeroSection({
 
             min-height:
               auto;
-
-            display:
-              block;
 
             padding:
-              120px 0
-              100px;
+              88px 0
+              130px;
+
+            overflow:
+              visible;
           }
 
 
-          .hl-story-shell {
+          .hl-hero-container {
+            height:
+              auto;
+          }
+
+
+          .hl-hero-topline {
+            position:
+              relative;
+
+            top:
+              auto;
+
+            margin-bottom:
+              50px;
+          }
+
+
+          .hl-hero-grid {
+            position:
+              relative;
+
+            inset:
+              auto;
+
+            grid-template-columns:
+              1fr;
+
+            gap:
+              70px;
+
+            padding:
+              0;
+          }
+
+
+          .hl-copy {
+            transform:
+              none !important;
+
+            opacity:
+              1 !important;
+          }
+
+
+          .hl-product-stage {
+            min-height:
+              570px;
+          }
+
+
+          .hl-hero-bottom {
+            position:
+              relative;
+
+            left:
+              auto;
+
+            right:
+              auto;
+
+            bottom:
+              auto;
+
             width:
               min(
-                100% - 30px,
-                1320px
+                1240px,
+                calc(100% - 64px)
               );
 
-            height:
-              auto;
+            margin:
+              40px auto 0;
+
+            flex-direction:
+              column;
+
+            align-items:
+              flex-start;
           }
 
 
-          .hl-story-meta {
-            position:
-              relative;
-
-            top:
-              auto;
-
-            left:
-              auto;
-
-            right:
-              auto;
-
-            margin-bottom:
-              55px;
-
-            opacity:
-              1 !important;
-          }
-
-
-          .hl-story-copy {
-            position:
-              relative;
-
-            left:
-              auto;
-
-            top:
-              auto;
-
+          .hl-metrics {
             width:
               100%;
-
-            transform:
-              none !important;
-
-            opacity:
-              1 !important;
-
-            margin-bottom:
-              55px;
           }
 
 
-          .hl-story-title {
-            font-size:
-              clamp(
-                50px,
-                14vw,
-                76px
-              );
+          .hl-metric {
+            flex:
+              1;
+
+            min-width:
+              0;
           }
 
 
-          .hl-story-description {
-            font-size:
-              14px;
-          }
-
-
-          .hl-story-stage {
-            position:
-              relative;
-
-            right:
-              auto;
-
-            top:
-              auto;
-
-            width:
-              100%;
-
-            height:
-              600px;
-
-            transform:
-              none !important;
-          }
-
-
-          .hl-story-frame {
-            width:
-              100%;
-
-            height:
-              560px;
-          }
-
-
-          .hl-story-progress,
-          .hl-story-bottom {
+          .hl-scroll-indicator {
             display:
               none;
           }
@@ -2669,38 +2105,45 @@ export function HeroSection({
         }
 
 
-        /* ======================================================
-           PHONE
-           ====================================================== */
+        /* =====================================================
+           SMALL MOBILE
+           ===================================================== */
 
-        @media (max-width: 560px) {
+        @media (max-width: 600px) {
 
-          .hl-story-sticky {
-            padding:
-              100px 0
-              80px;
+          .hl-hero-container,
+          .hl-hero-bottom {
+            width:
+              min(
+                100% - 32px,
+                1240px
+              );
           }
 
 
-          .hl-story-meta {
+          .hl-hero-topline {
             margin-bottom:
-              44px;
+              50px;
           }
 
 
-          .hl-story-meta-left {
+          .hl-title {
             font-size:
-              8px;
+              clamp(
+                48px,
+                14vw,
+                70px
+              );
           }
 
 
-          .hl-story-description {
-            line-height:
-              1.65;
+          .hl-description {
+            font-size:
+              15px;
           }
 
 
-          .hl-story-actions {
+          .hl-actions {
             align-items:
               stretch;
 
@@ -2709,814 +2152,692 @@ export function HeroSection({
           }
 
 
-          .hl-story-actions > * {
+          .hl-actions > * {
             width:
               100%;
           }
 
 
-          .hl-story-stage {
-            height:
-              520px;
+          .hl-product-stage {
+            min-height:
+              510px;
           }
 
 
-          .hl-story-frame {
-            height:
-              500px;
-
-            border-radius:
-              23px;
-          }
-
-
-          .hl-story-frame-top {
-            height:
-              55px;
-
-            padding:
-              0 15px;
-          }
-
-
-          .hl-story-canvas {
-            inset:
-              55px 0 0 0;
-          }
-
-
-          .hl-scene-document {
+          .hl-resume-card {
             width:
-              270px;
+              94%;
 
             min-height:
-              355px;
+              465px;
 
             padding:
-              20px;
+              22px;
+
+            border-radius:
+              21px;
           }
 
 
-          .hl-document-name {
-            font-size:
-              19px;
-          }
-
-
-          .hl-story-vector-grid {
-            width:
-              88%;
-
-            height:
-              210px;
-
-            gap:
-              5px;
-
-            padding:
-              13px;
-          }
-
-
-          .hl-match-result {
-            width:
-              87%;
-
-            padding:
-              17px;
-          }
-
-
-          .hl-match-evidence {
-            grid-template-columns:
-              1fr;
-          }
-
-
-          .hl-stage-title {
+          .hl-resume-footer {
             left:
-              18px;
+              22px;
+
+            right:
+              22px;
 
             bottom:
-              18px;
-
-            font-size:
               22px;
           }
 
 
-          .hl-stage-description {
+          .hl-transform-layer {
+            width:
+              90%;
+          }
+
+
+          .hl-detail-card {
             right:
-              18px;
+              0;
 
             bottom:
-              18px;
+              16px;
 
-            max-width:
-              150px;
-
-            font-size:
-              7px;
+            width:
+              205px;
           }
 
 
-          .hl-stage-label {
-            left:
-              18px;
+          .hl-metrics {
+            display:
+              grid;
 
-            top:
-              18px;
+            grid-template-columns:
+              1fr;
+
+            width:
+              100%;
           }
 
 
-          .hl-search-node {
-            padding:
-              9px 10px;
+          .hl-metric {
+            border-right:
+              0;
+
+            border-bottom:
+              1px solid
+              var(--hl-border);
           }
 
 
-          .hl-search-node.left {
-            left:
-              8px;
+          .hl-metric:last-child {
+            border-bottom:
+              0;
           }
 
 
-          .hl-search-node.right {
-            right:
-              8px;
+          .hl-floating-dot {
+            display:
+              none;
           }
 
         }
 
 
-        /* ======================================================
+        /* =====================================================
            REDUCED MOTION
-           ====================================================== */
+           ===================================================== */
 
         @media (
-          prefers-reduced-motion: reduce
+          prefers-reduced-motion:
+            reduce
         ) {
 
-          .hl-story-ring,
-          .hl-vector-dot,
-          .hl-search-path path {
-            animation:
+          .hl-copy,
+          .hl-resume-card,
+          .hl-transform-layer,
+          .hl-detail-card,
+          .hl-product-orbit {
+            transform:
               none !important;
+
+            transition:
+              none !important;
+          }
+
+
+          .hl-transform-layer {
+            opacity:
+              0 !important;
+
+            visibility:
+              hidden !important;
           }
 
         }
 
       `}</style>
 
-      <div className="hl-story-sticky">
 
-        <div className="hl-story-grain" />
+      {/* =====================================================
+          HERO SECTION
+         ===================================================== */}
 
-        <div className="hl-story-ring one" />
-        <div className="hl-story-ring two" />
-        <div className="hl-story-ring three" />
+      <section
+        ref={sectionRef}
+        className="hirelabs-hero"
+        id="heroSection"
+        aria-label="HireLabs introduction"
+      >
 
-        <div className="hl-story-shell">
+        <div className="hl-hero-sticky">
 
-          {/* ==================================================
-              TOP META
-             ================================================== */}
+          {/* =================================================
+              BACKGROUND
+             ================================================= */}
 
-          <div className="hl-story-meta">
+          <div className="hl-grain" />
 
-            <div className="hl-story-meta-left">
-              <span className="hl-story-meta-dot" />
+          <div className="hl-floating-dot one" />
+          <div className="hl-floating-dot two" />
+          <div className="hl-floating-dot three" />
 
-              Intelligent hiring infrastructure
+
+          <div className="hl-hero-container">
+
+            {/* ===============================================
+                TOP LINE
+               =============================================== */}
+
+            <div className="hl-hero-topline">
+
+              <div className="hl-eyebrow">
+
+                <span className="hl-eyebrow-dot" />
+
+                Intelligent hiring infrastructure
+
+              </div>
+
+
+              <div className="hl-version">
+                HireLabs · v2.4
+              </div>
+
             </div>
 
-            <div className="hl-story-meta-pill">
-              HireLabs · v2.4
-            </div>
 
-          </div>
+            {/* ===============================================
+                MAIN GRID
+               =============================================== */}
 
+            <div className="hl-hero-grid">
 
-          {/* ==================================================
-              LEFT INTRO
-             ================================================== */}
+              {/* =============================================
+                  LEFT CONTENT
+                 ============================================= */}
 
-          <div className="hl-story-copy">
+              <div className="hl-copy">
 
-            <div className="hl-story-kicker">
-              <span className="hl-story-kicker-line" />
-
-              Semantic candidate matching
-            </div>
-
-            <h1 className="hl-story-title">
-
-              Hire better.
-              <br />
-
-              See the{' '}
-              <em>
-                signal.
-              </em>
-
-            </h1>
-
-            <p className="hl-story-description">
-              HireLabs turns resumes into structured,
-              searchable candidate intelligence — then
-              matches people to roles based on meaning,
-              experience, and evidence.
-            </p>
-
-            <div className="hl-story-actions">
-
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={
-                  onExploreClick
-                }
-              >
-                <span>
-                  Explore Live Sandbox
+                <span className="hl-kicker">
+                  Semantic candidate matching
                 </span>
 
-                <svg
-                  width="17"
-                  height="17"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
 
-              </Button>
+                <h1 className="hl-title">
+
+                  <span className="hl-title-line">
+                    Hire better.
+                  </span>
 
 
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={
-                  onViewArchClick
-                }
-              >
-                View Architecture
-              </Button>
+                  <span className="hl-title-line">
 
-            </div>
+                    Skip the{' '}
 
-            <div className="hl-story-note">
-              Gemini embeddings · pgvector ·
-              Supabase · evidence-backed matching
-            </div>
+                    <span className="hl-title-accent">
+                      guesswork.
+                    </span>
 
-          </div>
+                  </span>
+
+                </h1>
 
 
-          {/* ==================================================
-              VISUAL STORY
-             ================================================== */}
+                <p className="hl-description">
+                  HireLabs turns resumes into structured,
+                  searchable candidate intelligence — then
+                  matches people to the roles where they can
+                  actually make an impact.
+                </p>
 
-          <div className="hl-story-stage">
 
-            <div className="hl-story-frame">
+                <div className="hl-actions">
 
-              {/* ==============================================
-                  FRAME HEADER
-                 ============================================== */}
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={
+                      onExploreClick
+                    }
+                  >
 
-              <div className="hl-story-frame-top">
+                    <span>
+                      Explore Live Sandbox
+                    </span>
 
-                <div className="hl-story-frame-status">
 
-                  <span className="hl-story-frame-status-dot" />
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      aria-hidden="true"
+                    >
 
-                  HireLabs intelligence engine
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+
+                    </svg>
+
+                  </Button>
+
+
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={
+                      onViewArchClick
+                    }
+                  >
+
+                    <span>
+                      View Architecture
+                    </span>
+
+                  </Button>
 
                 </div>
 
-                <div className="hl-story-frame-stage">
 
-                  Stage{' '}
-                  {String(
-                    activeStage + 1
-                  ).padStart(2, '0')}
-
+                <div className="hl-quiet-note">
+                  Semantic matching · Gemini embeddings ·
+                  pgvector · Supabase
                 </div>
 
               </div>
 
 
-              {/* ==============================================
-                  CANVAS
-                 ============================================== */}
+              {/* =============================================
+                  PRODUCT VISUAL
+                 ============================================= */}
 
-              <div className="hl-story-canvas">
+              <div
+                className="hl-product-stage"
+                aria-hidden="true"
+              >
 
-                {/* ============================================
-                    STAGE LABEL
-                   ============================================ */}
+                <div className="hl-product-orbit" />
 
-                <div className="hl-stage-label">
-                  {currentStage.label}
+
+                {/* =========================================
+                    RESUME
+                   ========================================= */}
+
+                <div className="hl-resume-card">
+
+                  <div className="hl-resume-top">
+
+                    <div>
+
+                      <div className="hl-resume-name">
+                        Alex Mercer
+                      </div>
+
+
+                      <div className="hl-resume-role">
+                        Lead Full-Stack AI Engineer
+                      </div>
+
+                    </div>
+
+
+                    <div className="hl-resume-mark">
+                      AM
+                    </div>
+
+                  </div>
+
+
+                  <div className="hl-resume-section">
+
+                    <div className="hl-resume-section-label">
+                      Experience
+                    </div>
+
+
+                    <div className="hl-resume-line long" />
+                    <div className="hl-resume-line medium" />
+                    <div className="hl-resume-line long" />
+                    <div className="hl-resume-line short" />
+
+                  </div>
+
+
+                  <div className="hl-resume-section">
+
+                    <div className="hl-resume-section-label">
+                      Skills
+                    </div>
+
+
+                    <div className="hl-resume-skills">
+
+                      <span className="hl-skill">
+                        React
+                      </span>
+
+                      <span className="hl-skill">
+                        Node.js
+                      </span>
+
+                      <span className="hl-skill">
+                        PostgreSQL
+                      </span>
+
+                      <span className="hl-skill">
+                        AWS
+                      </span>
+
+                      <span className="hl-skill">
+                        Python
+                      </span>
+
+                      <span className="hl-skill">
+                        AI / ML
+                      </span>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="hl-resume-section">
+
+                    <div className="hl-resume-section-label">
+                      Education
+                    </div>
+
+
+                    <div className="hl-resume-line medium" />
+                    <div className="hl-resume-line short" />
+
+                  </div>
+
+
+                  <div className="hl-resume-footer">
+
+                    <span>
+                      resume.pdf
+                    </span>
+
+                    <span>
+                      Parsed successfully
+                    </span>
+
+                  </div>
+
                 </div>
 
 
-                {/* ============================================
-                    STAGE TITLE
-                   ============================================ */}
-
-                <div className="hl-stage-title">
-                  {currentStage.title}
-                </div>
-
-
-                <div className="hl-stage-description">
-                  {currentStage.description}
-                </div>
-
-
-                {/* ============================================
-                    STAGE 01 — RESUME
-                   ============================================ */}
+                {/* =========================================
+                    MATCHING RESULT
+                   ========================================= */}
 
                 <div
-                  className="hl-scene-document"
+                  className={`hl-transform-layer ${
+                    insightIsVisible
+                      ? ''
+                      : 'is-hidden'
+                  }`}
                   style={{
                     opacity:
-                      activeStage ===
-                      0
-                        ? 0.98
-                        : activeStage ===
-                            1
-                          ? stageFade
-                          : 0,
+                      insightOpacity,
 
-                    transform:
-                      activeStage ===
-                      0
-                        ? 'translate(-50%, -50%) rotate(-3deg) scale(1)'
-                        : activeStage ===
-                            1
-                          ? `translate(-50%, -50%) rotate(-1deg) scale(${0.98})`
-                          : 'translate(-50%, -58%) rotate(3deg) scale(0.82)',
-                  }}
-                >
-
-                  <div className="hl-document-name">
-                    Alex Mercer
-                  </div>
-
-                  <div className="hl-document-role">
-                    Lead Full-Stack AI Engineer
-                  </div>
-
-                  <div className="hl-document-rule" />
-
-                  <div className="hl-document-label">
-                    Experience
-                  </div>
-
-                  <div className="hl-document-line long" />
-                  <div className="hl-document-line medium" />
-                  <div className="hl-document-line long" />
-                  <div className="hl-document-line short" />
-
-                  <div className="hl-document-rule" />
-
-                  <div className="hl-document-label">
-                    Skills
-                  </div>
-
-                  <div className="hl-document-skills">
-
-                    <span className="hl-document-skill">
-                      React
-                    </span>
-
-                    <span className="hl-document-skill">
-                      Node.js
-                    </span>
-
-                    <span className="hl-document-skill">
-                      PostgreSQL
-                    </span>
-
-                    <span className="hl-document-skill">
-                      Python
-                    </span>
-
-                    <span className="hl-document-skill">
-                      AWS
-                    </span>
-
-                    <span className="hl-document-skill">
-                      AI / ML
-                    </span>
-
-                  </div>
-
-                  <div className="hl-document-rule" />
-
-                  <div className="hl-document-label">
-                    Education
-                  </div>
-
-                  <div className="hl-document-line medium" />
-                  <div className="hl-document-line short" />
-
-                </div>
-
-
-                {/* ============================================
-                    STAGE 02 — EXTRACTION
-                   ============================================ */}
-
-                <div
-                  className="hl-extraction-layer"
-                  style={{
-                    opacity:
-                      activeStage ===
-                      1
-                        ? 1
-                        : 0,
-                    transform:
-                      activeStage ===
-                      1
-                        ? 'scale(1)'
-                        : 'scale(0.95)',
-                    transition:
-                      'opacity 600ms ease, transform 700ms cubic-bezier(0.16,1,0.3,1)',
-                  }}
-                >
-
-                  <div className="hl-extraction-tag one">
-                    Next.js 15
-                  </div>
-
-                  <div className="hl-extraction-tag two">
-                    8+ years experience
-                  </div>
-
-                  <div className="hl-extraction-tag three">
-                    PostgreSQL
-                  </div>
-
-                  <div className="hl-extraction-tag four">
-                    AI / ML
-                  </div>
-
-                </div>
-
-
-                {/* ============================================
-                    PARTICLES
-                   ============================================ */}
-
-                <div
-                  className="hl-particle-field"
-                  style={{
-                    opacity:
-                      activeStage >=
-                      1 &&
-                      activeStage <=
-                        3
-                        ? 1
-                        : 0,
-                  }}
-                >
-
-                  {particles.map(
-                    (_, index) => {
-
-                      const row =
-                        Math.floor(
-                          index /
-                            12
-                        );
-
-                      const column =
-                        index %
-                        12;
-
-                      const x =
-                        (column -
-                          5.5) *
-                          (14 +
-                            progress *
-                              18);
-
-                      const y =
-                        (row -
-                          2.5) *
-                          (24 +
-                            progress *
-                              12);
-
-                      const scale =
-                        0.45 +
-                        ((index *
-                          17) %
-                          70) /
-                          100;
-
-                      const opacity =
-                        ((index *
-                          13) %
-                          60) /
-                          100;
-
-                      return (
-                        <span
-                          key={index}
-                          className="hl-particle"
-                          style={{
-                            '--particle-x': `${x}px`,
-                            '--particle-y': `${y}px`,
-                            '--particle-scale': scale,
-                            '--particle-opacity': opacity,
-                          }}
-                        />
-                      );
-                    }
-                  )}
-
-                </div>
-
-
-                {/* ============================================
-                    STAGE 03 — VECTOR FIELD
-                   ============================================ */}
-
-                <div
-                  style={{
-                    position:
-                      'absolute',
-
-                    inset:
-                      0,
-
-                    opacity:
-                      activeStage >=
-                      2 &&
-                      activeStage <=
-                        3
-                        ? 1
-                        : 0,
-
-                    transition:
-                      'opacity 650ms ease',
+                    visibility:
+                      insightIsVisible
+                        ? 'visible'
+                        : 'hidden',
 
                     pointerEvents:
                       'none',
-                  }}
-                >
 
-                  <div className="hl-story-vector-grid">
+                    zIndex:
+                      insightIsVisible
+                        ? 8
+                        : 1,
 
-                    {Array.from({
-                      length: 60,
-                    }).map(
-                      (_, index) => {
-
-                        const scale =
-                          0.45 +
-                          ((index *
-                            19) %
-                            55) /
-                            100;
-
-                        const opacity =
-                          ((index *
-                            11) %
-                            65) /
-                          100;
-
-                        return (
-                          <span
-                            key={index}
-                            className="hl-vector-dot"
-                            style={{
-                              '--vector-scale': scale,
-                              '--vector-opacity': opacity,
-                            }}
-                          />
-                        );
-                      }
-                    )}
-
-                  </div>
-
-
-                  <div className="hl-vector-core" />
-
-                </div>
-
-
-                {/* ============================================
-                    STAGE 04 — SEARCH
-                   ============================================ */}
-
-                <div
-                  className="hl-search-path"
-                  style={{
                     transform:
-                      `translate(-50%, -50%) scale(${nextStageFade})`,
+                      `translate3d(0, ${insightY}px, 0) scale(${insightScale})`,
                   }}
                 >
 
-                  <svg
-                    viewBox="0 0 470 180"
-                    preserveAspectRatio="none"
-                  >
-                    <path
-                      d="M0 110 C95 20 130 50 185 90 S315 160 470 55"
-                    />
-                  </svg>
+                  <div className="hl-insight-card">
 
-                  <div className="hl-search-node left">
-
-                    <span className="hl-search-node-label">
-                      Job requirements
-                    </span>
-
-                    <div className="hl-search-node-title">
-                      Full-Stack AI Engineer
-                    </div>
-
-                  </div>
-
-
-                  <div className="hl-search-node right">
-
-                    <span className="hl-search-node-label">
-                      Candidate vector
-                    </span>
-
-                    <div className="hl-search-node-title">
-                      Alex Mercer
-                    </div>
-
-                  </div>
-
-                </div>
-
-
-                {/* ============================================
-                    STAGE 05 — RESULT
-                   ============================================ */}
-
-                <div className="hl-match-result">
-
-                  <div className="hl-match-top">
-
-                    <div className="hl-match-person">
-
-                      <div className="hl-match-avatar">
-                        AM
-                      </div>
+                    <div className="hl-insight-header">
 
                       <div>
 
-                        <div className="hl-match-name">
-                          Alex Mercer
+                        <div className="hl-insight-label">
+                          HireLabs analysis
                         </div>
 
-                        <div className="hl-match-role">
-                          Full-Stack AI Engineer · 8+ years
+
+                        <div className="hl-insight-title">
+                          Strong candidate fit
                         </div>
+
+                      </div>
+
+
+                      <div className="hl-score">
+
+                        <span className="hl-score-number">
+                          97.4%
+                        </span>
+
+
+                        <span className="hl-score-label">
+                          semantic match
+                        </span>
 
                       </div>
 
                     </div>
 
 
-                    <div className="hl-match-score">
+                    <div className="hl-insight-divider" />
 
-                      <span className="hl-match-score-value">
-                        97%
-                      </span>
 
-                      <span className="hl-match-score-label">
-                        semantic match
-                      </span>
+                    <div className="hl-match-grid">
+
+                      <div className="hl-match-row">
+
+                        <div className="hl-match-left">
+
+                          <span className="hl-check">
+                            ✓
+                          </span>
+
+                          React &amp; Node.js
+
+                        </div>
+
+
+                        <span className="hl-match-value">
+                          matched
+                        </span>
+
+                      </div>
+
+
+                      <div className="hl-match-row">
+
+                        <div className="hl-match-left">
+
+                          <span className="hl-check">
+                            ✓
+                          </span>
+
+                          System architecture
+
+                        </div>
+
+
+                        <span className="hl-match-value">
+                          matched
+                        </span>
+
+                      </div>
+
+
+                      <div className="hl-match-row">
+
+                        <div className="hl-match-left">
+
+                          <span className="hl-check">
+                            ✓
+                          </span>
+
+                          5+ years experience
+
+                        </div>
+
+
+                        <span className="hl-match-value">
+                          matched
+                        </span>
+
+                      </div>
+
+
+                      <div className="hl-match-row">
+
+                        <div className="hl-match-left">
+
+                          <span className="hl-check">
+                            ✓
+                          </span>
+
+                          AI / ML background
+
+                        </div>
+
+
+                        <span className="hl-match-value">
+                          strong fit
+                        </span>
+
+                      </div>
 
                     </div>
-
-                  </div>
-
-
-                  <div className="hl-match-divider" />
-
-
-                  <div className="hl-match-evidence">
-
-                    <div className="hl-match-evidence-item">
-                      ✓ Next.js experience
-                    </div>
-
-                    <div className="hl-match-evidence-item">
-                      ✓ PostgreSQL + pgvector
-                    </div>
-
-                    <div className="hl-match-evidence-item">
-                      ✓ AI / ML background
-                    </div>
-
-                    <div className="hl-match-evidence-item">
-                      ✓ Seniority aligned
-                    </div>
-
-                  </div>
-
-
-                  <div className="hl-match-footer">
-
-                    <span>
-                      Evidence-backed ranking
-                    </span>
-
-                    <span>
-                      Human decision support
-                    </span>
 
                   </div>
 
                 </div>
 
 
-                {/* ============================================
-                    TRANSITION
-                   ============================================ */}
+                {/* =========================================
+                    TECHNICAL DETAIL
+                   ========================================= */}
 
-                <div className="hl-stage-transition" />
+                <div
+                  className="hl-detail-card"
+                  style={{
+                    opacity:
+                      detailOpacity,
+
+                    transform:
+                      `translate3d(${detailY}px, 0, 0)`,
+                  }}
+                >
+
+                  <div className="hl-detail-label">
+                    Vector intelligence
+                  </div>
+
+
+                  <div className="hl-detail-title">
+                    Searchable candidate representation
+                  </div>
+
+
+                  <div className="hl-vector">
+
+                    [
+                    {' '}
+                    -0.0234,
+                    {' '}
+                    0.0841,
+                    {' '}
+                    -0.0519,
+
+                    <br />
+
+                    0.0911,
+                    {' '}
+                    0.0172,
+                    ...
+                    ]
+
+                    <br />
+                    <br />
+
+                    1536 dimensions
+
+                    <br />
+
+                    cosine distance → 0.026
+
+                  </div>
+
+                </div>
 
               </div>
 
             </div>
 
-          </div>
+
+            {/* ===============================================
+                BOTTOM DATA
+               =============================================== */}
+
+            <div className="hl-hero-bottom">
+
+              <div
+                className="hl-bottom-copy"
+              >
+                Scroll to see a resume transform into a
+                ranked candidate signal.
+              </div>
 
 
-          {/* ==================================================
-              STAGE PROGRESS
-             ================================================== */}
+              <div className="hl-metrics">
 
-          <div className="hl-story-progress">
+                <div className="hl-metric">
 
-            {stages.map(
-              (stage, index) => {
+                  <span className="hl-metric-number">
+                    1536
+                  </span>
 
-                const active =
-                  index <=
-                  activeStage;
+                  <span className="hl-metric-label">
+                    Vector dimensions
+                  </span>
 
-                return (
-                  <div
-                    key={stage.number}
-                    className={`hl-story-progress-item ${
-                      active
-                        ? 'active'
-                        : ''
-                    }`}
-                  >
-
-                    <span className="hl-story-progress-line" />
-
-                    <span>
-                      {stage.number}
-                    </span>
-
-                  </div>
-                );
-              }
-            )}
-
-          </div>
+                </div>
 
 
-          {/* ==================================================
-              BOTTOM STORY
-             ================================================== */}
+                <div className="hl-metric">
 
-          <div className="hl-story-bottom">
+                  <span className="hl-metric-number">
+                    &lt; 85ms
+                  </span>
 
-            <div className="hl-story-bottom-left">
+                  <span className="hl-metric-label">
+                    Match query
+                  </span>
 
-              Resumes become structured signals.
-              Signals become searchable meaning.
-              Meaning becomes better hiring decisions.
+                </div>
+
+
+                <div className="hl-metric">
+
+                  <span className="hl-metric-number">
+                    100%
+                  </span>
+
+                  <span className="hl-metric-label">
+                    RLS scoped
+                  </span>
+
+                </div>
+
+              </div>
 
             </div>
 
 
-            <div className="hl-story-bottom-right">
+            {/* ===============================================
+                SCROLL INDICATOR
+               =============================================== */}
 
-              <span className="hl-story-scroll-line" />
+            <div className="hl-scroll-indicator">
 
-              Scroll to transform
+              <span className="hl-scroll-line" />
+
+              Scroll to explore
 
             </div>
 
@@ -3524,7 +2845,7 @@ export function HeroSection({
 
         </div>
 
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
