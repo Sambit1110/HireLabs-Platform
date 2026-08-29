@@ -1,8 +1,40 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export function SecuritySection() {
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.12,
+        rootMargin: '0px 0px -8% 0px',
+      }
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="hl-security-section" id="security">
+    <section
+      ref={sectionRef}
+      className={`hl-security-section ${
+        isVisible ? 'is-visible' : ''
+      }`}
+      id="security"
+    >
       <style>{`
         .hl-security-section {
           --cream: #F5F1E8;
@@ -16,10 +48,24 @@ export function SecuritySection() {
           --border: #DED7CA;
 
           position: relative;
-          padding: 170px 0;
-          background: var(--cream);
-          color: var(--espresso);
+
+          padding:
+            190px 0
+            180px;
+
+          background:
+            linear-gradient(
+              180deg,
+              #F4EFE5 0%,
+              var(--cream) 100%
+            );
+
+          color:
+            var(--espresso);
+
           overflow: hidden;
+
+          isolation: isolate;
         }
 
         .hl-security-section *,
@@ -28,440 +74,1495 @@ export function SecuritySection() {
           box-sizing: border-box;
         }
 
+        /* =====================================================
+           BACKGROUND
+           ===================================================== */
+
+        .hl-security-section::before {
+          content: '';
+
+          position: absolute;
+
+          width: 760px;
+          height: 760px;
+
+          right: -430px;
+          top: 8%;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.085
+            );
+
+          border-radius: 50%;
+
+          transform:
+            scale(0.9);
+
+          opacity: 0;
+
+          transition:
+            opacity 1.3s ease,
+            transform 1.5s
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+
+          z-index: -1;
+        }
+
+        .hl-security-section::after {
+          content: '';
+
+          position: absolute;
+
+          width: 470px;
+          height: 470px;
+
+          left: -310px;
+          bottom: 5%;
+
+          border:
+            1px dashed
+            rgba(
+              111,
+              125,
+              85,
+              0.065
+            );
+
+          border-radius: 50%;
+
+          opacity: 0;
+
+          transform:
+            scale(0.92);
+
+          transition:
+            opacity 1.2s ease 180ms,
+            transform 1.5s
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ) 180ms;
+
+          z-index: -1;
+        }
+
+        .hl-security-section.is-visible::before,
+        .hl-security-section.is-visible::after {
+          opacity: 1;
+
+          transform:
+            scale(1);
+        }
+
         .hl-security-shell {
-          width: min(1180px, calc(100% - 48px));
+          position: relative;
+
+          z-index: 1;
+
+          width:
+            min(
+              1180px,
+              calc(100% - 48px)
+            );
+
           margin: 0 auto;
         }
 
+        /* =====================================================
+           INTRO
+           ===================================================== */
+
         .hl-security-heading {
           max-width: 820px;
-          margin-bottom: 75px;
+
+          margin-bottom: 88px;
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              34px,
+              0
+            );
+
+          transition:
+            opacity 950ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 1050ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-heading {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-security-kicker {
           display: inline-flex;
+
           align-items: center;
+
           gap: 9px;
+
           margin-bottom: 18px;
-          color: var(--olive-dark);
+
+          color:
+            var(--olive-dark);
+
           font-size: 10px;
+
           line-height: 1;
+
           font-weight: 900;
+
           letter-spacing: 0.15em;
+
           text-transform: uppercase;
         }
 
         .hl-security-kicker-dot {
           width: 7px;
           height: 7px;
+
           border-radius: 50%;
-          background: var(--olive);
-          box-shadow: 0 0 0 4px rgba(111, 125, 85, 0.11);
+
+          background:
+            var(--olive);
+
+          box-shadow:
+            0 0 0 4px
+            rgba(
+              111,
+              125,
+              85,
+              0.11
+            );
         }
 
         .hl-security-title {
           margin: 0;
+
           max-width: 820px;
-          font-family: Georgia, 'Times New Roman', serif;
-          font-size: clamp(48px, 6vw, 78px);
-          line-height: 0.95;
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            clamp(
+              48px,
+              6vw,
+              78px
+            );
+
+          line-height: 0.94;
+
           letter-spacing: -0.055em;
+
           font-weight: 500;
         }
 
         .hl-security-title em {
-          color: var(--olive);
+          color:
+            var(--olive);
+
           font-style: italic;
         }
 
         .hl-security-intro {
           max-width: 680px;
-          margin: 23px 0 0;
-          color: var(--espresso-soft);
+
+          margin:
+            24px 0 0;
+
+          color:
+            var(--espresso-soft);
+
           font-size: 15px;
+
           line-height: 1.72;
         }
 
+        /* =====================================================
+           MAIN LAYOUT
+           ===================================================== */
+
         .hl-security-layout {
           display: grid;
-          grid-template-columns: 0.82fr 1.18fr;
+
+          grid-template-columns:
+            0.82fr
+            1.18fr;
+
           gap: 18px;
+
           align-items: stretch;
         }
 
+        /* =====================================================
+           LEFT SECURITY ITEMS
+           ===================================================== */
+
         .hl-security-info {
           display: flex;
+
           flex-direction: column;
-          gap: 10px;
+
+          gap: 11px;
         }
 
         .hl-security-item {
           position: relative;
-          padding: 23px;
-          border: 1px solid var(--border);
-          border-radius: 19px;
-          background: rgba(255,255,255,0.48);
+
+          padding: 24px;
+
+          border:
+            1px solid
+            var(--border);
+
+          border-radius: 20px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.5
+            );
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              -24px,
+              20px,
+              0
+            );
+
           transition:
-            transform 220ms ease,
-            background 220ms ease,
-            box-shadow 220ms ease;
+            opacity 750ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 850ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            background 250ms ease,
+
+            box-shadow 250ms ease;
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-item {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-item:nth-child(1) {
+          transition-delay:
+            220ms;
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-item:nth-child(2) {
+          transition-delay:
+            320ms;
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-item:nth-child(3) {
+          transition-delay:
+            420ms;
         }
 
         .hl-security-item:hover {
-          transform: translateY(-3px);
-          background: rgba(255,255,255,0.7);
-          box-shadow: 0 17px 38px rgba(44,39,34,0.06);
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.73
+            );
+
+          box-shadow:
+            0 18px 42px
+            rgba(
+              44,
+              39,
+              34,
+              0.06
+            );
+
+          transform:
+            translateY(-3px);
         }
 
         .hl-security-item-top {
           display: flex;
+
           align-items: flex-start;
+
           gap: 13px;
         }
 
         .hl-security-icon {
           width: 40px;
           height: 40px;
-          flex: 0 0 40px;
+
+          flex:
+            0 0 40px;
+
           display: grid;
+
           place-items: center;
+
           border-radius: 13px;
-          background: var(--espresso);
-          color: var(--cream);
+
+          background:
+            var(--espresso);
+
+          color:
+            var(--cream);
+
+          transition:
+            transform 280ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-item:hover
+          .hl-security-icon {
+          transform:
+            translateY(-2px)
+            rotate(-2deg);
         }
 
         .hl-security-number {
-          color: #A39A8D;
+          color:
+            #A39A8D;
+
           font-size: 8px;
+
           font-weight: 900;
-          letter-spacing: 0.12em;
+
+          letter-spacing:
+            0.12em;
         }
 
         .hl-security-item-title {
           margin-top: 4px;
-          font-family: Georgia, 'Times New Roman', serif;
-          font-size: 19px;
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size: 20px;
+
           line-height: 1.05;
-          letter-spacing: -0.025em;
+
+          letter-spacing:
+            -0.025em;
         }
 
         .hl-security-item-text {
-          margin: 14px 0 0 53px;
-          color: #756C63;
+          margin:
+            14px 0 0 53px;
+
+          color:
+            #756C63;
+
           font-size: 10px;
+
           line-height: 1.65;
         }
 
         .hl-security-item-text code {
-          padding: 2px 5px;
+          padding:
+            2px 5px;
+
           border-radius: 5px;
-          background: #ECE8DE;
-          color: var(--olive-dark);
-          font-family: 'SFMono-Regular', Consolas, monospace;
+
+          background:
+            #ECE8DE;
+
+          color:
+            var(--olive-dark);
+
+          font-family:
+            'SFMono-Regular',
+            Consolas,
+            monospace;
+
           font-size: 9px;
         }
 
+        /* =====================================================
+           DARK SECURITY OBJECT
+           ===================================================== */
+
         .hl-security-visual {
-          min-height: 620px;
+          min-height: 635px;
+
           position: relative;
-          padding: 30px;
-          border: 1px solid var(--border);
-          border-radius: 25px;
-          background: var(--espresso);
-          color: var(--cream);
+
+          padding: 31px;
+
+          border:
+            1px solid
+            var(--border);
+
+          border-radius: 27px;
+
+          background:
+            var(--espresso);
+
+          color:
+            var(--cream);
+
           overflow: hidden;
-          box-shadow: 0 28px 70px rgba(37,32,28,0.14);
+
+          box-shadow:
+            0 30px 78px
+            rgba(
+              37,
+              32,
+              28,
+              0.15
+            );
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              28px,
+              26px,
+              0
+            )
+            scale(
+              0.985
+            );
+
+          transition:
+            opacity 1050ms
+              320ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 1150ms
+              320ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-visual {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            )
+            scale(
+              1
+            );
         }
 
         .hl-security-visual::before {
           content: '';
+
           position: absolute;
-          width: 460px;
-          height: 460px;
+
+          width: 470px;
+          height: 470px;
+
           top: -180px;
-          right: -130px;
-          border: 1px solid rgba(245,241,232,0.08);
+          right: -140px;
+
+          border:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.08
+            );
+
           border-radius: 50%;
+
+          animation:
+            hlSecurityOrbit
+            16s
+            linear
+            infinite;
         }
 
         .hl-security-visual::after {
           content: '';
+
           position: absolute;
-          width: 320px;
-          height: 320px;
-          top: -110px;
+
+          width: 330px;
+          height: 330px;
+
+          top: -112px;
           right: -70px;
-          border: 1px dashed rgba(174,187,141,0.12);
+
+          border:
+            1px dashed
+            rgba(
+              174,
+              187,
+              141,
+              0.13
+            );
+
           border-radius: 50%;
+
+          animation:
+            hlSecurityOrbitReverse
+            22s
+            linear
+            infinite;
         }
+
+        @keyframes hlSecurityOrbit {
+          from {
+            transform:
+              rotate(0deg);
+          }
+
+          to {
+            transform:
+              rotate(360deg);
+          }
+        }
+
+        @keyframes hlSecurityOrbitReverse {
+          from {
+            transform:
+              rotate(360deg);
+          }
+
+          to {
+            transform:
+              rotate(0deg);
+          }
+        }
+
+        /* =====================================================
+           TERMINAL TOP
+           ===================================================== */
 
         .hl-security-visual-top {
           position: relative;
+
           z-index: 2;
+
           display: flex;
+
           align-items: flex-start;
-          justify-content: space-between;
+
+          justify-content:
+            space-between;
+
           gap: 18px;
-          padding-bottom: 22px;
-          border-bottom: 1px solid rgba(245,241,232,0.12);
+
+          padding-bottom: 23px;
+
+          border-bottom:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.12
+            );
         }
 
         .hl-security-terminal-label {
           display: flex;
+
           align-items: center;
+
           gap: 8px;
-          color: #B0A89E;
+
+          color:
+            #B0A89E;
+
           font-size: 9px;
-          font-family: 'SFMono-Regular', Consolas, monospace;
+
+          font-family:
+            'SFMono-Regular',
+            Consolas,
+            monospace;
         }
 
         .hl-security-terminal-dot {
           width: 6px;
           height: 6px;
+
           border-radius: 50%;
-          background: #AEBB8D;
+
+          background:
+            #AEBB8D;
+
+          box-shadow:
+            0 0 10px
+            rgba(
+              174,
+              187,
+              141,
+              0.18
+            );
         }
 
         .hl-security-status {
-          padding: 7px 10px;
+          padding:
+            7px 10px;
+
           border-radius: 999px;
-          background: rgba(111,125,85,0.18);
-          color: #B7C59A;
+
+          background:
+            rgba(
+              111,
+              125,
+              85,
+              0.18
+            );
+
+          color:
+            #B7C59A;
+
           font-size: 7px;
+
           font-weight: 900;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
         }
+
+        /* =====================================================
+           CODE
+           ===================================================== */
 
         .hl-security-code {
           position: relative;
+
           z-index: 2;
-          margin-top: 27px;
-          padding: 21px;
-          border: 1px solid rgba(245,241,232,0.1);
+
+          margin-top: 28px;
+
+          padding: 22px;
+
+          border:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.1
+            );
+
           border-radius: 18px;
-          background: rgba(255,255,255,0.035);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.035
+            );
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              16px,
+              0
+            );
+
+          transition:
+            opacity 800ms
+              520ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 850ms
+              520ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-code {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-security-code-header {
           display: flex;
+
           align-items: center;
-          justify-content: space-between;
+
+          justify-content:
+            space-between;
+
           gap: 12px;
+
           margin-bottom: 15px;
         }
 
         .hl-security-code-file {
-          color: #938C82;
+          color:
+            #938C82;
+
           font-size: 8px;
-          font-family: 'SFMono-Regular', Consolas, monospace;
+
+          font-family:
+            'SFMono-Regular',
+            Consolas,
+            monospace;
         }
 
         .hl-security-code-lang {
-          color: #776F66;
+          color:
+            #776F66;
+
           font-size: 7px;
+
           font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
+
+          letter-spacing:
+            0.08em;
+
+          text-transform:
+            uppercase;
         }
 
         .hl-security-code pre {
           margin: 0;
-          color: #D8D1C6;
-          font-family: 'SFMono-Regular', Consolas, monospace;
+
+          color:
+            #D8D1C6;
+
+          font-family:
+            'SFMono-Regular',
+            Consolas,
+            monospace;
+
           font-size: 9px;
+
           line-height: 1.8;
-          white-space: pre-wrap;
-          overflow-x: auto;
+
+          white-space:
+            pre-wrap;
+
+          overflow-x:
+            auto;
         }
 
         .hl-code-keyword {
-          color: #B6C494;
+          color:
+            #B6C494;
         }
 
         .hl-code-function {
-          color: #DDD2C2;
+          color:
+            #DDD2C2;
         }
 
         .hl-code-value {
-          color: #D6BFA1;
+          color:
+            #D6BFA1;
         }
+
+        /* =====================================================
+           POLICY EXPLAINER
+           ===================================================== */
 
         .hl-security-explainer {
           position: relative;
+
           z-index: 2;
+
           margin-top: 24px;
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              16px,
+              0
+            );
+
+          transition:
+            opacity 800ms
+              640ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 850ms
+              640ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-explainer {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-security-explainer-title {
           margin-bottom: 11px;
-          color: #9B9389;
+
+          color:
+            #9B9389;
+
           font-size: 8px;
+
           font-weight: 900;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
+
+          letter-spacing:
+            0.12em;
+
+          text-transform:
+            uppercase;
         }
 
         .hl-security-flow {
           display: grid;
-          grid-template-columns: 1fr auto 1fr;
+
+          grid-template-columns:
+            1fr
+            auto
+            1fr;
+
           align-items: center;
+
           gap: 9px;
         }
 
         .hl-security-node {
           padding: 15px;
-          border: 1px solid rgba(245,241,232,0.11);
+
+          border:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.11
+            );
+
           border-radius: 14px;
-          background: rgba(255,255,255,0.035);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.035
+            );
+
+          transition:
+            transform 280ms ease,
+            background 280ms ease,
+            border-color 280ms ease;
+        }
+
+        .hl-security-node:hover {
+          transform:
+            translateY(-2px);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.055
+            );
+
+          border-color:
+            rgba(
+              174,
+              187,
+              141,
+              0.2
+            );
         }
 
         .hl-security-node-label {
-          color: #7F786F;
+          color:
+            #7F786F;
+
           font-size: 7px;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          font-weight: 900;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing:
+            0.1em;
+
+          font-weight:
+            900;
         }
 
         .hl-security-node-value {
           margin-top: 6px;
-          color: #E9E2D8;
+
+          color:
+            #E9E2D8;
+
           font-size: 11px;
+
           font-weight: 800;
         }
 
         .hl-security-node-sub {
           margin-top: 4px;
-          color: #857E74;
+
+          color:
+            #857E74;
+
           font-size: 7px;
+
           line-height: 1.4;
         }
 
         .hl-security-flow-arrow {
-          color: #9EAB7E;
+          color:
+            #9EAB7E;
+
           font-size: 16px;
+
+          animation:
+            hlSecurityArrow
+            2.2s
+            ease-in-out
+            infinite;
         }
+
+        @keyframes hlSecurityArrow {
+          0%,
+          100% {
+            opacity: 0.45;
+
+            transform:
+              translateX(0);
+          }
+
+          50% {
+            opacity: 1;
+
+            transform:
+              translateX(4px);
+          }
+        }
+
+        /* =====================================================
+           ACCESS GRID
+           ===================================================== */
 
         .hl-security-access {
           position: relative;
+
           z-index: 2;
+
           margin-top: 14px;
+
           display: grid;
-          grid-template-columns: 1fr 1fr;
+
+          grid-template-columns:
+            1fr
+            1fr;
+
           gap: 8px;
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              12px,
+              0
+            );
+
+          transition:
+            opacity 700ms
+              780ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 800ms
+              780ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-access {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-access-item {
           display: flex;
+
           align-items: center;
+
           gap: 8px;
+
           min-height: 43px;
+
           padding: 10px;
+
           border-radius: 11px;
+
           font-size: 8px;
+
           font-weight: 800;
+
+          transition:
+            transform 250ms ease,
+            background 250ms ease;
+        }
+
+        .hl-access-item:hover {
+          transform:
+            translateY(-2px);
         }
 
         .hl-access-item.allowed {
-          background: rgba(111,125,85,0.15);
-          color: #B8C59A;
+          background:
+            rgba(
+              111,
+              125,
+              85,
+              0.15
+            );
+
+          color:
+            #B8C59A;
         }
 
         .hl-access-item.blocked {
-          background: rgba(173,105,82,0.11);
-          color: #C69A89;
+          background:
+            rgba(
+              173,
+              105,
+              82,
+              0.11
+            );
+
+          color:
+            #C69A89;
         }
 
         .hl-access-icon {
           width: 20px;
           height: 20px;
+
           display: grid;
+
           place-items: center;
+
           border-radius: 7px;
-          background: rgba(255,255,255,0.06);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.06
+            );
+
           font-size: 9px;
         }
 
+        /* =====================================================
+           STATS
+           ===================================================== */
+
         .hl-security-bottom {
           position: relative;
+
           z-index: 2;
+
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+
+          grid-template-columns:
+            repeat(
+              3,
+              1fr
+            );
+
           gap: 8px;
-          margin-top: 19px;
+
+          margin-top: 20px;
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              12px,
+              0
+            );
+
+          transition:
+            opacity 700ms
+              900ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 800ms
+              900ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-bottom {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-security-stat {
           padding: 13px;
-          border: 1px solid rgba(245,241,232,0.1);
+
+          border:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.1
+            );
+
           border-radius: 12px;
-          background: rgba(255,255,255,0.025);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.025
+            );
+
+          transition:
+            transform 250ms ease,
+            background 250ms ease;
+        }
+
+        .hl-security-stat:hover {
+          transform:
+            translateY(-2px);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.04
+            );
         }
 
         .hl-security-stat strong {
           display: block;
+
           font-size: 12px;
+
           line-height: 1;
         }
 
         .hl-security-stat span {
           display: block;
+
           margin-top: 5px;
-          color: #80786F;
+
+          color:
+            #80786F;
+
           font-size: 7px;
+
           line-height: 1.4;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing:
+            0.08em;
         }
 
+        /* =====================================================
+           BOTTOM STATEMENT
+           ===================================================== */
+
         .hl-security-note {
-          margin-top: 42px;
-          display: flex;
+          display: grid;
+
+          grid-template-columns:
+            0.9fr
+            1.1fr;
+
           align-items: center;
-          justify-content: space-between;
-          gap: 30px;
-          padding: 23px 0 0;
-          border-top: 1px solid var(--border);
+
+          gap: 60px;
+
+          margin-top: 55px;
+
+          padding:
+            26px 0 0;
+
+          border-top:
+            1px solid
+            var(--border);
+
+          opacity: 0;
+
+          transform:
+            translate3d(
+              0,
+              20px,
+              0
+            );
+
+          transition:
+            opacity 800ms
+              1050ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+
+            transform 900ms
+              1050ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+        .hl-security-section.is-visible
+          .hl-security-note {
+          opacity: 1;
+
+          transform:
+            translate3d(
+              0,
+              0,
+              0
+            );
         }
 
         .hl-security-note strong {
-          font-family: Georgia, 'Times New Roman', serif;
-          font-size: 25px;
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size: 27px;
+
           line-height: 1.05;
+
           font-weight: 500;
-          letter-spacing: -0.03em;
+
+          letter-spacing:
+            -0.03em;
         }
 
         .hl-security-note p {
           max-width: 480px;
+
           margin: 0;
-          color: #7A7168;
+
+          color:
+            #7A7168;
+
           font-size: 10px;
-          line-height: 1.6;
+
+          line-height: 1.65;
         }
+
+        /* =====================================================
+           TABLET
+           ===================================================== */
 
         @media (max-width: 950px) {
           .hl-security-layout {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
 
           .hl-security-visual {
             min-height: 560px;
           }
+
+          .hl-security-note {
+            grid-template-columns:
+              1fr
+              1fr;
+          }
         }
+
+        /* =====================================================
+           MOBILE
+           ===================================================== */
 
         @media (max-width: 650px) {
           .hl-security-section {
-            padding: 110px 0;
+            padding:
+              115px 0
+              125px;
           }
 
           .hl-security-shell {
-            width: min(100% - 28px, 1180px);
+            width:
+              min(
+                100% - 28px,
+                1180px
+              );
+          }
+
+          .hl-security-heading {
+            margin-bottom: 55px;
           }
 
           .hl-security-title {
             font-size: 46px;
+          }
+
+          .hl-security-intro {
+            font-size: 14px;
           }
 
           .hl-security-item {
@@ -474,45 +1575,97 @@ export function SecuritySection() {
 
           .hl-security-visual {
             min-height: 660px;
+
             padding: 20px;
-            border-radius: 20px;
+
+            border-radius: 21px;
           }
 
           .hl-security-flow {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
 
           .hl-security-flow-arrow {
             justify-self: center;
-            transform: rotate(90deg);
+
+            transform:
+              rotate(90deg);
           }
 
           .hl-security-access {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
 
           .hl-security-bottom {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
           }
 
           .hl-security-note {
-            align-items: flex-start;
-            flex-direction: column;
+            grid-template-columns:
+              1fr;
+
+            align-items:
+              flex-start;
+
             gap: 15px;
           }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .hl-security-item {
-            transition: none;
+        /* =====================================================
+           REDUCED MOTION
+           ===================================================== */
+
+        @media (
+          prefers-reduced-motion: reduce
+        ) {
+          .hl-security-section::before,
+          .hl-security-section::after,
+          .hl-security-heading,
+          .hl-security-item,
+          .hl-security-visual,
+          .hl-security-code,
+          .hl-security-explainer,
+          .hl-security-access,
+          .hl-security-bottom,
+          .hl-security-note {
+            opacity: 1 !important;
+
+            transform:
+              none !important;
+
+            transition: none !important;
+          }
+
+          .hl-security-visual::before,
+          .hl-security-visual::after,
+          .hl-security-flow-arrow {
+            animation: none !important;
+          }
+
+          .hl-security-item:hover,
+          .hl-security-stat:hover,
+          .hl-access-item:hover,
+          .hl-security-node:hover {
+            transform:
+              none !important;
           }
         }
       `}</style>
 
       <div className="hl-security-shell">
+
+        {/* =========================================
+            INTRO
+           ========================================= */}
+
         <div className="hl-security-heading">
+
           <div className="hl-security-kicker">
             <span className="hl-security-kicker-dot" />
+
             Security by design
           </div>
 
@@ -523,16 +1676,31 @@ export function SecuritySection() {
           </h2>
 
           <p className="hl-security-intro">
-            HireLabs treats candidate data as private infrastructure, not
-            shared application state. Authentication, database policies and
-            private file paths work together to keep each workspace isolated.
+            HireLabs treats candidate data as private
+            infrastructure, not shared application state.
+            Authentication, database policies and private
+            file paths work together to keep each workspace
+            isolated.
           </p>
+
         </div>
 
+        {/* =========================================
+            MAIN SECURITY LAYOUT
+           ========================================= */}
+
         <div className="hl-security-layout">
+
+          {/* =======================================
+              LEFT INFORMATION
+             ======================================= */}
+
           <div className="hl-security-info">
+
             <article className="hl-security-item">
+
               <div className="hl-security-item-top">
+
                 <div className="hl-security-icon">
                   <svg
                     width="20"
@@ -542,11 +1710,12 @@ export function SecuritySection() {
                     stroke="currentColor"
                     strokeWidth="1.7"
                   >
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6-8-4 8-10 8-10 8-10 8-10z" />
                   </svg>
                 </div>
 
                 <div>
+
                   <div className="hl-security-number">
                     01 · DATABASE
                   </div>
@@ -554,18 +1723,24 @@ export function SecuritySection() {
                   <div className="hl-security-item-title">
                     Row Level Security, everywhere it matters.
                   </div>
+
                 </div>
+
               </div>
 
               <div className="hl-security-item-text">
-                Application tables enforce RLS at the database layer. Candidate
-                vectors are filtered by the authenticated user instead of
-                relying only on application-side checks.
+                Application tables enforce RLS at the database
+                layer. Candidate vectors are filtered by the
+                authenticated user instead of relying only on
+                application-side checks.
               </div>
+
             </article>
 
             <article className="hl-security-item">
+
               <div className="hl-security-item-top">
+
                 <div className="hl-security-icon">
                   <svg
                     width="20"
@@ -575,12 +1750,20 @@ export function SecuritySection() {
                     stroke="currentColor"
                     strokeWidth="1.7"
                   >
-                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                    <rect
+                      x="3"
+                      y="11"
+                      width="18"
+                      height="10"
+                      rx="2"
+                    />
+
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 </div>
 
                 <div>
+
                   <div className="hl-security-number">
                     02 · STORAGE
                   </div>
@@ -588,18 +1771,26 @@ export function SecuritySection() {
                   <div className="hl-security-item-title">
                     Private resume storage.
                   </div>
+
                 </div>
+
               </div>
 
               <div className="hl-security-item-text">
                 Resume PDF/DOCX files use{' '}
-                <code>&lt;auth-user-id&gt;/*</code> paths so files stay inside
-                the owning recruiter's storage boundary.
+                <code>
+                  &lt;auth-user-id&gt;/*
+                </code>{' '}
+                paths so files stay inside the owning
+                recruiter's storage boundary.
               </div>
+
             </article>
 
             <article className="hl-security-item">
+
               <div className="hl-security-item-top">
+
                 <div className="hl-security-icon">
                   <svg
                     width="20"
@@ -609,12 +1800,18 @@ export function SecuritySection() {
                     stroke="currentColor"
                     strokeWidth="1.7"
                   >
-                    <circle cx="12" cy="12" r="9" />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                    />
+
                     <path d="M12 7v5l3 2" />
                   </svg>
                 </div>
 
                 <div>
+
                   <div className="hl-security-number">
                     03 · DECISIONS
                   </div>
@@ -622,31 +1819,50 @@ export function SecuritySection() {
                   <div className="hl-security-item-title">
                     AI supports people, not the other way around.
                   </div>
+
                 </div>
+
               </div>
 
               <div className="hl-security-item-text">
-                Match scores are presented as decision support with evidence
-                and qualification gaps, keeping recruiters in the loop rather
+                Match scores are presented as decision
+                support with evidence and qualification
+                gaps, keeping recruiters in the loop rather
                 than replacing human judgment.
               </div>
+
             </article>
+
           </div>
 
+          {/* =======================================
+              SECURITY VISUAL
+             ======================================= */}
+
           <div className="hl-security-visual">
+
             <div className="hl-security-visual-top">
+
               <div className="hl-security-terminal-label">
                 <span className="hl-security-terminal-dot" />
+
                 supabase / database policy
               </div>
 
               <div className="hl-security-status">
                 policy active
               </div>
+
             </div>
 
+            {/* ===================================
+                CODE
+               =================================== */}
+
             <div className="hl-security-code">
+
               <div className="hl-security-code-header">
+
                 <span className="hl-security-code-file">
                   candidate_embeddings.sql
                 </span>
@@ -654,44 +1870,63 @@ export function SecuritySection() {
                 <span className="hl-security-code-lang">
                   PostgreSQL
                 </span>
+
               </div>
 
               <pre>
-<span className="hl-code-keyword">CREATE POLICY</span>{' '}
+<span className="hl-code-keyword">
+CREATE POLICY
+</span>{' '}
 <span className="hl-code-value">
-  "Users can only view their own candidate vectors"
+"Users can only view their own candidate vectors"
 </span>
-{`
 
-`}
-<span className="hl-code-keyword">ON</span>{' '}
+{'\n\n'}
+
+<span className="hl-code-keyword">
+ON
+</span>{' '}
 <span className="hl-code-function">
-  public.candidate_embeddings
+public.candidate_embeddings
 </span>
-{`
 
-`}
-<span className="hl-code-keyword">FOR SELECT</span>
-{`
+{'\n\n'}
 
-`}
-<span className="hl-code-keyword">USING</span>{' '}
+<span className="hl-code-keyword">
+FOR SELECT
+</span>
+
+{'\n\n'}
+
+<span className="hl-code-keyword">
+USING
+</span>{' '}
 (auth.uid() = user_id);
 
-{`
+{'\n\n'}
 
-`}
-<span className="hl-code-keyword">WHERE</span>{' '}
-user_id = auth.uid();</pre>
+<span className="hl-code-keyword">
+WHERE
+</span>{' '}
+user_id = auth.uid();
+              </pre>
+
             </div>
 
+            {/* ===================================
+                POLICY EXPLAINER
+               =================================== */}
+
             <div className="hl-security-explainer">
+
               <div className="hl-security-explainer-title">
                 What the policy means
               </div>
 
               <div className="hl-security-flow">
+
                 <div className="hl-security-node">
+
                   <div className="hl-security-node-label">
                     Request
                   </div>
@@ -703,6 +1938,7 @@ user_id = auth.uid();</pre>
                   <div className="hl-security-node-sub">
                     Has a valid auth.uid()
                   </div>
+
                 </div>
 
                 <div className="hl-security-flow-arrow">
@@ -710,6 +1946,7 @@ user_id = auth.uid();</pre>
                 </div>
 
                 <div className="hl-security-node">
+
                   <div className="hl-security-node-label">
                     Database
                   </div>
@@ -721,62 +1958,109 @@ user_id = auth.uid();</pre>
                   <div className="hl-security-node-sub">
                     Policy decides what can be returned
                   </div>
+
                 </div>
+
               </div>
 
               <div className="hl-security-access">
+
                 <div className="hl-access-item allowed">
-                  <span className="hl-access-icon">✓</span>
+                  <span className="hl-access-icon">
+                    ✓
+                  </span>
+
                   Own candidate vectors
                 </div>
 
                 <div className="hl-access-item allowed">
-                  <span className="hl-access-icon">✓</span>
+                  <span className="hl-access-icon">
+                    ✓
+                  </span>
+
                   Own resume files
                 </div>
 
                 <div className="hl-access-item blocked">
-                  <span className="hl-access-icon">×</span>
+                  <span className="hl-access-icon">
+                    ×
+                  </span>
+
                   Another user's vectors
                 </div>
 
                 <div className="hl-access-item blocked">
-                  <span className="hl-access-icon">×</span>
+                  <span className="hl-access-icon">
+                    ×
+                  </span>
+
                   Another user's files
                 </div>
+
               </div>
+
             </div>
+
+            {/* ===================================
+                BOTTOM STATS
+               =================================== */}
 
             <div className="hl-security-bottom">
+
               <div className="hl-security-stat">
-                <strong>RLS</strong>
-                <span>Database-level isolation</span>
+                <strong>
+                  RLS
+                </strong>
+
+                <span>
+                  Database-level isolation
+                </span>
               </div>
 
               <div className="hl-security-stat">
-                <strong>Private</strong>
-                <span>Scoped storage paths</span>
+                <strong>
+                  Private
+                </strong>
+
+                <span>
+                  Scoped storage paths
+                </span>
               </div>
 
               <div className="hl-security-stat">
-                <strong>Human</strong>
-                <span>Decision support model</span>
+                <strong>
+                  Human
+                </strong>
+
+                <span>
+                  Decision support model
+                </span>
               </div>
+
             </div>
+
           </div>
         </div>
 
+        {/* =========================================
+            FINAL STATEMENT
+           ========================================= */}
+
         <div className="hl-security-note">
+
           <strong>
             Security should feel invisible.
           </strong>
 
           <p>
-            The recruiting experience stays simple because the access rules
-            live underneath it — at the database and storage boundaries where
-            they can be consistently enforced.
+            The recruiting experience stays simple because
+            the access rules live underneath it — at the
+            database and storage boundaries where they can
+            be consistently enforced.
           </p>
+
         </div>
+
       </div>
     </section>
   );
