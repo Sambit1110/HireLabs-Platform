@@ -804,14 +804,26 @@ export function ArchitectureFlow() {
 
         .hl-embed-visual {
           width: 100%;
+
+          display: flex;
+
+          flex-direction: column;
+
+          justify-content: center;
+
+          gap: 14px;
+
+          min-height: 0;
         }
 
         .hl-embedding-label {
-          margin-bottom: 10px;
+          margin: 0;
 
           color: #7F766D;
 
           font-size: 8px;
+
+          line-height: 1;
 
           letter-spacing: 0.1em;
 
@@ -824,29 +836,41 @@ export function ArchitectureFlow() {
           display: grid;
 
           grid-template-columns:
-            repeat(8, 1fr);
+            repeat(8, minmax(0, 1fr));
+
+          grid-auto-rows: 16px;
 
           gap: 6px;
 
-          padding: 15px;
+          width: 100%;
+
+          padding: 14px;
 
           border:
             1px solid
             var(--border);
 
-          border-radius: 18px;
+          border-radius: 17px;
 
           background: #FAF8F3;
+
+          overflow: hidden;
+
+          flex-shrink: 0;
         }
 
         .hl-vector-cell {
-          height: 18px;
+          width: 100%;
 
-          border-radius: 5px;
+          height: 16px;
+
+          border-radius: 999px;
 
           background: #DFE5D4;
 
           opacity: 0.55;
+
+          transform-origin: center;
 
           animation:
             hlArchitecturePulse
@@ -883,31 +907,44 @@ export function ArchitectureFlow() {
         }
 
         .hl-embed-meta {
-          display: flex;
+          display: grid;
 
-          justify-content: space-between;
+          grid-template-columns:
+            repeat(3, minmax(0, 1fr));
 
-          gap: 12px;
+          gap: 10px;
 
-          margin-top: 12px;
+          width: 100%;
+
+          margin: 0;
+
+          flex-shrink: 0;
         }
 
         .hl-embed-stat {
-          flex: 1;
+          min-width: 0;
 
-          padding: 12px;
+          padding: 11px;
 
-          border-radius: 13px;
+          border-radius: 11px;
 
           background: #F0EEE7;
+
+          overflow: hidden;
         }
 
         .hl-embed-stat strong {
           display: block;
 
-          font-size: 16px;
+          font-size: 14px;
 
           line-height: 1;
+
+          white-space: nowrap;
+
+          overflow: hidden;
+
+          text-overflow: ellipsis;
         }
 
         .hl-embed-stat span {
@@ -917,7 +954,9 @@ export function ArchitectureFlow() {
 
           color: #847B72;
 
-          font-size: 8px;
+          font-size: 7px;
+
+          line-height: 1.35;
 
           text-transform: uppercase;
 
@@ -1370,9 +1409,15 @@ export function ArchitectureFlow() {
           }
 
           .hl-arch-card {
-            width: min(560px, 94%);
+            width:
+              min(
+                560px,
+                94%
+              );
 
-            margin: 0 auto 28px;
+            margin:
+              0 auto
+              28px;
           }
 
           .hl-final-note {
@@ -1381,7 +1426,11 @@ export function ArchitectureFlow() {
             right: auto;
             bottom: auto;
 
-            width: min(560px, 94%);
+            width:
+              min(
+                560px,
+                94%
+              );
 
             margin: 0 auto;
 
@@ -1486,7 +1535,38 @@ export function ArchitectureFlow() {
 
           .hl-vector-field {
             grid-template-columns:
-              repeat(6, 1fr);
+              repeat(6, minmax(0, 1fr));
+
+            grid-auto-rows: 13px;
+
+            gap: 5px;
+
+            padding: 12px;
+          }
+
+          .hl-vector-cell {
+            height: 13px;
+          }
+
+          .hl-embed-meta {
+            grid-template-columns:
+              repeat(3, minmax(0, 1fr));
+
+            gap: 7px;
+          }
+
+          .hl-embed-stat {
+            padding: 9px;
+          }
+
+          .hl-embed-stat strong {
+            font-size: 12px;
+          }
+
+          .hl-embed-stat span {
+            font-size: 6px;
+
+            line-height: 1.25;
           }
 
           .hl-evidence-list {
@@ -1542,7 +1622,6 @@ export function ArchitectureFlow() {
           >
             <div className="hl-arch-kicker">
               <span className="hl-arch-kicker-dot" />
-
               Behind the product
             </div>
 
@@ -1712,6 +1791,7 @@ export function ArchitectureFlow() {
                           user-scoped Supabase bucket
                         </div>
                       </div>
+
                     </div>
                   )}
 
