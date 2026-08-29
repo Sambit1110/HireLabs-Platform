@@ -25,10 +25,12 @@ export default function ResumesPage() {
         router.replace("/");
         return;
       }
+
       const { data, error } = await supabase
         .from("resumes")
         .select("id, file_name, processing_status, created_at")
         .order("created_at", { ascending: false });
+
       if (error) throw error;
       setResumes(data ?? []);
       setMessage("");
@@ -36,6 +38,14 @@ export default function ResumesPage() {
       setMessage(error instanceof Error ? error.message : "Unable to load resumes.");
     }
   }, [router]);
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/");
+  }, [router]);
+
+  const hasResumes = resumes.length > 0;
 
   useEffect(() => { void loadResumes(); }, [loadResumes]);
 
@@ -47,14 +57,14 @@ export default function ResumesPage() {
           <h1>Resume Management</h1>
           <p>Upload private candidate files and track their processing status.</p>
         </div>
-        <button className="btn btn-ghost" onClick={() => createClient().auth.signOut().then(() => router.replace("/"))}>Sign out</button>
+        <button className="btn btn-ghost" onClick={handleSignOut}>Sign out</button>
       </header>
       <div className="dashboard-grid">
         <ResumeUpload onUploaded={loadResumes} />
         <section className="resume-list" aria-live="polite">
           <h2>Uploaded resumes</h2>
           {message && <p>{message}</p>}
-          {!message && resumes.length === 0 && <p>No resumes yet. Upload the first candidate file.</p>}
+          {!message && !hasResumes && <p>No resumes yet. Upload the first candidate file.</p>}
           {resumes.map((resume) => (
             <article className="resume-row" key={resume.id}>
               <div><strong>{resume.file_name}</strong><span>{new Date(resume.created_at).toLocaleDateString()}</span></div>
