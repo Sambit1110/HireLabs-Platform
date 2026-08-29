@@ -617,9 +617,6 @@ export function FeaturesGrid() {
 
         /* =====================================================
            CARD GRID
-           IMPORTANT FIX:
-           align-items:start prevents standard cards from
-           stretching to an unnecessarily tall grid row.
            ===================================================== */
 
         .hl-feature-grid {
@@ -645,6 +642,11 @@ export function FeaturesGrid() {
 
         /* =====================================================
            STANDARD CARD
+
+           IMPORTANT:
+           Normal cards now use an internal two-column layout.
+           This is what removes the massive vertical empty space
+           visible in cards 02 and 03.
            ===================================================== */
 
         .hl-feature-card {
@@ -652,7 +654,7 @@ export function FeaturesGrid() {
             relative;
 
           min-height:
-            315px;
+            0;
 
           height:
             auto;
@@ -660,8 +662,27 @@ export function FeaturesGrid() {
           align-self:
             start;
 
+          display:
+            grid;
+
+          grid-template-columns:
+            minmax(
+              0,
+              1.02fr
+            )
+            minmax(
+              210px,
+              0.98fr
+            );
+
+          gap:
+            24px;
+
+          align-items:
+            center;
+
           padding:
-            30px;
+            26px;
 
           border:
             1px solid
@@ -977,6 +998,9 @@ export function FeaturesGrid() {
         .hl-feature-visual {
           min-height:
             185px;
+
+          width:
+            100%;
 
           border:
             1px solid
@@ -2071,6 +2095,35 @@ export function FeaturesGrid() {
           }
 
 
+          .hl-feature-card:not(
+            .featured
+          ) {
+            display:
+              block;
+
+            min-height:
+              0;
+
+            height:
+              auto;
+
+            padding:
+              28px;
+          }
+
+
+          .hl-feature-card:not(
+            .featured
+          )
+            .hl-feature-visual {
+            margin-top:
+              24px;
+
+            min-height:
+              180px;
+          }
+
+
           .hl-feature-card.featured {
             grid-template-columns:
               1fr;
@@ -2121,7 +2174,21 @@ export function FeaturesGrid() {
           }
 
 
-          .hl-feature-card,
+          .hl-feature-card {
+            display:
+              block;
+
+            min-height:
+              0;
+
+            height:
+              auto;
+
+            padding:
+              22px;
+          }
+
+
           .hl-feature-card.featured {
             min-height:
               0;
