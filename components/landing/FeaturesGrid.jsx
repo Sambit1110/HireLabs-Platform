@@ -1,13 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 
 export function FeaturesGrid() {
-  const sectionRef = useRef(null);
-
-  const [isVisible, setIsVisible] =
-    useState(false);
-
   const features = [
     {
       number: '01',
@@ -15,10 +10,7 @@ export function FeaturesGrid() {
       title: 'Meaning, not just keywords.',
       description:
         'Gemini embeddings capture technical skills, seniority, and cross-domain experience so candidate discovery is based on meaning rather than simple keyword overlap.',
-      tags: [
-        'Gemini Embeddings',
-        '1536 Dimensions',
-      ],
+      tags: ['Gemini Embeddings', '1536 Dimensions'],
       featured: true,
       visual: 'embedding',
     },
@@ -28,11 +20,7 @@ export function FeaturesGrid() {
       title: 'Search candidates at database speed.',
       description:
         'Native Postgres cosine-distance queries with pgvector and HNSW indexing keep semantic candidate search fast without maintaining a separate vector database.',
-      tags: [
-        'pgvector',
-        'HNSW',
-        '<85ms',
-      ],
+      tags: ['pgvector', 'HNSW', '<85ms'],
       visual: 'search',
     },
     {
@@ -41,10 +29,7 @@ export function FeaturesGrid() {
       title: 'Every team sees its own data.',
       description:
         'Candidate records, vectors, and files are scoped to the authenticated user through Supabase Row Level Security.',
-      tags: [
-        'RLS',
-        'Private Storage',
-      ],
+      tags: ['RLS', 'Private Storage'],
       visual: 'security',
     },
     {
@@ -53,11 +38,7 @@ export function FeaturesGrid() {
       title: 'Messy resumes become structured data.',
       description:
         'PDF and DOCX files are transformed into consistent candidate profiles and normalized JSON.',
-      tags: [
-        'PDF',
-        'DOCX',
-        'JSON',
-      ],
+      tags: ['PDF', 'DOCX', 'JSON'],
       visual: 'document',
     },
     {
@@ -66,10 +47,7 @@ export function FeaturesGrid() {
       title: 'Know why the candidate ranked.',
       description:
         'Match explanations stay grounded in supplied evidence, highlight qualification gaps, and avoid using protected demographic traits.',
-      tags: [
-        'Evidence',
-        'Gap Analysis',
-      ],
+      tags: ['Evidence', 'Gap Analysis'],
       visual: 'explain',
     },
     {
@@ -78,127 +56,62 @@ export function FeaturesGrid() {
       title: 'A modern stack underneath.',
       description:
         'Built around Next.js App Router, authenticated routes, server-side rendering, and cloud-ready deployment primitives.',
-      tags: [
-        'Next.js 15',
-        'Vercel Ready',
-      ],
+      tags: ['Next.js 15', 'Vercel Ready'],
       visual: 'stack',
     },
   ];
-
-  useEffect(() => {
-    const section =
-      sectionRef.current;
-
-    if (!section) return;
-
-    const observer =
-      new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        },
-        {
-          threshold: 0.08,
-          rootMargin:
-            '0px 0px -8% 0px',
-        }
-      );
-
-    observer.observe(section);
-
-    return () =>
-      observer.disconnect();
-  }, []);
 
   const renderVisual = (type) => {
     if (type === 'embedding') {
       return (
         <div className="hl-feature-visual hl-embedding-visual">
-
           <div className="hl-embedding-header">
-            <span>
-              Candidate representation
-            </span>
-
-            <span>
-              1536 DIM
-            </span>
+            <span>Candidate representation</span>
+            <span>1536 DIM</span>
           </div>
 
           <div
             className="hl-vector-grid"
             aria-hidden="true"
           >
-            {Array.from({
-              length: 72,
-            }).map(
-              (_, index) => {
-                const scale =
-                  0.55 +
-                  ((index * 17) %
-                    46) /
-                    100;
+            {Array.from({ length: 72 }).map((_, index) => {
+              const scale =
+                0.55 +
+                ((index * 17) % 46) / 100;
 
-                const opacity =
-                  0.35 +
-                  ((index * 13) %
-                    60) /
-                    100;
+              const opacity =
+                0.35 +
+                ((index * 13) % 60) / 100;
 
-                return (
-                  <span
-                    key={index}
-                    className="hl-vector-cell"
-                    style={{
-                      '--vector-scale':
-                        scale,
-
-                      '--vector-opacity':
-                        opacity,
-                    }}
-                  />
-                );
-              }
-            )}
+              return (
+                <span
+                  key={index}
+                  className="hl-vector-cell"
+                  style={{
+                    '--vector-scale': scale,
+                    '--vector-opacity': opacity,
+                  }}
+                />
+              );
+            })}
           </div>
 
           <div className="hl-embedding-bottom">
-
             <div>
-              <strong>
-                Semantic
-              </strong>
-
-              <span>
-                meaning retained
-              </span>
+              <strong>Semantic</strong>
+              <span>meaning retained</span>
             </div>
 
             <div>
-              <strong>
-                Searchable
-              </strong>
-
-              <span>
-                vector signal
-              </span>
+              <strong>Searchable</strong>
+              <span>vector signal</span>
             </div>
 
             <div>
-              <strong>
-                Private
-              </strong>
-
-              <span>
-                team scoped
-              </span>
+              <strong>Private</strong>
+              <span>team scoped</span>
             </div>
-
           </div>
-
         </div>
       );
     }
@@ -206,81 +119,57 @@ export function FeaturesGrid() {
     if (type === 'search') {
       return (
         <div className="hl-feature-visual hl-search-visual">
-
           <div className="hl-search-query">
             Senior Full-Stack AI Engineer
           </div>
 
           <div className="hl-search-results">
-
             <div className="hl-search-row top">
-
               <span className="hl-search-rank">
                 01
               </span>
 
               <div>
-                <strong>
-                  Alex Mercer
-                </strong>
-
+                <strong>Alex Mercer</strong>
                 <span>
                   Lead Full-Stack AI Engineer
                 </span>
               </div>
 
-              <b>
-                97.4%
-              </b>
-
+              <b>97.4%</b>
             </div>
 
             <div className="hl-search-row">
-
               <span className="hl-search-rank">
                 02
               </span>
 
               <div>
-                <strong>
-                  Dr. Sarah Lin
-                </strong>
-
+                <strong>Dr. Sarah Lin</strong>
                 <span>
-                  Staff ML &amp; Vector Systems Engineer
+                  Staff ML &amp; Vector Systems
+                  Engineer
                 </span>
               </div>
 
-              <b>
-                84.7%
-              </b>
-
+              <b>84.7%</b>
             </div>
 
             <div className="hl-search-row">
-
               <span className="hl-search-rank">
                 03
               </span>
 
               <div>
-                <strong>
-                  Elena Rostova
-                </strong>
-
+                <strong>Elena Rostova</strong>
                 <span>
                   Principal Cloud Architect
                 </span>
               </div>
 
-              <b>
-                71.2%
-              </b>
-
+              <b>71.2%</b>
             </div>
-
           </div>
-
         </div>
       );
     }
@@ -288,9 +177,7 @@ export function FeaturesGrid() {
     if (type === 'security') {
       return (
         <div className="hl-feature-visual hl-security-visual">
-
           <div className="hl-security-lock">
-
             <svg
               width="25"
               height="25"
@@ -298,6 +185,7 @@ export function FeaturesGrid() {
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
+              aria-hidden="true"
             >
               <rect
                 x="4"
@@ -309,49 +197,31 @@ export function FeaturesGrid() {
 
               <path d="M8 10V7a4 4 0 0 1 8 0v3" />
             </svg>
-
           </div>
 
           <div className="hl-security-copy">
-
-            <strong>
-              auth.uid()
-            </strong>
-
+            <strong>auth.uid()</strong>
             <span>
               controls the data boundary
             </span>
-
           </div>
 
           <div className="hl-security-lines">
-
             <div className="allowed">
-              <span>
-                ✓
-              </span>
-
+              <span>✓</span>
               Authorized candidate records
             </div>
 
             <div className="blocked">
-              <span>
-                ×
-              </span>
-
+              <span>×</span>
               Another team's private vectors
             </div>
 
             <div className="blocked">
-              <span>
-                ×
-              </span>
-
+              <span>×</span>
               Unscoped resume storage
             </div>
-
           </div>
-
         </div>
       );
     }
@@ -359,21 +229,13 @@ export function FeaturesGrid() {
     if (type === 'document') {
       return (
         <div className="hl-feature-visual hl-document-visual">
-
           <div className="hl-document-paper">
-
             <div className="hl-paper-heading" />
-
             <div />
-
             <div />
-
             <div className="short" />
-
             <div />
-
             <div className="short" />
-
           </div>
 
           <div className="hl-document-arrow">
@@ -381,33 +243,16 @@ export function FeaturesGrid() {
           </div>
 
           <div className="hl-document-profile">
+            <span>PROFILE</span>
 
-            <span>
-              PROFILE
-            </span>
-
-            <strong>
-              Alex Mercer
-            </strong>
+            <strong>Alex Mercer</strong>
 
             <div className="hl-profile-tags">
-
-              <i>
-                React
-              </i>
-
-              <i>
-                Node.js
-              </i>
-
-              <i>
-                AI / ML
-              </i>
-
+              <i>React</i>
+              <i>Node.js</i>
+              <i>AI / ML</i>
             </div>
-
           </div>
-
         </div>
       );
     }
@@ -415,116 +260,65 @@ export function FeaturesGrid() {
     if (type === 'explain') {
       return (
         <div className="hl-feature-visual hl-explain-visual">
-
           <div className="hl-explain-score">
-
-            <span>
-              97.4%
-            </span>
-
-            <small>
-              match
-            </small>
-
+            <span>97.4%</span>
+            <small>match</small>
           </div>
 
           <div className="hl-explain-items">
-
             <div>
-              <span>
-                ✓
-              </span>
-
+              <span>✓</span>
               Next.js experience
             </div>
 
             <div>
-              <span>
-                ✓
-              </span>
-
+              <span>✓</span>
               PostgreSQL + pgvector
             </div>
 
             <div>
-              <span>
-                ✓
-              </span>
-
+              <span>✓</span>
               AI / ML background
             </div>
 
             <div className="gap">
-              <span>
-                !
-              </span>
-
+              <span>!</span>
               Kubernetes gap
             </div>
-
           </div>
-
         </div>
       );
     }
 
     return (
       <div className="hl-feature-visual hl-stack-visual">
-
         <div className="hl-stack-layer">
-
-          <span>
-            Frontend
-          </span>
-
-          <strong>
-            Next.js 15
-          </strong>
-
+          <span>Frontend</span>
+          <strong>Next.js 15</strong>
         </div>
 
         <div className="hl-stack-layer">
-
-          <span>
-            Data + Auth
-          </span>
-
-          <strong>
-            Supabase
-          </strong>
-
+          <span>Data + Auth</span>
+          <strong>Supabase</strong>
         </div>
 
         <div className="hl-stack-layer">
-
-          <span>
-            Search
-          </span>
-
-          <strong>
-            pgvector
-          </strong>
-
+          <span>Search</span>
+          <strong>pgvector</strong>
         </div>
-
       </div>
     );
   };
 
   return (
     <section
-      ref={sectionRef}
-      className={`hl-features-section ${
-        isVisible
-          ? 'is-visible'
-          : ''
-      }`}
+      className="hl-features-section"
       id="features"
     >
       <style>{`
 
         /* =====================================================
-           SECTION
+           ROOT
            ===================================================== */
 
         .hl-features-section {
@@ -541,19 +335,13 @@ export function FeaturesGrid() {
           --taupe: #C8C0AF;
           --border: #DED7CA;
 
-          position:
-            relative;
+          position: relative;
 
           padding:
-            175px 0
-            180px;
+            160px 0;
 
           background:
-            linear-gradient(
-              180deg,
-              #F5F1E8 0%,
-              #F2ECE2 100%
-            );
+            var(--cream);
 
           color:
             var(--espresso);
@@ -600,7 +388,7 @@ export function FeaturesGrid() {
             );
 
           right:
-            -410px;
+            -400px;
 
           top:
             18%;
@@ -617,23 +405,11 @@ export function FeaturesGrid() {
           border-radius:
             50%;
 
-          opacity:
+          pointer-events:
+            none;
+
+          z-index:
             0;
-
-          transform:
-            scale(
-              0.92
-            );
-
-          transition:
-            opacity 1.4s ease,
-            transform 1.7s
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              );
         }
 
 
@@ -654,7 +430,7 @@ export function FeaturesGrid() {
             -300px;
 
           bottom:
-            12%;
+            10%;
 
           border:
             1px dashed
@@ -662,44 +438,17 @@ export function FeaturesGrid() {
               111,
               125,
               85,
-              0.06
+              0.055
             );
 
           border-radius:
             50%;
 
-          opacity:
-            0;
-
-          transform:
-            scale(
-              0.94
-            );
-
-          transition:
-            opacity 1.2s ease 100ms,
-            transform 1.5s
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ) 100ms;
-
           pointer-events:
             none;
-        }
 
-
-        .hl-features-section.is-visible::before,
-        .hl-features-section.is-visible::after {
-          opacity:
-            1;
-
-          transform:
-            scale(
-              1
-            );
+          z-index:
+            0;
         }
 
 
@@ -726,7 +475,7 @@ export function FeaturesGrid() {
 
 
         /* =====================================================
-           SECTION HEADER
+           HEADING
            ===================================================== */
 
         .hl-features-heading {
@@ -734,121 +483,17 @@ export function FeaturesGrid() {
             grid;
 
           grid-template-columns:
-            minmax(
-              0,
-              0.85fr
-            )
-            minmax(
-              0,
-              1.15fr
-            );
+            0.8fr
+            1.2fr;
 
           gap:
-            clamp(
-              45px,
-              7vw,
-              85px
-            );
+            70px;
 
           align-items:
             end;
 
           margin-bottom:
-            82px;
-        }
-
-
-        .hl-features-heading
-          > div {
-          opacity:
-            0;
-
-          transform:
-            translate3d(
-              0,
-              32px,
-              0
-            );
-
-          transition:
-            opacity 900ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-
-            transform 1000ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              );
-        }
-
-
-        .hl-features-heading
-          > p {
-          opacity:
-            0;
-
-          transform:
-            translate3d(
-              0,
-              27px,
-              0
-            );
-
-          transition:
-            opacity 900ms
-              120ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-
-            transform 1000ms
-              120ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              );
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-features-heading
-          > div {
-          opacity:
-            1;
-
-          transform:
-            translate3d(
-              0,
-              0,
-              0
-            );
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-features-heading
-          > p {
-          opacity:
-            1;
-
-          transform:
-            translate3d(
-              0,
-              0,
-              0
-            );
+            75px;
         }
 
 
@@ -892,6 +537,9 @@ export function FeaturesGrid() {
           height:
             7px;
 
+          flex:
+            0 0 7px;
+
           border-radius:
             50%;
 
@@ -914,7 +562,7 @@ export function FeaturesGrid() {
             0;
 
           max-width:
-            560px;
+            520px;
 
           font-family:
             Georgia,
@@ -923,16 +571,16 @@ export function FeaturesGrid() {
 
           font-size:
             clamp(
-              49px,
-              5.9vw,
-              78px
+              48px,
+              5.8vw,
+              76px
             );
 
           line-height:
-            0.93;
+            0.95;
 
           letter-spacing:
-            -0.058em;
+            -0.055em;
 
           font-weight:
             500;
@@ -953,7 +601,7 @@ export function FeaturesGrid() {
             590px;
 
           margin:
-            0 0 2px
+            0 0 3px
             auto;
 
           color:
@@ -968,13 +616,13 @@ export function FeaturesGrid() {
 
 
         /* =====================================================
-           FEATURE GRID
+           CARD GRID
+           IMPORTANT FIX:
+           align-items:start prevents standard cards from
+           stretching to an unnecessarily tall grid row.
            ===================================================== */
 
         .hl-feature-grid {
-          position:
-            relative;
-
           display:
             grid;
 
@@ -988,67 +636,15 @@ export function FeaturesGrid() {
             );
 
           gap:
-            16px;
+            14px;
+
+          align-items:
+            start;
         }
 
 
         /* =====================================================
-           CONNECTING VERTICAL THREAD
-           ===================================================== */
-
-        .hl-feature-grid::before {
-          content:
-            '';
-
-          position:
-            absolute;
-
-          top:
-            45px;
-
-          bottom:
-            45px;
-
-          left:
-            50%;
-
-          width:
-            1px;
-
-          background:
-            linear-gradient(
-              to bottom,
-              transparent,
-              rgba(
-                111,
-                125,
-                85,
-                0.12
-              ) 7%,
-              rgba(
-                111,
-                125,
-                85,
-                0.12
-              ) 93%,
-              transparent
-            );
-
-          transform:
-            translateX(
-              -50%
-            );
-
-          pointer-events:
-            none;
-
-          z-index:
-            0;
-        }
-
-
-        /* =====================================================
-           CARD
+           STANDARD CARD
            ===================================================== */
 
         .hl-feature-card {
@@ -1056,145 +652,46 @@ export function FeaturesGrid() {
             relative;
 
           min-height:
-            400px;
+            315px;
+
+          height:
+            auto;
+
+          align-self:
+            start;
 
           padding:
-            31px;
+            30px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            26px;
+            25px;
 
           background:
             rgba(
               255,
               255,
               255,
-              0.56
+              0.54
             );
 
           overflow:
             hidden;
 
-          opacity:
-            0;
-
-          transform:
-            translate3d(
-              0,
-              34px,
-              0
-            )
-            scale(
-              0.985
-            );
-
           transition:
-            opacity 850ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-
-            transform 950ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              ),
-
-            box-shadow 300ms ease,
-
-            background 300ms ease;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card {
-          opacity:
-            1;
-
-          transform:
-            translate3d(
-              0,
-              0,
-              0
-            )
-            scale(
-              1
-            );
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            1
-          ) {
-          transition-delay:
-            160ms;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            2
-          ) {
-          transition-delay:
-            250ms;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            3
-          ) {
-          transition-delay:
-            340ms;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            4
-          ) {
-          transition-delay:
-            430ms;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            5
-          ) {
-          transition-delay:
-            520ms;
-        }
-
-
-        .hl-features-section.is-visible
-          .hl-feature-card:nth-child(
-            6
-          ) {
-          transition-delay:
-            610ms;
+            transform 240ms ease,
+            box-shadow 240ms ease,
+            background 240ms ease;
         }
 
 
         .hl-feature-card:hover {
           transform:
-            translate3d(
-              0,
-              -5px,
-              0
-            )
-            scale(
-              1.003
+            translateY(
+              -4px
             );
 
           background:
@@ -1202,11 +699,11 @@ export function FeaturesGrid() {
               255,
               255,
               255,
-              0.78
+              0.72
             );
 
           box-shadow:
-            0 24px 60px
+            0 22px 55px
             rgba(
               45,
               40,
@@ -1225,71 +722,49 @@ export function FeaturesGrid() {
             span 2;
 
           min-height:
-            520px;
+            510px;
+
+          height:
+            auto;
+
+          align-self:
+            start;
 
           display:
             grid;
 
           grid-template-columns:
-            minmax(
-              0,
-              0.84fr
-            )
-            minmax(
-              0,
-              1.16fr
-            );
+            0.85fr
+            1.15fr;
 
           gap:
-            52px;
+            50px;
 
           align-items:
             center;
 
           padding:
-            39px;
+            36px;
 
           background:
-            rgba(
-              255,
-              255,
-              255,
-              0.86
-            );
+            var(--white);
 
           box-shadow:
-            0 28px 75px
+            0 25px 70px
             rgba(
               45,
               40,
               34,
-              0.075
-            );
-
-          border-color:
-            rgba(
-              202,
-              193,
-              178,
-              0.86
+              0.07
             );
         }
 
 
         .hl-feature-card.featured:hover {
           background:
-            rgba(
-              255,
-              255,
-              255,
-              0.96
-            );
+            #FFFFFF;
         }
 
-
-        /* =====================================================
-           ACCENT GLOW
-           ===================================================== */
 
         .hl-feature-card.featured::before {
           content:
@@ -1320,9 +795,10 @@ export function FeaturesGrid() {
                 111,
                 125,
                 85,
-                0.09
+                0.07
               ),
-              transparent 68%
+              transparent
+                68%
             );
 
           pointer-events:
@@ -1331,21 +807,12 @@ export function FeaturesGrid() {
 
 
         /* =====================================================
-           NUMBER
+           CARD CONTENT
            ===================================================== */
 
         .hl-feature-number {
-          display:
-            inline-flex;
-
-          align-items:
-            center;
-
-          gap:
-            8px;
-
           color:
-            #9A9187;
+            #A0988D;
 
           font-size:
             9px;
@@ -1355,40 +822,15 @@ export function FeaturesGrid() {
 
           letter-spacing:
             0.14em;
-
-          font-variant-numeric:
-            tabular-nums;
         }
 
-
-        .hl-feature-number::after {
-          content:
-            '';
-
-          display:
-            inline-block;
-
-          width:
-            24px;
-
-          height:
-            1px;
-
-          background:
-            #D4CCBE;
-        }
-
-
-        /* =====================================================
-           EYEBROW
-           ===================================================== */
 
         .hl-feature-eyebrow {
           display:
             block;
 
           margin-top:
-            17px;
+            18px;
 
           color:
             var(--olive-dark);
@@ -1396,30 +838,23 @@ export function FeaturesGrid() {
           font-size:
             8px;
 
-          line-height:
-            1;
-
           font-weight:
             900;
 
           letter-spacing:
-            0.14em;
+            0.13em;
 
           text-transform:
             uppercase;
         }
 
 
-        /* =====================================================
-           TITLE
-           ===================================================== */
-
         .hl-feature-title {
-          max-width:
-            470px;
-
           margin:
             9px 0 0;
+
+          max-width:
+            460px;
 
           font-family:
             Georgia,
@@ -1428,16 +863,16 @@ export function FeaturesGrid() {
 
           font-size:
             clamp(
-              29px,
+              28px,
               3vw,
               42px
             );
 
           line-height:
-            1.01;
+            1;
 
           letter-spacing:
-            -0.042em;
+            -0.04em;
 
           font-weight:
             500;
@@ -1449,17 +884,13 @@ export function FeaturesGrid() {
         )
           .hl-feature-title {
           font-size:
-            29px;
+            28px;
         }
 
 
-        /* =====================================================
-           DESCRIPTION
-           ===================================================== */
-
         .hl-feature-description {
           max-width:
-            520px;
+            500px;
 
           margin:
             17px 0 0;
@@ -1471,13 +902,9 @@ export function FeaturesGrid() {
             11px;
 
           line-height:
-            1.72;
+            1.7;
         }
 
-
-        /* =====================================================
-           TAGS
-           ===================================================== */
 
         .hl-feature-tags {
           display:
@@ -1490,7 +917,7 @@ export function FeaturesGrid() {
             7px;
 
           margin-top:
-            21px;
+            18px;
         }
 
 
@@ -1519,50 +946,24 @@ export function FeaturesGrid() {
 
           font-weight:
             800;
-
-          transition:
-            transform 200ms ease,
-            background 200ms ease,
-            color 200ms ease;
         }
 
-
-        .hl-feature-tag:hover {
-          transform:
-            translateY(
-              -1px
-            );
-
-          background:
-            #F0EEE5;
-
-          color:
-            var(--olive-dark);
-        }
-
-
-        /* =====================================================
-           INDEX CORNER
-           ===================================================== */
 
         .hl-feature-index {
           position:
             absolute;
 
           right:
-            21px;
+            20px;
 
           top:
-            21px;
+            20px;
 
           color:
-            #C0B8AC;
+            #C1BAAE;
 
           font-size:
             8px;
-
-          line-height:
-            1;
 
           font-weight:
             900;
@@ -1570,22 +971,19 @@ export function FeaturesGrid() {
 
 
         /* =====================================================
-           VISUAL
+           VISUAL CONTAINER
            ===================================================== */
 
         .hl-feature-visual {
-          position:
-            relative;
-
           min-height:
-            190px;
+            185px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            19px;
+            18px;
 
           background:
             #FAF8F3;
@@ -1595,49 +993,13 @@ export function FeaturesGrid() {
         }
 
 
-        .hl-feature-visual::before {
-          content:
-            '';
-
-          position:
-            absolute;
-
-          width:
-            180px;
-
-          height:
-            180px;
-
-          right:
-            -90px;
-
-          bottom:
-            -90px;
-
-          border:
-            1px solid
-            rgba(
-              111,
-              125,
-              85,
-              0.07
-            );
-
-          border-radius:
-            50%;
-
-          pointer-events:
-            none;
-        }
-
-
         /* =====================================================
-           EMBEDDING VISUAL
+           EMBEDDING
            ===================================================== */
 
         .hl-embedding-visual {
           padding:
-            22px;
+            21px;
         }
 
 
@@ -1750,7 +1112,10 @@ export function FeaturesGrid() {
             var(--olive);
 
           opacity:
-            var(--vector-opacity, 0.65);
+            var(
+              --vector-opacity,
+              0.65
+            );
 
           transform:
             scaleY(
@@ -1793,6 +1158,7 @@ export function FeaturesGrid() {
 
 
         @keyframes hlFeaturePulse {
+
           0%,
           100% {
             transform:
@@ -1815,6 +1181,7 @@ export function FeaturesGrid() {
                 )
               );
           }
+
         }
 
 
@@ -1918,14 +1285,8 @@ export function FeaturesGrid() {
           font-size:
             14px;
 
-          box-shadow:
-            0 9px 22px
-            rgba(
-              33,
-              28,
-              24,
-              0.09
-            );
+          line-height:
+            1.2;
         }
 
 
@@ -1971,8 +1332,8 @@ export function FeaturesGrid() {
 
           transition:
             transform 200ms ease,
-            border-color 200ms ease,
-            background 200ms ease;
+            background 200ms ease,
+            border-color 200ms ease;
         }
 
 
@@ -1982,16 +1343,16 @@ export function FeaturesGrid() {
               3px
             );
 
+          background:
+            #FCFBF7;
+
           border-color:
             rgba(
               111,
               125,
               85,
-              0.28
+              0.25
             );
-
-          background:
-            #FCFBF7;
         }
 
 
@@ -2074,6 +1435,9 @@ export function FeaturesGrid() {
 
           font-size:
             7px;
+
+          line-height:
+            1.25;
         }
 
 
@@ -2124,7 +1488,7 @@ export function FeaturesGrid() {
               33,
               28,
               24,
-              0.1
+              0.08
             );
         }
 
@@ -2194,6 +1558,9 @@ export function FeaturesGrid() {
 
           font-size:
             8px;
+
+          line-height:
+            1.35;
 
           font-weight:
             700;
@@ -2346,6 +1713,7 @@ export function FeaturesGrid() {
 
 
         @keyframes hlFeatureArrow {
+
           0%,
           100% {
             transform:
@@ -2360,6 +1728,7 @@ export function FeaturesGrid() {
                 4px
               );
           }
+
         }
 
 
@@ -2486,7 +1855,7 @@ export function FeaturesGrid() {
             var(--olive-dark);
 
           font-size:
-            28px;
+            27px;
 
           line-height:
             1;
@@ -2544,6 +1913,9 @@ export function FeaturesGrid() {
 
           font-size:
             8px;
+
+          line-height:
+            1.3;
 
           font-weight:
             800;
@@ -2679,7 +2051,7 @@ export function FeaturesGrid() {
 
 
         /* =====================================================
-           RESPONSIVE — TABLET
+           TABLET
            ===================================================== */
 
         @media (max-width: 900px) {
@@ -2710,12 +2082,6 @@ export function FeaturesGrid() {
               35px;
           }
 
-
-          .hl-feature-grid::before {
-            display:
-              none;
-          }
-
         }
 
 
@@ -2727,8 +2093,7 @@ export function FeaturesGrid() {
 
           .hl-features-section {
             padding:
-              110px 0
-              125px;
+              110px 0;
           }
 
 
@@ -2741,30 +2106,12 @@ export function FeaturesGrid() {
           }
 
 
-          .hl-features-heading {
-            margin-bottom:
-              60px;
-          }
-
-
-          .hl-features-title {
-            font-size:
-              46px;
-          }
-
-
-          .hl-features-intro {
-            font-size:
-              14px;
-          }
-
-
           .hl-feature-grid {
             grid-template-columns:
               1fr;
 
-            gap:
-              13px;
+            align-items:
+              start;
           }
 
 
@@ -2779,10 +2126,10 @@ export function FeaturesGrid() {
             min-height:
               0;
 
-            padding:
-              23px;
+            height:
+              auto;
 
-            border-radius:
+            padding:
               22px;
           }
 
@@ -2797,21 +2144,9 @@ export function FeaturesGrid() {
           }
 
 
-          .hl-feature-description {
-            font-size:
-              10px;
-          }
-
-
           .hl-feature-visual {
             min-height:
               175px;
-          }
-
-
-          .hl-embedding-visual {
-            padding:
-              17px;
           }
 
 
@@ -2851,6 +2186,15 @@ export function FeaturesGrid() {
 
             max-height:
               13px;
+          }
+
+
+          .hl-vector-grid
+            span:nth-child(
+              n+61
+            ) {
+            display:
+              none;
           }
 
 
@@ -2916,23 +2260,19 @@ export function FeaturesGrid() {
           }
 
 
-          .hl-feature-card,
-          .hl-features-heading > div,
-          .hl-features-heading > p {
-            opacity:
-              1 !important;
-
-            transform:
-              none !important;
-
+          .hl-feature-card {
             transition:
-              none !important;
+              none;
           }
 
         }
 
       `}</style>
 
+
+      {/* =====================================================
+          FEATURE CONTENT
+         ===================================================== */}
 
       <div className="hl-features-shell">
 
@@ -2981,7 +2321,7 @@ export function FeaturesGrid() {
 
 
         {/* ===================================================
-            FEATURE CARDS
+            FEATURE GRID
            =================================================== */}
 
         <div className="hl-feature-grid">
@@ -3036,7 +2376,9 @@ export function FeaturesGrid() {
                       (tag) => (
                         <span
                           className="hl-feature-tag"
-                          key={tag}
+                          key={
+                            tag
+                          }
                         >
                           {tag}
                         </span>

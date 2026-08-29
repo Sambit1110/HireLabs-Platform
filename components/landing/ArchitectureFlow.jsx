@@ -8,7 +8,9 @@ import React, {
 
 export function ArchitectureFlow() {
   const sectionRef = useRef(null);
-  const [progress, setProgress] = useState(0);
+
+  const [progress, setProgress] =
+    useState(0);
 
   const steps = [
     {
@@ -62,30 +64,41 @@ export function ArchitectureFlow() {
     let rafId = null;
 
     const updateProgress = () => {
-      const section = sectionRef.current;
+      const section =
+        sectionRef.current;
 
       if (!section) {
         rafId = null;
         return;
       }
 
-      const rect = section.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
+      const rect =
+        section.getBoundingClientRect();
 
-      const totalDistance = Math.max(
-        section.offsetHeight - viewportHeight,
-        1
-      );
+      const viewportHeight =
+        window.innerHeight;
 
-      const nextProgress = Math.min(
-        1,
+      const totalDistance =
         Math.max(
-          0,
-          -rect.top / totalDistance
-        )
+          section.offsetHeight -
+            viewportHeight,
+          1
+        );
+
+      const nextProgress =
+        Math.min(
+          1,
+          Math.max(
+            0,
+            -rect.top /
+              totalDistance
+          )
+        );
+
+      setProgress(
+        nextProgress
       );
 
-      setProgress(nextProgress);
       rafId = null;
     };
 
@@ -94,9 +107,10 @@ export function ArchitectureFlow() {
         return;
       }
 
-      rafId = window.requestAnimationFrame(
-        updateProgress
-      );
+      rafId =
+        window.requestAnimationFrame(
+          updateProgress
+        );
     };
 
     updateProgress();
@@ -104,7 +118,9 @@ export function ArchitectureFlow() {
     window.addEventListener(
       'scroll',
       handleScroll,
-      { passive: true }
+      {
+        passive: true,
+      }
     );
 
     window.addEventListener(
@@ -124,17 +140,21 @@ export function ArchitectureFlow() {
       );
 
       if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
+        window.cancelAnimationFrame(
+          rafId
+        );
       }
     };
   }, []);
 
-  const activeIndex = Math.min(
-    steps.length - 1,
-    Math.floor(
-      progress * steps.length
-    )
-  );
+  const activeIndex =
+    Math.min(
+      steps.length - 1,
+      Math.floor(
+        progress *
+          steps.length
+      )
+    );
 
   const lineProgress =
     progress *
@@ -157,7 +177,6 @@ export function ArchitectureFlow() {
 
         .hl-architecture {
           --cream: #F5F1E8;
-          --cream-soft: #ECE6DA;
           --white: #FFFFFF;
 
           --espresso: #211C18;
@@ -169,9 +188,11 @@ export function ArchitectureFlow() {
           --taupe: #C8C0AF;
           --border: #DED7CA;
 
-          position: relative;
+          position:
+            relative;
 
-          min-height: 430vh;
+          min-height:
+            430vh;
 
           background:
             linear-gradient(
@@ -183,9 +204,11 @@ export function ArchitectureFlow() {
           color:
             var(--espresso);
 
-          overflow: visible;
+          overflow:
+            visible;
 
-          isolation: isolate;
+          isolation:
+            isolate;
         }
 
 
@@ -200,31 +223,33 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           AMBIENT RING
+           BACKGROUND ORBITS
            ===================================================== */
 
         .hl-architecture::before {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
           width:
             min(
-              860px,
+              900px,
               76vw
             );
 
           height:
             min(
-              860px,
+              900px,
               76vw
             );
 
+          right:
+            -410px;
+
           top:
             10vh;
-
-          right:
-            -370px;
 
           border:
             1px solid
@@ -240,25 +265,30 @@ export function ArchitectureFlow() {
 
           pointer-events:
             none;
+
+          z-index:
+            0;
         }
 
 
         .hl-architecture::after {
-          content: '';
+          content:
+            '';
 
-          position: absolute;
+          position:
+            absolute;
 
           width:
-            480px;
+            520px;
 
           height:
-            480px;
+            520px;
 
           left:
-            -300px;
+            -360px;
 
           bottom:
-            6vh;
+            5vh;
 
           border:
             1px dashed
@@ -274,30 +304,40 @@ export function ArchitectureFlow() {
 
           pointer-events:
             none;
+
+          z-index:
+            0;
         }
 
 
         /* =====================================================
            STICKY VIEWPORT
+
+           IMPORTANT:
+           The architecture header and story are now in
+           separate vertical zones.
+
+           This is the main overlap fix.
            ===================================================== */
 
         .hl-arch-sticky {
-          position: sticky;
+          position:
+            sticky;
 
-          top: 0;
+          top:
+            0;
 
-          height: 100vh;
+          height:
+            100vh;
 
-          min-height: 680px;
+          min-height:
+            720px;
 
           display:
-            flex;
-
-          align-items:
-            center;
+            block;
 
           overflow:
-            visible;
+            hidden;
 
           isolation:
             isolate;
@@ -305,7 +345,8 @@ export function ArchitectureFlow() {
 
 
         .hl-arch-shell {
-          position: relative;
+          position:
+            relative;
 
           width:
             min(
@@ -317,7 +358,7 @@ export function ArchitectureFlow() {
             100%;
 
           min-height:
-            680px;
+            720px;
 
           margin:
             0 auto;
@@ -326,6 +367,8 @@ export function ArchitectureFlow() {
 
         /* =====================================================
            INTRO
+
+           Dedicated upper region.
            ===================================================== */
 
         .hl-arch-intro {
@@ -336,13 +379,20 @@ export function ArchitectureFlow() {
             0;
 
           top:
-            7vh;
+            clamp(
+              72px,
+              7vh,
+              92px
+            );
+
+          width:
+            min(
+              640px,
+              53%
+            );
 
           z-index:
             20;
-
-          max-width:
-            670px;
 
           pointer-events:
             none;
@@ -351,9 +401,7 @@ export function ArchitectureFlow() {
             1;
 
           transform:
-            translateY(
-              0
-            );
+            translateY(0);
 
           transition:
             opacity 180ms linear,
@@ -372,7 +420,7 @@ export function ArchitectureFlow() {
             9px;
 
           margin-bottom:
-            17px;
+            16px;
 
           color:
             var(--olive-dark);
@@ -432,13 +480,13 @@ export function ArchitectureFlow() {
 
           font-size:
             clamp(
-              48px,
-              5.4vw,
+              47px,
+              5.3vw,
               76px
             );
 
           line-height:
-            0.96;
+            0.94;
 
           letter-spacing:
             -0.055em;
@@ -459,32 +507,49 @@ export function ArchitectureFlow() {
 
         .hl-arch-description {
           max-width:
-            610px;
+            590px;
 
           margin:
-            20px 0 0;
+            19px 0 0;
 
           color:
             var(--espresso-soft);
 
           font-size:
-            14px;
+            13px;
 
           line-height:
-            1.7;
+            1.68;
         }
 
 
         /* =====================================================
-           SCENE
+           STORY AREA
+
+           Starts BELOW the intro.
+
+           This used to be inset: 0 which caused the overlap.
            ===================================================== */
 
         .hl-arch-scene {
           position:
             absolute;
 
-          inset:
+          left:
             0;
+
+          right:
+            0;
+
+          top:
+            clamp(
+              310px,
+              30vh,
+              365px
+            );
+
+          bottom:
+            64px;
 
           display:
             grid;
@@ -501,7 +566,7 @@ export function ArchitectureFlow() {
 
           gap:
             clamp(
-              50px,
+              45px,
               7vw,
               105px
             );
@@ -509,11 +574,8 @@ export function ArchitectureFlow() {
           align-items:
             stretch;
 
-          padding-top:
-            120px;
-
-          padding-bottom:
-            24px;
+          z-index:
+            10;
         }
 
 
@@ -525,14 +587,23 @@ export function ArchitectureFlow() {
           position:
             relative;
 
-          z-index:
-            15;
-
           align-self:
+            stretch;
+
+          display:
+            flex;
+
+          flex-direction:
+            column;
+
+          justify-content:
             center;
 
-          padding-top:
-            72px;
+          padding:
+            0;
+
+          z-index:
+            12;
         }
 
 
@@ -551,13 +622,19 @@ export function ArchitectureFlow() {
             );
 
           gap:
-            15px;
+            14px;
 
           min-height:
-            84px;
+            69px;
 
           padding-bottom:
-            21px;
+            13px;
+        }
+
+
+        .hl-arch-step:last-child {
+          padding-bottom:
+            0;
         }
 
 
@@ -573,6 +650,8 @@ export function ArchitectureFlow() {
         }
 
 
+        /* connecting line */
+
         .hl-arch-step-marker::before {
           content:
             '';
@@ -581,10 +660,10 @@ export function ArchitectureFlow() {
             absolute;
 
           top:
-            33px;
+            35px;
 
           bottom:
-            -1px;
+            0;
 
           width:
             1px;
@@ -606,7 +685,7 @@ export function ArchitectureFlow() {
             relative;
 
           z-index:
-            2;
+            3;
 
           width:
             36px;
@@ -671,7 +750,7 @@ export function ArchitectureFlow() {
             );
 
           box-shadow:
-            0 10px 25px
+            0 10px 22px
             rgba(
               33,
               28,
@@ -695,7 +774,7 @@ export function ArchitectureFlow() {
 
           transition:
             opacity 260ms ease,
-            transform 300ms
+            transform 280ms
               cubic-bezier(
                 0.16,
                 1,
@@ -727,10 +806,10 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            22px;
+            20px;
 
           line-height:
-            1.1;
+            1.08;
 
           letter-spacing:
             -0.03em;
@@ -749,19 +828,19 @@ export function ArchitectureFlow() {
 
         .hl-arch-step-desc {
           max-width:
-            330px;
+            325px;
 
           margin:
-            6px 0 0;
+            5px 0 0;
 
           color:
             #847B72;
 
           font-size:
-            10px;
+            9px;
 
           line-height:
-            1.55;
+            1.5;
         }
 
 
@@ -770,10 +849,10 @@ export function ArchitectureFlow() {
             inline-block;
 
           margin-top:
-            8px;
+            6px;
 
           padding:
-            6px 8px;
+            5px 7px;
 
           border-radius:
             999px;
@@ -785,7 +864,7 @@ export function ArchitectureFlow() {
             #7A7168;
 
           font-size:
-            7px;
+            6.5px;
 
           line-height:
             1;
@@ -816,21 +895,15 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           RIGHT VISUAL STAGE
+           VISUAL STAGE
            ===================================================== */
 
         .hl-arch-stage {
           position:
             relative;
 
-          align-self:
-            stretch;
-
-          width:
-            100%;
-
-          height:
-            100%;
+          min-width:
+            0;
 
           min-height:
             0;
@@ -844,12 +917,6 @@ export function ArchitectureFlow() {
           justify-content:
             center;
 
-          padding-top:
-            72px;
-
-          padding-bottom:
-            22px;
-
           overflow:
             visible;
 
@@ -859,33 +926,27 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           ORBIT
+           ORBIT FIELD
            ===================================================== */
 
         .hl-arch-stage-bg {
           position:
             absolute;
 
-          top:
+          left:
             50%;
 
-          left:
+          top:
             50%;
 
           width:
             min(
-              600px,
-              46vw
+              610px,
+              47vw
             );
 
           aspect-ratio:
             1;
-
-          transform:
-            translate(
-              -50%,
-              -50%
-            );
 
           border:
             1px solid
@@ -899,11 +960,17 @@ export function ArchitectureFlow() {
           border-radius:
             50%;
 
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
           pointer-events:
             none;
 
-          transition:
-            transform 200ms linear;
+          z-index:
+            0;
         }
 
 
@@ -948,7 +1015,9 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           CARD
+           MAIN CARD
+
+           It now stays inside the stage.
            ===================================================== */
 
         .hl-arch-card {
@@ -960,42 +1029,44 @@ export function ArchitectureFlow() {
 
           width:
             min(
-              530px,
-              90%
+              535px,
+              91%
             );
 
           height:
             min(
-              470px,
-              calc(100vh - 148px)
+              430px,
+              calc(
+                100vh - 410px
+              )
             );
 
           min-height:
-            430px;
+            410px;
 
           max-height:
-            470px;
+            430px;
 
           padding:
-            32px;
+            30px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            30px;
+            28px;
 
           background:
             rgba(
               255,
               255,
               255,
-              0.93
+              0.94
             );
 
           box-shadow:
-            0 36px 90px
+            0 34px 85px
             rgba(
               48,
               43,
@@ -1003,7 +1074,7 @@ export function ArchitectureFlow() {
               0.11
             ),
 
-            0 10px 30px
+            0 10px 28px
             rgba(
               48,
               43,
@@ -1019,22 +1090,6 @@ export function ArchitectureFlow() {
 
           flex-direction:
             column;
-
-          transform:
-            translate3d(
-              0,
-              0,
-              0
-            );
-
-          transition:
-            transform 350ms
-              cubic-bezier(
-                0.16,
-                1,
-                0.3,
-                1
-              );
         }
 
 
@@ -1046,16 +1101,16 @@ export function ArchitectureFlow() {
             absolute;
 
           width:
-            310px;
+            290px;
 
           height:
-            310px;
-
-          right:
-            -160px;
+            290px;
 
           top:
-            -160px;
+            -150px;
+
+          right:
+            -150px;
 
           border:
             1px solid
@@ -1098,7 +1153,7 @@ export function ArchitectureFlow() {
             18px;
 
           padding-bottom:
-            21px;
+            18px;
 
           border-bottom:
             1px solid
@@ -1111,7 +1166,7 @@ export function ArchitectureFlow() {
             var(--olive-dark);
 
           font-size:
-            9px;
+            8px;
 
           line-height:
             1;
@@ -1137,7 +1192,7 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            30px;
+            28px;
 
           line-height:
             1;
@@ -1155,7 +1210,7 @@ export function ArchitectureFlow() {
             0 0 auto;
 
           max-width:
-            170px;
+            155px;
 
           overflow:
             hidden;
@@ -1177,7 +1232,7 @@ export function ArchitectureFlow() {
             #7D746B;
 
           font-size:
-            8px;
+            7px;
 
           line-height:
             1;
@@ -1210,21 +1265,21 @@ export function ArchitectureFlow() {
             430px;
 
           margin:
-            18px 0 0;
+            15px 0 0;
 
           color:
             #6F665D;
 
           font-size:
-            12px;
+            11px;
 
           line-height:
-            1.68;
+            1.58;
         }
 
 
         /* =====================================================
-           VISUAL CONTAINER
+           VISUAL CONTENT
            ===================================================== */
 
         .hl-visual {
@@ -1232,16 +1287,16 @@ export function ArchitectureFlow() {
             absolute;
 
           left:
-            32px;
+            30px;
 
           right:
-            32px;
+            30px;
 
           top:
-            184px;
+            174px;
 
           bottom:
-            50px;
+            42px;
 
           display:
             flex;
@@ -1261,7 +1316,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           UPLOAD VISUAL
+           UPLOAD
            ===================================================== */
 
         .hl-upload-visual {
@@ -1286,7 +1341,7 @@ export function ArchitectureFlow() {
             center;
 
           gap:
-            15px;
+            14px;
         }
 
 
@@ -1296,14 +1351,14 @@ export function ArchitectureFlow() {
             0;
 
           padding:
-            19px;
+            18px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            18px;
+            17px;
 
           background:
             #FAF8F3;
@@ -1313,10 +1368,10 @@ export function ArchitectureFlow() {
         .hl-file-icon,
         .hl-storage-icon {
           width:
-            39px;
+            38px;
 
           height:
-            39px;
+            38px;
 
           display:
             grid;
@@ -1325,10 +1380,10 @@ export function ArchitectureFlow() {
             center;
 
           margin-bottom:
-            13px;
+            12px;
 
           border-radius:
-            12px;
+            11px;
 
           background:
             var(--espresso);
@@ -1340,7 +1395,7 @@ export function ArchitectureFlow() {
 
         .hl-visual-title {
           font-size:
-            11px;
+            10px;
 
           font-weight:
             900;
@@ -1355,10 +1410,10 @@ export function ArchitectureFlow() {
             #857B72;
 
           font-size:
-            9px;
+            8px;
 
           line-height:
-            1.45;
+            1.4;
         }
 
 
@@ -1367,7 +1422,7 @@ export function ArchitectureFlow() {
             var(--olive);
 
           font-size:
-            20px;
+            19px;
 
           font-weight:
             900;
@@ -1381,6 +1436,7 @@ export function ArchitectureFlow() {
 
 
         @keyframes hlArchArrow {
+
           0%,
           100% {
             transform:
@@ -1401,6 +1457,7 @@ export function ArchitectureFlow() {
             opacity:
               1;
           }
+
         }
 
 
@@ -1420,24 +1477,24 @@ export function ArchitectureFlow() {
             1fr;
 
           gap:
-            12px;
+            11px;
         }
 
 
         .hl-document-mini,
         .hl-profile-mini {
           min-height:
-            160px;
+            145px;
 
           padding:
-            16px;
+            15px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            17px;
+            16px;
 
           background:
             #FAF8F3;
@@ -1446,13 +1503,13 @@ export function ArchitectureFlow() {
 
         .hl-mini-heading {
           margin-bottom:
-            12px;
+            11px;
 
           color:
             #81786F;
 
           font-size:
-            8px;
+            7px;
 
           font-weight:
             900;
@@ -1497,7 +1554,7 @@ export function ArchitectureFlow() {
             inline-flex;
 
           padding:
-            7px 8px;
+            6px 7px;
 
           margin:
             3px;
@@ -1512,7 +1569,7 @@ export function ArchitectureFlow() {
             var(--olive-dark);
 
           font-size:
-            8px;
+            7px;
 
           font-weight:
             800;
@@ -1520,7 +1577,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           EMBED VISUAL
+           EMBED
            ===================================================== */
 
         .hl-embed-visual {
@@ -1537,22 +1594,16 @@ export function ArchitectureFlow() {
             center;
 
           gap:
-            13px;
-
-          min-height:
-            0;
+            12px;
         }
 
 
         .hl-embedding-label {
-          margin:
-            0;
-
           color:
             #7F766D;
 
           font-size:
-            8px;
+            7px;
 
           line-height:
             1;
@@ -1582,32 +1633,29 @@ export function ArchitectureFlow() {
             );
 
           grid-auto-rows:
-            16px;
+            14px;
 
           gap:
-            6px;
+            5px;
 
           width:
             100%;
 
           padding:
-            14px;
+            12px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            17px;
+            16px;
 
           background:
             #FAF8F3;
 
           overflow:
             hidden;
-
-          flex-shrink:
-            0;
         }
 
 
@@ -1616,19 +1664,13 @@ export function ArchitectureFlow() {
             100%;
 
           height:
-            16px;
+            14px;
 
           border-radius:
             999px;
 
           background:
             #DFE5D4;
-
-          opacity:
-            0.55;
-
-          transform-origin:
-            center;
 
           animation:
             hlArchitecturePulse
@@ -1657,6 +1699,7 @@ export function ArchitectureFlow() {
 
 
         @keyframes hlArchitecturePulse {
+
           0%,
           100% {
             transform:
@@ -1677,6 +1720,7 @@ export function ArchitectureFlow() {
             opacity:
               0.9;
           }
+
         }
 
 
@@ -1694,13 +1738,7 @@ export function ArchitectureFlow() {
             );
 
           gap:
-            9px;
-
-          width:
-            100%;
-
-          flex-shrink:
-            0;
+            8px;
         }
 
 
@@ -1709,10 +1747,10 @@ export function ArchitectureFlow() {
             0;
 
           padding:
-            11px;
+            10px;
 
           border-radius:
-            11px;
+            10px;
 
           background:
             #F0EEE7;
@@ -1727,7 +1765,7 @@ export function ArchitectureFlow() {
             block;
 
           font-size:
-            14px;
+            13px;
 
           line-height:
             1;
@@ -1748,27 +1786,27 @@ export function ArchitectureFlow() {
             block;
 
           margin-top:
-            5px;
+            4px;
 
           color:
             #847B72;
 
           font-size:
-            7px;
+            6.5px;
 
           line-height:
-            1.35;
+            1.3;
 
           text-transform:
             uppercase;
 
           letter-spacing:
-            0.08em;
+            0.07em;
         }
 
 
         /* =====================================================
-           SEARCH VISUAL
+           SEARCH
            ===================================================== */
 
         .hl-search-visual {
@@ -1779,10 +1817,10 @@ export function ArchitectureFlow() {
 
         .hl-query-box {
           padding:
-            15px;
+            14px;
 
           border-radius:
-            15px;
+            14px;
 
           background:
             var(--espresso);
@@ -1797,7 +1835,7 @@ export function ArchitectureFlow() {
             #9C958B;
 
           font-size:
-            8px;
+            7px;
 
           text-transform:
             uppercase;
@@ -1812,7 +1850,7 @@ export function ArchitectureFlow() {
 
         .hl-query-text {
           margin-top:
-            7px;
+            6px;
 
           font-family:
             Georgia,
@@ -1820,13 +1858,10 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            18px;
+            16px;
 
           line-height:
             1.1;
-
-          letter-spacing:
-            -0.02em;
         }
 
 
@@ -1835,10 +1870,10 @@ export function ArchitectureFlow() {
             grid;
 
           gap:
-            7px;
+            6px;
 
           margin-top:
-            11px;
+            10px;
         }
 
 
@@ -1847,7 +1882,7 @@ export function ArchitectureFlow() {
             grid;
 
           grid-template-columns:
-            31px
+            30px
             minmax(
               0,
               1fr
@@ -1858,49 +1893,29 @@ export function ArchitectureFlow() {
             center;
 
           gap:
-            10px;
+            9px;
 
           padding:
-            10px;
+            9px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            13px;
+            12px;
 
           background:
             #FAF8F3;
-
-          transition:
-            transform 220ms ease,
-            border-color 220ms ease;
-        }
-
-
-        .hl-search-result:hover {
-          transform:
-            translateX(
-              3px
-            );
-
-          border-color:
-            rgba(
-              111,
-              125,
-              85,
-              0.3
-            );
         }
 
 
         .hl-search-rank {
           width:
-            29px;
+            28px;
 
           height:
-            29px;
+            28px;
 
           display:
             grid;
@@ -1909,7 +1924,7 @@ export function ArchitectureFlow() {
             center;
 
           border-radius:
-            9px;
+            8px;
 
           background:
             #ECE8DE;
@@ -1918,7 +1933,7 @@ export function ArchitectureFlow() {
             #6F665D;
 
           font-size:
-            9px;
+            8px;
 
           font-weight:
             900;
@@ -1937,7 +1952,7 @@ export function ArchitectureFlow() {
 
         .hl-search-name {
           font-size:
-            10px;
+            9px;
 
           font-weight:
             900;
@@ -1952,10 +1967,10 @@ export function ArchitectureFlow() {
             #857C73;
 
           font-size:
-            8px;
+            7px;
 
           line-height:
-            1.35;
+            1.3;
         }
 
 
@@ -1964,7 +1979,7 @@ export function ArchitectureFlow() {
             var(--olive-dark);
 
           font-size:
-            11px;
+            10px;
 
           font-weight:
             900;
@@ -1972,7 +1987,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           EXPLAIN VISUAL
+           EXPLAIN
            ===================================================== */
 
         .hl-explain-visual {
@@ -1992,17 +2007,17 @@ export function ArchitectureFlow() {
             space-between;
 
           gap:
-            15px;
+            14px;
 
           padding:
-            18px;
+            17px;
 
           border:
             1px solid
             var(--border);
 
           border-radius:
-            17px;
+            16px;
 
           background:
             #FAF8F3;
@@ -2017,19 +2032,19 @@ export function ArchitectureFlow() {
             center;
 
           gap:
-            14px;
+            13px;
         }
 
 
         .hl-score-circle {
           width:
-            72px;
+            68px;
 
           height:
-            72px;
+            68px;
 
           flex:
-            0 0 72px;
+            0 0 68px;
 
           display:
             grid;
@@ -2057,7 +2072,7 @@ export function ArchitectureFlow() {
 
         .hl-score-circle span {
           font-size:
-            16px;
+            15px;
 
           font-weight:
             900;
@@ -2071,7 +2086,7 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            19px;
+            18px;
 
           line-height:
             1;
@@ -2080,16 +2095,13 @@ export function ArchitectureFlow() {
 
         .hl-score-role {
           margin-top:
-            5px;
+            4px;
 
           color:
             #847B72;
 
           font-size:
-            9px;
-
-          line-height:
-            1.35;
+            8px;
         }
 
 
@@ -2102,26 +2114,29 @@ export function ArchitectureFlow() {
             1fr;
 
           gap:
-            7px;
+            6px;
 
           margin-top:
-            11px;
+            10px;
         }
 
 
         .hl-evidence,
         .hl-gap {
+          min-width:
+            0;
+
           padding:
-            10px;
+            9px;
 
           border-radius:
-            11px;
+            10px;
 
           font-size:
-            8px;
+            7px;
 
           line-height:
-            1.45;
+            1.4;
 
           font-weight:
             800;
@@ -2147,7 +2162,7 @@ export function ArchitectureFlow() {
 
 
         /* =====================================================
-           PROGRESS — INSIDE CARD
+           PROGRESS
            ===================================================== */
 
         .hl-progress-bar {
@@ -2161,31 +2176,31 @@ export function ArchitectureFlow() {
             24px;
 
           bottom:
-            18px;
+            17px;
 
           height:
             3px;
 
-          background:
-            #E3DDD0;
-
           border-radius:
             999px;
+
+          background:
+            #E3DDD0;
 
           overflow:
             hidden;
 
           z-index:
-            10;
+            12;
         }
 
 
         .hl-progress-fill {
-          height:
-            100%;
-
           width:
             ${lineProgress * 100}%;
+
+          height:
+            100%;
 
           background:
             var(--olive);
@@ -2194,7 +2209,7 @@ export function ArchitectureFlow() {
             inherit;
 
           transition:
-            width 90ms linear;
+            width 100ms linear;
         }
 
 
@@ -2209,7 +2224,7 @@ export function ArchitectureFlow() {
             24px;
 
           bottom:
-            10px;
+            9px;
 
           display:
             flex;
@@ -2221,19 +2236,16 @@ export function ArchitectureFlow() {
             none;
 
           z-index:
-            11;
+            13;
         }
 
 
         .hl-progress-dot {
           width:
-            15px;
+            14px;
 
           height:
-            15px;
-
-          flex:
-            0 0 15px;
+            14px;
 
           border:
             3px solid
@@ -2251,8 +2263,7 @@ export function ArchitectureFlow() {
 
           transition:
             background 180ms ease,
-            transform 180ms ease,
-            box-shadow 180ms ease;
+            transform 180ms ease;
         }
 
 
@@ -2273,6 +2284,9 @@ export function ArchitectureFlow() {
 
         /* =====================================================
            FINAL NOTE
+
+           It now sits BELOW the story area instead of
+           competing with the card.
            ===================================================== */
 
         .hl-final-note {
@@ -2283,16 +2297,13 @@ export function ArchitectureFlow() {
             0;
 
           bottom:
-            2.8vh;
+            21px;
 
           width:
-            min(
-              310px,
-              40%
-            );
+            290px;
 
           padding-top:
-            12px;
+            9px;
 
           border-top:
             1px solid
@@ -2302,16 +2313,16 @@ export function ArchitectureFlow() {
             #887F75;
 
           font-size:
-            9px;
+            8px;
 
           line-height:
-            1.55;
+            1.45;
 
           text-align:
             right;
 
           z-index:
-            18;
+            20;
 
           pointer-events:
             none;
@@ -2334,10 +2345,10 @@ export function ArchitectureFlow() {
             serif;
 
           font-size:
-            18px;
+            16px;
 
           line-height:
-            1.05;
+            1.03;
 
           font-weight:
             500;
@@ -2369,12 +2380,9 @@ export function ArchitectureFlow() {
             min-height:
               auto;
 
-            display:
-              block;
-
             padding:
               110px 0
-              125px;
+              120px;
 
             overflow:
               visible;
@@ -2406,11 +2414,14 @@ export function ArchitectureFlow() {
             left:
               auto;
 
+            width:
+              100%;
+
             max-width:
               760px;
 
             margin-bottom:
-              60px;
+              55px;
 
             opacity:
               1 !important;
@@ -2430,47 +2441,41 @@ export function ArchitectureFlow() {
             inset:
               auto;
 
+            top:
+              auto;
+
+            bottom:
+              auto;
+
+            display:
+              grid;
+
             grid-template-columns:
               1fr;
 
             gap:
-              45px;
-
-            padding:
-              0;
+              42px;
           }
 
 
           .hl-arch-nav {
-            padding-top:
-              0;
-          }
-
-
-          .hl-arch-stage {
-            height:
+            min-height:
               auto;
 
-            min-height:
-              570px;
-
-            padding:
-              0;
-
-            align-items:
-              center;
+            display:
+              flex;
 
             justify-content:
               flex-start;
           }
 
 
-          .hl-arch-stage-bg {
+          .hl-arch-stage {
+            min-height:
+              540px;
+
             width:
-              min(
-                620px,
-                90vw
-              );
+              100%;
           }
 
 
@@ -2482,7 +2487,7 @@ export function ArchitectureFlow() {
               );
 
             height:
-              470px;
+              460px;
 
             min-height:
               430px;
@@ -2491,8 +2496,7 @@ export function ArchitectureFlow() {
               none;
 
             margin:
-              0 auto
-              25px;
+              0 auto;
           }
 
 
@@ -2513,7 +2517,7 @@ export function ArchitectureFlow() {
               );
 
             margin:
-              0 auto;
+              22px auto 0;
 
             text-align:
               left;
@@ -2539,7 +2543,7 @@ export function ArchitectureFlow() {
 
           .hl-arch-title {
             font-size:
-              46px;
+              45px;
           }
 
 
@@ -2558,13 +2562,13 @@ export function ArchitectureFlow() {
               );
 
             min-height:
-              68px;
+              66px;
           }
 
 
           .hl-arch-step-title {
             font-size:
-              19px;
+              18px;
           }
 
 
@@ -2576,7 +2580,7 @@ export function ArchitectureFlow() {
 
           .hl-arch-stage {
             min-height:
-              560px;
+              555px;
           }
 
 
@@ -2591,43 +2595,43 @@ export function ArchitectureFlow() {
               94%;
 
             height:
-              auto;
+              430px;
 
             min-height:
               430px;
 
             padding:
-              23px;
+              22px;
 
             border-radius:
-              23px;
+              22px;
           }
 
 
           .hl-arch-card-title {
             font-size:
-              26px;
+              25px;
           }
 
 
           .hl-arch-card-pill {
             max-width:
-              125px;
+              120px;
           }
 
 
           .hl-visual {
             left:
-              23px;
+              22px;
 
             right:
-              23px;
+              22px;
 
             top:
-              188px;
+              183px;
 
             bottom:
-              48px;
+              45px;
           }
 
 
@@ -2657,7 +2661,7 @@ export function ArchitectureFlow() {
           .hl-document-mini,
           .hl-profile-mini {
             min-height:
-              110px;
+              108px;
           }
 
 
@@ -2673,12 +2677,6 @@ export function ArchitectureFlow() {
 
             grid-auto-rows:
               13px;
-
-            gap:
-              5px;
-
-            padding:
-              11px;
           }
 
 
@@ -2690,28 +2688,25 @@ export function ArchitectureFlow() {
 
           .hl-embed-meta {
             gap:
-              6px;
+              5px;
           }
 
 
           .hl-embed-stat {
             padding:
-              8px;
+              7px;
           }
 
 
           .hl-embed-stat strong {
             font-size:
-              11px;
+              10px;
           }
 
 
           .hl-embed-stat span {
             font-size:
-              6px;
-
-            line-height:
-              1.2;
+              5.5px;
           }
 
 
@@ -2723,25 +2718,19 @@ export function ArchitectureFlow() {
 
           .hl-progress-bar {
             left:
-              20px;
+              18px;
 
             right:
-              20px;
-
-            bottom:
               18px;
           }
 
 
           .hl-progress-dots {
             left:
-              20px;
+              18px;
 
             right:
-              20px;
-
-            bottom:
-              10px;
+              18px;
           }
 
 
@@ -2756,7 +2745,7 @@ export function ArchitectureFlow() {
 
           .hl-final-note strong {
             font-size:
-              16px;
+              15px;
           }
 
         }
@@ -2781,8 +2770,7 @@ export function ArchitectureFlow() {
           .hl-arch-step-number,
           .hl-arch-step-content,
           .hl-arch-step-title,
-          .hl-progress-dot,
-          .hl-arch-card {
+          .hl-progress-dot {
             transition:
               none !important;
           }
@@ -2793,16 +2781,16 @@ export function ArchitectureFlow() {
 
 
       {/* =====================================================
-          STICKY EXPERIENCE
-          ===================================================== */}
+          STICKY ARCHITECTURE EXPERIENCE
+         ===================================================== */}
 
       <div className="hl-arch-sticky">
 
         <div className="hl-arch-shell">
 
-          {/* ===================================================
+          {/* =================================================
               INTRO
-             =================================================== */}
+             ================================================= */}
 
           <div
             className="hl-arch-intro"
@@ -2811,13 +2799,15 @@ export function ArchitectureFlow() {
                 1 -
                 Math.min(
                   1,
-                  progress / 0.34
+                  progress /
+                    0.36
                 ) *
-                  0.55,
+                  0.58,
 
               transform:
                 `translateY(${
-                  progress * -14
+                  progress *
+                  -14
                 }px)`,
             }}
           >
@@ -2857,15 +2847,15 @@ export function ArchitectureFlow() {
           </div>
 
 
-          {/* ===================================================
-              STORY SCENE
-             =================================================== */}
+          {/* =================================================
+              STORY
+             ================================================= */}
 
           <div className="hl-arch-scene">
 
-            {/* =================================================
+            {/* ===============================================
                 LEFT PIPELINE
-               ================================================= */}
+               =============================================== */}
 
             <div className="hl-arch-nav">
 
@@ -2947,9 +2937,9 @@ export function ArchitectureFlow() {
             </div>
 
 
-            {/* =================================================
-                RIGHT VISUAL
-               ================================================= */}
+            {/* ===============================================
+                VISUAL STAGE
+               =============================================== */}
 
             <div className="hl-arch-stage">
 
@@ -2958,7 +2948,8 @@ export function ArchitectureFlow() {
                 style={{
                   transform:
                     `translate(-50%, -50%) rotate(${
-                      progress * -14
+                      progress *
+                      -14
                     }deg)`,
                 }}
               />
@@ -2966,9 +2957,9 @@ export function ArchitectureFlow() {
 
               <div className="hl-arch-card">
 
-                {/* =============================================
+                {/* =========================================
                     CARD HEADER
-                   ============================================= */}
+                   ========================================= */}
 
                 <div className="hl-arch-card-top">
 
@@ -3011,9 +3002,9 @@ export function ArchitectureFlow() {
                 </div>
 
 
-                {/* =============================================
+                {/* =========================================
                     DESCRIPTION
-                   ============================================= */}
+                   ========================================= */}
 
                 <p className="hl-arch-card-copy">
 
@@ -3024,15 +3015,15 @@ export function ArchitectureFlow() {
                 </p>
 
 
-                {/* =============================================
-                    VISUAL AREA
-                   ============================================= */}
+                {/* =========================================
+                    VISUAL CONTENT
+                   ========================================= */}
 
                 <div className="hl-visual">
 
-                  {/* =========================================
+                  {/* =======================================
                       STAGE 01
-                     ========================================= */}
+                     ======================================= */}
 
                   {activeStep.visual ===
                     'upload' && (
@@ -3047,8 +3038,8 @@ export function ArchitectureFlow() {
                         <div className="hl-file-icon">
 
                           <svg
-                            width="19"
-                            height="19"
+                            width="18"
+                            height="18"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -3099,7 +3090,9 @@ export function ArchitectureFlow() {
                           >
 
                             <path d="M3 7h18" />
+
                             <path d="M5 7v13h14V7" />
+
                             <path d="M8 3h8l2 4H6z" />
 
                           </svg>
@@ -3122,9 +3115,9 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =========================================
+                  {/* =======================================
                       STAGE 02
-                     ========================================= */}
+                     ======================================= */}
 
                   {activeStep.visual ===
                     'normalize' && (
@@ -3162,17 +3155,21 @@ export function ArchitectureFlow() {
                           React
                         </span>
 
+
                         <span className="hl-profile-tag">
                           PostgreSQL
                         </span>
+
 
                         <span className="hl-profile-tag">
                           AI / ML
                         </span>
 
+
                         <span className="hl-profile-tag">
                           8 yrs
                         </span>
+
 
                         <span className="hl-profile-tag">
                           Next.js
@@ -3184,9 +3181,9 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =========================================
+                  {/* =======================================
                       STAGE 03
-                     ========================================= */}
+                     ======================================= */}
 
                   {activeStep.visual ===
                     'embed' && (
@@ -3269,9 +3266,9 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =========================================
+                  {/* =======================================
                       STAGE 04
-                     ========================================= */}
+                     ======================================= */}
 
                   {activeStep.visual ===
                     'search' && (
@@ -3386,9 +3383,9 @@ export function ArchitectureFlow() {
                   )}
 
 
-                  {/* =========================================
+                  {/* =======================================
                       STAGE 05
-                     ========================================= */}
+                     ======================================= */}
 
                   {activeStep.visual ===
                     'explain' && (
@@ -3458,9 +3455,9 @@ export function ArchitectureFlow() {
                 </div>
 
 
-                {/* =============================================
+                {/* =========================================
                     PROGRESS
-                   ============================================= */}
+                   ========================================= */}
 
                 <div className="hl-progress-bar">
 
@@ -3501,9 +3498,9 @@ export function ArchitectureFlow() {
               </div>
 
 
-              {/* ===============================================
+              {/* =============================================
                   FINAL NOTE
-                 =============================================== */}
+                 ============================================= */}
 
               <div className="hl-final-note">
 
