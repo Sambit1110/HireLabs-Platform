@@ -1,19 +1,62 @@
+'use client';
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
 
 export function HeroSection({
   onExploreClick,
   onViewArchClick,
 }) {
   const sectionRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const stages = [
+    {
+      number: '01',
+      label: 'RAW RESUME',
+      title: 'Start with the source.',
+      description:
+        'A resume begins as an unstructured document full of experience, skills, and context.',
+    },
+    {
+      number: '02',
+      label: 'UNDERSTANDING',
+      title: 'Read between the lines.',
+      description:
+        'HireLabs extracts the parts that matter: skills, seniority, experience, and technical context.',
+    },
+    {
+      number: '03',
+      label: 'VECTOR SIGNAL',
+      title: 'Turn meaning into a signal.',
+      description:
+        'The candidate becomes a high-dimensional representation designed for semantic search.',
+    },
+    {
+      number: '04',
+      label: 'SEMANTIC SEARCH',
+      title: 'Find the right match.',
+      description:
+        'Instead of relying on exact keywords, the system compares meaning between the role and the candidate.',
+    },
+    {
+      number: '05',
+      label: 'DECISION SUPPORT',
+      title: 'Make the result useful.',
+      description:
+        'Candidates are ranked with evidence and qualification gaps so recruiters can make better decisions.',
+    },
+  ];
 
   useEffect(() => {
-    const handleScroll = () => {
+    let rafId = null;
+
+    const updateProgress = () => {
       const section = sectionRef.current;
 
-      if (!section) return;
+      if (!section) {
+        return;
+      }
 
       const rect =
         section.getBoundingClientRect();
@@ -21,30 +64,50 @@ export function HeroSection({
       const viewportHeight =
         window.innerHeight;
 
-      const totalDistance = Math.max(
-        section.offsetHeight -
-          viewportHeight,
-        1
-      );
-
-      const progress = Math.min(
-        1,
+      const scrollDistance =
         Math.max(
-          0,
-          -rect.top /
-            totalDistance
-        )
-      );
+          section.offsetHeight -
+            viewportHeight,
+          1
+        );
 
-      setScrollProgress(progress);
+      const rawProgress =
+        -rect.top /
+        scrollDistance;
+
+      const nextProgress =
+        Math.min(
+          1,
+          Math.max(
+            0,
+            rawProgress
+          )
+        );
+
+      setProgress(nextProgress);
+
+      rafId = null;
     };
 
-    handleScroll();
+    const handleScroll = () => {
+      if (rafId !== null) {
+        return;
+      }
+
+      rafId =
+        window.requestAnimationFrame(
+          updateProgress
+        );
+    };
+
+    updateProgress();
 
     window.addEventListener(
       'scroll',
       handleScroll,
-      { passive: true }
+      {
+        passive: true,
+      }
     );
 
     window.addEventListener(
@@ -62,6 +125,12 @@ export function HeroSection({
         'resize',
         handleScroll
       );
+
+      if (rafId !== null) {
+        window.cancelAnimationFrame(
+          rafId
+        );
+      }
     };
   }, []);
 
@@ -72,215 +141,221 @@ export function HeroSection({
   ) =>
     Math.min(
       max,
-      Math.max(min, value)
+      Math.max(
+        min,
+        value
+      )
     );
 
-  const heroProgress =
-    clamp(scrollProgress);
+  const stageProgress =
+    progress *
+    (stages.length - 1);
 
-  /*
-   * ==========================================================
-   * STORY TIMELINE
-   *
-   * 0 → 28%   Hero introduction
-   * 18 → 60%  Resume transforms into match signal
-   * 52 → 80%  Technical intelligence appears
-   * 72 → 100% Hero settles into the next section
-   * ==========================================================
-   */
+  const activeStage =
+    Math.min(
+      stages.length - 1,
+      Math.floor(stageProgress)
+    );
 
-  const introProgress =
+  const localStageProgress =
+    stageProgress -
+    activeStage;
+
+  const smoothStage =
     clamp(
-      heroProgress / 0.28
+      localStageProgress
     );
 
-  const transformProgress =
+  /*
+   * Intro fades slightly as the visual
+   * story takes over.
+   */
+  const heroIntro =
+    1 -
     clamp(
-      (heroProgress - 0.18) /
-        0.42
-    );
-
-  const detailProgress =
-    clamp(
-      (heroProgress - 0.52) /
-        0.28
-    );
-
-  const metricsProgress =
-    clamp(
-      (heroProgress - 0.72) /
-        0.28
-    );
+      progress / 0.28
+    ) *
+      0.45;
 
   /*
-   * ==========================================================
-   * RESUME MOTION
-   * ==========================================================
+   * Large central scene movement.
    */
+  const sceneScale =
+    1 +
+    progress *
+      0.035;
 
-  const resumeScale =
-    1 -
-    transformProgress *
-      0.13;
-
-  const resumeY =
-    transformProgress *
-    -48;
-
-  const resumeOpacity =
-    1 -
-    transformProgress *
-      0.62;
-
-  const resumeRotate =
-    transformProgress *
-    -1.1;
+  const sceneY =
+    progress *
+    -16;
 
   /*
-   * ==========================================================
-   * MATCH INSIGHT
-   * ==========================================================
+   * Text overlay on the left.
    */
-
-  const insightY =
-    88 -
-    transformProgress *
-      88;
-
-  const insightOpacity =
-    transformProgress;
-
-  const insightScale =
-    0.95 +
-    transformProgress *
-      0.05;
+  const textY =
+    progress *
+    -24;
 
   /*
-   * ==========================================================
-   * TECHNICAL DETAIL
-   * ==========================================================
+   * Stage-specific transitions.
    */
+  const stageFade =
+    smoothStage >
+    0.78
+      ? 1 -
+        ((smoothStage -
+          0.78) /
+          0.22)
+      : 1;
 
-  const detailY =
-    50 -
-    detailProgress *
-      50;
+  const nextStageFade =
+    smoothStage < 0.22
+      ? smoothStage /
+        0.22
+      : 1;
 
-  const detailOpacity =
-    detailProgress;
+  const currentStage =
+    stages[activeStage];
 
   /*
-   * ==========================================================
-   * HERO OPACITY
-   * ==========================================================
+   * Progress around the five-step
+   * story.
    */
+  const progressPercent =
+    progress * 100;
 
-  const copyOpacity =
-    1 -
-    heroProgress *
-      0.08;
-
-  const bottomOpacity =
-    1 -
-    metricsProgress *
-      0.28;
+  /*
+   * Decorative vector particles.
+   */
+  const particles =
+    Array.from({
+      length: 72,
+    });
 
   return (
-    <>
+    <section
+      ref={sectionRef}
+      className="hl-story-hero"
+      id="heroSection"
+    >
       <style>{`
 
-        /* ====================================================
-           HERO ROOT
-           ==================================================== */
+        /* ======================================================
+           ROOT
+           ====================================================== */
 
-        .hirelabs-hero {
-          --hl-cream: #F5F1E8;
-          --hl-cream-soft: #EEE9DD;
-          --hl-white: #FFFFFF;
+        .hl-story-hero {
+          --cream: #F5F1E8;
+          --cream-soft: #ECE6DA;
+          --white: #FFFFFF;
 
-          --hl-espresso: #211C18;
-          --hl-espresso-soft: #5E554D;
+          --espresso: #211C18;
+          --espresso-soft: #625950;
 
-          --hl-olive: #6F7D55;
-          --hl-olive-dark: #596544;
+          --olive: #6F7D55;
+          --olive-dark: #596544;
 
-          --hl-taupe: #C8C0AF;
-          --hl-border: #DED7CA;
+          --taupe: #C8C0AF;
+          --border: #DED7CA;
 
           position: relative;
 
-          min-height: 300vh;
+          min-height: 480vh;
 
           background:
             linear-gradient(
               180deg,
               #F7F2E8 0%,
-              var(--hl-cream) 65%,
-              #F3EEE4 100%
+              #F5F1E8 48%,
+              #EFE9DE 100%
             );
 
           color:
-            var(--hl-espresso);
+            var(--espresso);
 
           overflow: clip;
 
           isolation: isolate;
         }
 
-        .hirelabs-hero *,
-        .hirelabs-hero *::before,
-        .hirelabs-hero *::after {
+
+        .hl-story-hero *,
+        .hl-story-hero *::before,
+        .hl-story-hero *::after {
           box-sizing: border-box;
         }
 
 
-        /* ====================================================
-           STICKY SCENE
-           ==================================================== */
+        /* ======================================================
+           STICKY VIEW
+           ====================================================== */
 
-        .hl-hero-sticky {
+        .hl-story-sticky {
           position: sticky;
 
           top: 0;
 
           height: 100vh;
 
-          min-height: 100vh;
+          min-height: 680px;
+
+          overflow: hidden;
 
           display: flex;
 
           align-items: center;
 
-          overflow: hidden;
-
           isolation: isolate;
         }
 
 
-        /* ====================================================
-           SUBTLE BACKDROP
-           ==================================================== */
+        /* ======================================================
+           GRAIN
+           ====================================================== */
 
-        .hl-hero-sticky::before {
-          content: '';
-
+        .hl-story-grain {
           position: absolute;
 
-          width: min(
-            850px,
-            72vw
-          );
+          inset: 0;
 
-          height: min(
-            850px,
-            72vw
-          );
+          z-index: 0;
 
-          right:
-            -250px;
+          pointer-events: none;
 
-          top:
-            -280px;
+          opacity: 0.16;
+
+          background-image:
+            radial-gradient(
+              rgba(
+                33,
+                28,
+                24,
+                0.13
+              )
+              0.5px,
+              transparent
+              0.5px
+            );
+
+          background-size:
+            7px 7px;
+
+          mask-image:
+            linear-gradient(
+              to bottom,
+              black,
+              transparent
+              94%
+            );
+        }
+
+
+        /* ======================================================
+           BACKGROUND RINGS
+           ====================================================== */
+
+        .hl-story-ring {
+          position: absolute;
 
           border:
             1px solid
@@ -288,72 +363,121 @@ export function HeroSection({
               111,
               125,
               85,
-              0.08
+              0.11
             );
 
-          border-radius: 50%;
-
-          opacity:
-            0.8;
+          border-radius:
+            50%;
 
           pointer-events: none;
+
+          z-index: 0;
         }
 
-        .hl-hero-sticky::after {
-          content: '';
 
-          position: absolute;
+        .hl-story-ring.one {
+          width:
+            min(
+              900px,
+              78vw
+            );
 
-          width: 430px;
+          aspect-ratio: 1;
 
-          height: 430px;
+          right:
+            -260px;
+
+          top:
+            -240px;
+
+          transform:
+            rotate(
+              ${progress * -12}deg
+            );
+        }
+
+
+        .hl-story-ring.two {
+          width:
+            min(
+              640px,
+              58vw
+            );
+
+          aspect-ratio: 1;
+
+          right:
+            -120px;
+
+          top:
+            -100px;
+
+          border-style:
+            dashed;
+
+          transform:
+            rotate(
+              ${progress * 18}deg
+            );
+        }
+
+
+        .hl-story-ring.three {
+          width:
+            430px;
+
+          height:
+            430px;
 
           left:
-            -300px;
+            -280px;
 
           bottom:
-            -230px;
+            -240px;
 
-          border:
-            1px dashed
-            rgba(
-              111,
-              125,
-              85,
-              0.06
-            );
+          border-style:
+            dashed;
 
-          border-radius: 50%;
-
-          pointer-events: none;
+          opacity:
+            0.5;
         }
 
 
-        /* ====================================================
-           HERO CONTAINER
-           ==================================================== */
+        /* ======================================================
+           MAIN WRAPPER
+           ====================================================== */
 
-        .hl-hero-container {
+        .hl-story-shell {
           position: relative;
 
           z-index: 2;
 
           width:
             min(
-              1240px,
+              1320px,
               calc(100% - 64px)
             );
 
-          margin:
-            0 auto;
+          height: 100%;
+
+          margin: 0 auto;
         }
 
 
-        /* ====================================================
-           TOPLINE
-           ==================================================== */
+        /* ======================================================
+           TOP META
+           ====================================================== */
 
-        .hl-hero-topline {
+        .hl-story-meta {
+          position: absolute;
+
+          top:
+            34px;
+
+          left: 0;
+
+          right: 0;
+
           display: flex;
 
           align-items: center;
@@ -361,62 +485,51 @@ export function HeroSection({
           justify-content:
             space-between;
 
-          gap: 24px;
+          gap: 20px;
 
-          margin-bottom:
-            clamp(
-              35px,
-              6vh,
-              75px
-            );
+          z-index: 12;
 
           opacity:
-            ${1 -
-            introProgress *
-              0.05};
-
-          transform:
-            translateY(
-              ${introProgress *
-                -4}px
-            );
-
-          transition:
-            opacity 180ms
-            linear;
+            ${heroIntro};
         }
 
-        .hl-eyebrow {
+
+        .hl-story-meta-left {
           display: inline-flex;
 
           align-items: center;
 
           gap: 10px;
 
-          font-size: 10px;
+          color:
+            var(--espresso-soft);
+
+          font-size: 9px;
 
           line-height: 1;
 
+          font-weight: 800;
+
           letter-spacing:
-            0.16em;
+            0.15em;
 
           text-transform:
             uppercase;
-
-          font-weight: 700;
-
-          color:
-            var(--hl-espresso-soft);
         }
 
-        .hl-eyebrow-dot {
-          width: 7px;
-          height: 7px;
 
-          border-radius: 999px;
+        .hl-story-meta-dot {
+          width:
+            7px;
+
+          height:
+            7px;
+
+          border-radius:
+            50%;
 
           background:
-            var(--hl-olive);
+            var(--olive);
 
           box-shadow:
             0 0 0 4px
@@ -424,17 +537,18 @@ export function HeroSection({
               111,
               125,
               85,
-              0.12
+              0.11
             );
         }
 
-        .hl-version {
+
+        .hl-story-meta-pill {
           padding:
             8px 11px;
 
           border:
             1px solid
-            var(--hl-border);
+            var(--border);
 
           border-radius:
             999px;
@@ -447,109 +561,101 @@ export function HeroSection({
               0.46
             );
 
-          font-size: 9px;
+          color:
+            #766D63;
+
+          font-size:
+            8px;
+
+          font-weight:
+            800;
 
           letter-spacing:
-            0.1em;
+            0.08em;
 
           text-transform:
             uppercase;
-
-          font-weight: 700;
-
-          color:
-            var(--hl-espresso-soft);
-
-          white-space:
-            nowrap;
         }
 
 
-        /* ====================================================
-           HERO GRID
-           ==================================================== */
+        /* ======================================================
+           INTRO COPY
+           ====================================================== */
 
-        .hl-hero-grid {
-          display: grid;
+        .hl-story-copy {
+          position: absolute;
 
-          grid-template-columns:
-            minmax(
-              0,
-              1.02fr
-            )
-            minmax(
-              420px,
-              0.98fr
+          z-index: 10;
+
+          left: 0;
+
+          top:
+            50%;
+
+          width:
+            min(
+              590px,
+              48%
             );
-
-          gap:
-            clamp(
-              48px,
-              7vw,
-              120px
-            );
-
-          align-items:
-            center;
-        }
-
-
-        /* ====================================================
-           LEFT COPY
-           ==================================================== */
-
-        .hl-copy {
-          max-width:
-            690px;
-
-          position:
-            relative;
-
-          z-index: 4;
 
           transform:
             translate3d(
               0,
-              ${introProgress *
-                -10}px,
+              calc(
+                -50% +
+                ${textY}px
+              ),
               0
             );
 
           opacity:
-            ${copyOpacity};
-
-          transition:
-            opacity 160ms
-            linear;
+            ${heroIntro};
         }
 
-        .hl-kicker {
-          display: inline-block;
+
+        .hl-story-kicker {
+          display: inline-flex;
+
+          align-items: center;
+
+          gap: 9px;
 
           margin-bottom:
-            24px;
+            22px;
 
           color:
-            var(--hl-olive-dark);
+            var(--olive-dark);
 
-          font-size: 10px;
+          font-size:
+            10px;
 
           line-height: 1;
 
-          font-weight: 800;
+          font-weight:
+            900;
 
           letter-spacing:
-            0.12em;
+            0.14em;
 
           text-transform:
             uppercase;
         }
 
-        .hl-title {
-          margin: 0;
 
-          max-width:
-            760px;
+        .hl-story-kicker-line {
+          width:
+            28px;
+
+          height:
+            1px;
+
+          background:
+            var(--olive);
+        }
+
+
+        .hl-story-title {
+          margin: 0;
 
           font-family:
             Georgia,
@@ -558,100 +664,98 @@ export function HeroSection({
 
           font-size:
             clamp(
-              52px,
-              6.3vw,
-              92px
+              58px,
+              7vw,
+              98px
             );
 
           line-height:
-            0.92;
+            0.9;
 
           letter-spacing:
-            -0.058em;
+            -0.06em;
 
           font-weight:
             500;
         }
 
-        .hl-title-line {
-          display:
-            block;
-        }
 
-        .hl-title-accent {
+        .hl-story-title em {
           color:
-            var(--hl-olive);
+            var(--olive);
 
           font-style:
             italic;
         }
 
-        .hl-description {
+
+        .hl-story-description {
           max-width:
-            600px;
+            530px;
 
           margin:
-            32px 0 0;
+            27px 0 0;
 
           color:
-            var(--hl-espresso-soft);
+            var(--espresso-soft);
 
           font-size:
-            clamp(
-              15px,
-              1.35vw,
-              18px
-            );
+            15px;
 
           line-height:
-            1.7;
+            1.72;
         }
 
-        .hl-actions {
-          display:
-            flex;
 
-          flex-wrap:
-            wrap;
+        .hl-story-actions {
+          display: flex;
 
-          align-items:
-            center;
+          align-items: center;
 
-          gap:
-            12px;
+          flex-wrap: wrap;
+
+          gap: 11px;
 
           margin-top:
-            34px;
+            31px;
         }
 
-        .hl-quiet-note {
+
+        .hl-story-note {
           margin-top:
-            22px;
+            18px;
 
           color:
-            #7A7168;
+            #857C73;
 
           font-size:
-            11px;
+            9px;
 
           line-height:
             1.5;
+
+          letter-spacing:
+            0.03em;
         }
 
 
-        /* ====================================================
-           PRODUCT STAGE
-           ==================================================== */
+        /* ======================================================
+           STORY STAGE
+           ====================================================== */
 
-        .hl-product-stage {
-          position:
-            relative;
+        .hl-story-stage {
+          position: absolute;
 
-          min-height:
-            min(
-              640px,
-              68vh
-            );
+          right:
+            -20px;
+
+          top: 0;
+
+          width:
+            65%;
+
+          height:
+            100%;
 
           display:
             flex;
@@ -661,25 +765,219 @@ export function HeroSection({
 
           justify-content:
             center;
+
+          transform:
+            translate3d(
+              0,
+              ${sceneY}px,
+              0
+            )
+            scale(
+              ${sceneScale}
+            );
+
+          transform-origin:
+            center center;
+
+          will-change:
+            transform;
         }
 
 
-        /* ====================================================
-           ORBIT
-           ==================================================== */
+        /* ======================================================
+           CENTRAL VISUAL FRAME
+           ====================================================== */
 
-        .hl-product-orbit {
-          position:
-            absolute;
+        .hl-story-frame {
+          position: relative;
 
           width:
             min(
-              620px,
-              52vw
+              720px,
+              100%
             );
 
-          aspect-ratio:
-            1;
+          height:
+            min(
+              650px,
+              76vh
+            );
+
+          border:
+            1px solid
+            rgba(
+              222,
+              215,
+              202,
+              0.9
+            );
+
+          border-radius:
+            34px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.52
+            );
+
+          box-shadow:
+            0 35px 100px
+            rgba(
+              47,
+              41,
+              35,
+              0.07
+            );
+
+          overflow:
+            hidden;
+        }
+
+
+        /* ======================================================
+           FRAME TOP
+           ====================================================== */
+
+        .hl-story-frame-top {
+          position: absolute;
+
+          top: 0;
+
+          left: 0;
+
+          right: 0;
+
+          height:
+            63px;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            space-between;
+
+          padding:
+            0 22px;
+
+          border-bottom:
+            1px solid
+            var(--border);
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.38
+            );
+
+          z-index: 20;
+        }
+
+
+        .hl-story-frame-status {
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap: 8px;
+
+          color:
+            #746B62;
+
+          font-size:
+            8px;
+
+          font-weight:
+            800;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
+        }
+
+
+        .hl-story-frame-status-dot {
+          width:
+            6px;
+
+          height:
+            6px;
+
+          border-radius:
+            50%;
+
+          background:
+            var(--olive);
+        }
+
+
+        .hl-story-frame-stage {
+          color:
+            var(--olive-dark);
+
+          font-size:
+            8px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
+        }
+
+
+        /* ======================================================
+           VISUAL CANVAS
+           ====================================================== */
+
+        .hl-story-canvas {
+          position: absolute;
+
+          inset:
+            63px 0 0 0;
+
+          overflow:
+            hidden;
+        }
+
+
+        .hl-story-canvas::before {
+          content:
+            '';
+
+          position: absolute;
+
+          width:
+            520px;
+
+          height:
+            520px;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
 
           border:
             1px solid
@@ -687,35 +985,40 @@ export function HeroSection({
               111,
               125,
               85,
-              0.15
+              0.1
             );
 
           border-radius:
             50%;
 
-          transform:
-            rotate(-14deg)
-            scale(
-              ${1 -
-              detailProgress *
-                0.04}
-            );
-
-          transition:
-            transform 140ms
-            linear;
+          pointer-events:
+            none;
         }
 
-        .hl-product-orbit::before,
-        .hl-product-orbit::after {
+
+        .hl-story-canvas::after {
           content:
             '';
 
-          position:
-            absolute;
+          position: absolute;
 
-          inset:
-            12%;
+          width:
+            370px;
+
+          height:
+            370px;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
 
           border:
             1px dashed
@@ -723,804 +1026,44 @@ export function HeroSection({
               111,
               125,
               85,
-              0.13
+              0.08
             );
 
           border-radius:
             50%;
-        }
-
-        .hl-product-orbit::after {
-          inset:
-            25%;
-
-          border-style:
-            solid;
-
-          opacity:
-            0.45;
-        }
-
-
-        /* ====================================================
-           RESUME CARD
-           ==================================================== */
-
-        .hl-resume-card {
-          position:
-            relative;
-
-          width:
-            min(
-              450px,
-              90%
-            );
-
-          min-height:
-            540px;
-
-          padding:
-            28px;
-
-          border-radius:
-            27px;
-
-          background:
-            var(--hl-white);
-
-          border:
-            1px solid
-            var(--hl-border);
-
-          box-shadow:
-            0 32px 85px
-            rgba(
-              49,
-              43,
-              36,
-              0.12
-            ),
-
-            0 8px 24px
-            rgba(
-              49,
-              43,
-              36,
-              0.05
-            );
-
-          transform:
-            translate3d(
-              0,
-              ${resumeY}px,
-              0
-            )
-            scale(
-              ${resumeScale}
-            )
-            rotate(
-              ${resumeRotate}deg
-            );
-
-          opacity:
-            ${0.98 -
-            transformProgress *
-              0.08};
-
-          z-index:
-            3;
-
-          overflow:
-            hidden;
-
-          transform-origin:
-            center center;
-        }
-
-        .hl-resume-top {
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            space-between;
-
-          gap:
-            20px;
-
-          padding-bottom:
-            22px;
-
-          border-bottom:
-            1px solid
-            #E9E4DA;
-        }
-
-        .hl-resume-name {
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            24px;
-
-          line-height:
-            1;
-
-          letter-spacing:
-            -0.03em;
-        }
-
-        .hl-resume-role {
-          margin-top:
-            7px;
-
-          color:
-            #7B7269;
-
-          font-size:
-            11px;
-        }
-
-        .hl-resume-mark {
-          width:
-            43px;
-
-          height:
-            43px;
-
-          display:
-            grid;
-
-          place-items:
-            center;
-
-          border-radius:
-            14px;
-
-          background:
-            var(--hl-espresso);
-
-          color:
-            var(--hl-cream);
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            17px;
-        }
-
-        .hl-resume-section {
-          margin-top:
-            25px;
-        }
-
-        .hl-resume-section-label {
-          margin-bottom:
-            13px;
-
-          color:
-            #8A8177;
-
-          font-size:
-            9px;
-
-          line-height:
-            1;
-
-          letter-spacing:
-            0.14em;
-
-          text-transform:
-            uppercase;
-
-          font-weight:
-            800;
-        }
-
-        .hl-resume-line {
-          height:
-            9px;
-
-          border-radius:
-            999px;
-
-          margin:
-            9px 0;
-
-          background:
-            #EAE5DA;
-        }
-
-        .hl-resume-line.short {
-          width:
-            58%;
-        }
-
-        .hl-resume-line.medium {
-          width:
-            77%;
-        }
-
-        .hl-resume-line.long {
-          width:
-            92%;
-        }
-
-        .hl-resume-skills {
-          display:
-            flex;
-
-          flex-wrap:
-            wrap;
-
-          gap:
-            8px;
-        }
-
-        .hl-skill {
-          padding:
-            8px 10px;
-
-          border-radius:
-            999px;
-
-          background:
-            #F2EEE4;
-
-          border:
-            1px solid
-            #E4DED2;
-
-          color:
-            #5F574F;
-
-          font-size:
-            10px;
-
-          font-weight:
-            700;
-        }
-
-        .hl-resume-footer {
-          position:
-            absolute;
-
-          left:
-            28px;
-
-          right:
-            28px;
-
-          bottom:
-            26px;
-
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            space-between;
-
-          gap:
-            16px;
-
-          padding-top:
-            18px;
-
-          border-top:
-            1px solid
-            #E9E4DA;
-
-          color:
-            #8A8177;
-
-          font-size:
-            10px;
-        }
-
-
-        /* ====================================================
-           MATCH INSIGHT
-           ==================================================== */
-
-        .hl-transform-layer {
-          position:
-            absolute;
-
-          width:
-            min(
-              420px,
-              82%
-            );
-
-          z-index:
-            5;
-
-          transform:
-            translate3d(
-              0,
-              ${insightY}px,
-              0
-            )
-            scale(
-              ${insightScale}
-            );
-
-          opacity:
-            ${insightOpacity};
 
           pointer-events:
             none;
-
-          will-change:
-            transform,
-            opacity;
-        }
-
-        .hl-insight-card {
-          padding:
-            24px;
-
-          border-radius:
-            24px;
-
-          background:
-            var(--hl-espresso);
-
-          color:
-            var(--hl-cream);
-
-          box-shadow:
-            0 38px 95px
-            rgba(
-              33,
-              28,
-              24,
-              0.21
-            );
-        }
-
-        .hl-insight-header {
-          display:
-            flex;
-
-          align-items:
-            flex-start;
-
-          justify-content:
-            space-between;
-
-          gap:
-            20px;
-        }
-
-        .hl-insight-label {
-          font-size:
-            9px;
-
-          line-height:
-            1;
-
-          letter-spacing:
-            0.14em;
-
-          text-transform:
-            uppercase;
-
-          color:
-            #BEB8AE;
-
-          font-weight:
-            800;
-        }
-
-        .hl-insight-title {
-          margin-top:
-            9px;
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            24px;
-
-          letter-spacing:
-            -0.03em;
-        }
-
-        .hl-score {
-          min-width:
-            84px;
-
-          text-align:
-            right;
-        }
-
-        .hl-score-number {
-          display:
-            block;
-
-          color:
-            #B9C69A;
-
-          font-size:
-            28px;
-
-          line-height:
-            1;
-
-          font-weight:
-            800;
-
-          letter-spacing:
-            -0.04em;
-        }
-
-        .hl-score-label {
-          margin-top:
-            5px;
-
-          color:
-            #9D978D;
-
-          font-size:
-            9px;
-
-          text-transform:
-            uppercase;
-
-          letter-spacing:
-            0.08em;
-        }
-
-        .hl-insight-divider {
-          height:
-            1px;
-
-          margin:
-            20px 0;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.13
-            );
-        }
-
-        .hl-match-grid {
-          display:
-            grid;
-
-          gap:
-            11px;
-        }
-
-        .hl-match-row {
-          display:
-            grid;
-
-          grid-template-columns:
-            1fr
-            auto;
-
-          gap:
-            15px;
-
-          align-items:
-            center;
-        }
-
-        .hl-match-left {
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          gap:
-            9px;
-
-          color:
-            #E2DDD3;
-
-          font-size:
-            11px;
-        }
-
-        .hl-check {
-          width:
-            18px;
-
-          height:
-            18px;
-
-          display:
-            grid;
-
-          place-items:
-            center;
-
-          border-radius:
-            50%;
-
-          background:
-            rgba(
-              111,
-              125,
-              85,
-              0.3
-            );
-
-          color:
-            #C2D19F;
-
-          font-size:
-            10px;
-
-          font-weight:
-            800;
-        }
-
-        .hl-match-value {
-          color:
-            #AAA39A;
-
-          font-size:
-            10px;
-
-          font-weight:
-            700;
         }
 
 
-        /* ====================================================
-           TECHNICAL DETAIL
-           ==================================================== */
+        /* ======================================================
+           STAGE LABEL
+           ====================================================== */
 
-        .hl-detail-card {
+        .hl-stage-label {
           position:
             absolute;
 
-          right:
-            -24px;
-
-          bottom:
-            40px;
-
-          width:
-            235px;
-
-          padding:
-            18px;
-
-          border-radius:
-            18px;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.94
-            );
-
-          border:
-            1px solid
-            var(--hl-border);
-
-          box-shadow:
-            0 24px 58px
-            rgba(
-              49,
-              43,
-              36,
-              0.12
-            );
-
-          transform:
-            translate3d(
-              ${detailY}px,
-              0,
-              0
-            );
-
-          opacity:
-            ${detailOpacity};
-
-          z-index:
-            7;
-
-          backdrop-filter:
-            blur(14px);
-        }
-
-        .hl-detail-label {
-          color:
-            #8A8177;
-
-          font-size:
-            8px;
-
-          line-height:
-            1;
-
-          letter-spacing:
-            0.14em;
-
-          text-transform:
-            uppercase;
-
-          font-weight:
-            800;
-        }
-
-        .hl-detail-title {
-          margin-top:
-            7px;
-
-          font-size:
-            13px;
-
-          font-weight:
-            800;
-        }
-
-        .hl-vector {
-          margin-top:
-            13px;
-
-          padding:
-            11px;
-
-          border-radius:
-            11px;
-
-          background:
-            #F4F0E7;
-
-          color:
-            #696158;
-
-          font-family:
-            'SFMono-Regular',
-            Consolas,
-            monospace;
-
-          font-size:
-            8px;
-
-          line-height:
-            1.65;
-
-          overflow:
-            hidden;
-        }
-
-
-        /* ====================================================
-           BOTTOM AREA
-           ==================================================== */
-
-        .hl-hero-bottom {
-          position:
-            absolute;
+          top:
+            32px;
 
           left:
-            0;
-
-          right:
-            0;
-
-          bottom:
-            30px;
+            32px;
 
           z-index:
-            6;
+            15;
 
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          justify-content:
-            space-between;
-
-          gap:
-            30px;
-
-          width:
-            min(
-              1240px,
-              calc(100% - 64px)
-            );
-
-          margin:
-            0 auto;
-
-          opacity:
-            ${bottomOpacity};
-
-          transition:
-            opacity 160ms
-            linear;
-        }
-
-        .hl-bottom-copy {
-          max-width:
-            330px;
-
-          color:
-            #82796F;
-
-          font-size:
-            11px;
-
-          line-height:
-            1.5;
-        }
-
-        .hl-metrics {
-          display:
-            flex;
-
-          align-items:
-            stretch;
-
-          gap:
-            0;
+          padding:
+            7px 9px;
 
           border:
             1px solid
-            var(--hl-border);
+            var(--border);
 
           border-radius:
-            18px;
+            999px;
 
-          overflow:
-            hidden;
-
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.48
-            );
-
-          backdrop-filter:
-            blur(12px);
-        }
-
-        .hl-metric {
-          min-width:
-            145px;
-
-          padding:
-            15px 18px;
-
-          border-right:
-            1px solid
-            var(--hl-border);
-
-          transition:
-            background 220ms ease;
-        }
-
-        .hl-metric:hover {
           background:
             rgba(
               255,
@@ -1528,45 +1071,1191 @@ export function HeroSection({
               255,
               0.7
             );
-        }
 
-        .hl-metric:last-child {
-          border-right:
-            0;
-        }
-
-        .hl-metric-number {
-          display:
-            block;
+          color:
+            #736A61;
 
           font-size:
-            18px;
+            7px;
 
           line-height:
             1;
 
           font-weight:
-            800;
+            900;
 
           letter-spacing:
-            -0.03em;
+            0.1em;
+
+          text-transform:
+            uppercase;
         }
 
-        .hl-metric-label {
-          display:
-            block;
 
-          margin-top:
-            6px;
+        .hl-stage-title {
+          position:
+            absolute;
+
+          left:
+            32px;
+
+          bottom:
+            35px;
+
+          z-index:
+            15;
+
+          max-width:
+            250px;
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            28px;
+
+          line-height:
+            0.98;
+
+          letter-spacing:
+            -0.035em;
+        }
+
+
+        .hl-stage-description {
+          position:
+            absolute;
+
+          right:
+            31px;
+
+          bottom:
+            36px;
+
+          z-index:
+            15;
+
+          max-width:
+            220px;
 
           color:
-            #857D74;
+            #776E65;
 
           font-size:
             9px;
 
           line-height:
-            1.3;
+            1.55;
+
+          text-align:
+            right;
+        }
+
+
+        /* ======================================================
+           COMMON DOCUMENT
+           ====================================================== */
+
+        .hl-scene-document {
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          width:
+            390px;
+
+          min-height:
+            480px;
+
+          padding:
+            26px;
+
+          background:
+            #FFFFFF;
+
+          border:
+            1px solid
+            var(--border);
+
+          border-radius:
+            13px;
+
+          box-shadow:
+            0 30px 75px
+            rgba(
+              40,
+              35,
+              30,
+              0.12
+            );
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            )
+            rotate(
+              -3deg
+            );
+
+          transition:
+            transform 900ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+            opacity 600ms ease;
+        }
+
+
+        .hl-document-name {
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            23px;
+
+          letter-spacing:
+            -0.03em;
+        }
+
+
+        .hl-document-role {
+          margin-top:
+            6px;
+
+          color:
+            #7E756C;
+
+          font-size:
+            9px;
+        }
+
+
+        .hl-document-rule {
+          height:
+            1px;
+
+          margin:
+            18px 0;
+
+          background:
+            #E8E2D7;
+        }
+
+
+        .hl-document-label {
+          margin-bottom:
+            9px;
+
+          color:
+            #8A8177;
+
+          font-size:
+            7px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
+        }
+
+
+        .hl-document-line {
+          height:
+            7px;
+
+          margin:
+            8px 0;
+
+          border-radius:
+            999px;
+
+          background:
+            #E8E3D9;
+        }
+
+
+        .hl-document-line.long {
+          width:
+            94%;
+        }
+
+
+        .hl-document-line.medium {
+          width:
+            77%;
+        }
+
+
+        .hl-document-line.short {
+          width:
+            53%;
+        }
+
+
+        .hl-document-skills {
+          display:
+            flex;
+
+          flex-wrap:
+            wrap;
+
+          gap:
+            6px;
+
+          margin-top:
+            12px;
+        }
+
+
+        .hl-document-skill {
+          padding:
+            7px 8px;
+
+          border-radius:
+            999px;
+
+          background:
+            #F1EDE4;
+
+          color:
+            #665E56;
+
+          font-size:
+            7px;
+
+          font-weight:
+            800;
+        }
+
+
+        /* ======================================================
+           EXTRACTED SIGNALS
+           ====================================================== */
+
+        .hl-extraction-layer {
+          position:
+            absolute;
+
+          inset:
+            0;
+
+          z-index:
+            8;
+
+          pointer-events:
+            none;
+        }
+
+
+        .hl-extraction-tag {
+          position:
+            absolute;
+
+          padding:
+            8px 10px;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.2
+            );
+
+          border-radius:
+            10px;
+
+          background:
+            rgba(
+              246,
+              244,
+              237,
+              0.94
+            );
+
+          color:
+            #626B50;
+
+          font-size:
+            8px;
+
+          font-weight:
+            800;
+
+          box-shadow:
+            0 10px 22px
+            rgba(
+              48,
+              42,
+              36,
+              0.07
+            );
+        }
+
+
+        .hl-extraction-tag.one {
+          left:
+            20%;
+
+          top:
+            25%;
+        }
+
+
+        .hl-extraction-tag.two {
+          right:
+            15%;
+
+          top:
+            34%;
+        }
+
+
+        .hl-extraction-tag.three {
+          left:
+            25%;
+
+          bottom:
+            33%;
+        }
+
+
+        .hl-extraction-tag.four {
+          right:
+            20%;
+
+          bottom:
+            25%;
+        }
+
+
+        /* ======================================================
+           PARTICLE FIELD
+           ====================================================== */
+
+        .hl-particle-field {
+          position:
+            absolute;
+
+          inset:
+            0;
+
+          z-index:
+            5;
+
+          pointer-events:
+            none;
+        }
+
+
+        .hl-particle {
+          position:
+            absolute;
+
+          width:
+            5px;
+
+          height:
+            5px;
+
+          border-radius:
+            50%;
+
+          background:
+            var(--olive);
+
+          opacity:
+            calc(
+              0.18 +
+              var(--particle-opacity)
+            );
+
+          transform:
+            translate3d(
+              var(--particle-x),
+              var(--particle-y),
+              0
+            )
+            scale(
+              var(--particle-scale)
+            );
+
+          transition:
+            transform 900ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              ),
+            opacity 500ms ease;
+        }
+
+
+        /* ======================================================
+           VECTOR GRID
+           ====================================================== */
+
+        .hl-story-vector-grid {
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            46%;
+
+          width:
+            490px;
+
+          height:
+            260px;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          display:
+            grid;
+
+          grid-template-columns:
+            repeat(
+              10,
+              1fr
+            );
+
+          grid-template-rows:
+            repeat(
+              6,
+              1fr
+            );
+
+          gap:
+            8px;
+
+          padding:
+            20px;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.13
+            );
+
+          border-radius:
+            20px;
+
+          background:
+            rgba(
+              250,
+              248,
+              243,
+              0.72
+            );
+
+          box-shadow:
+            0 22px 50px
+            rgba(
+              48,
+              43,
+              37,
+              0.06
+            );
+        }
+
+
+        .hl-vector-dot {
+          width:
+            100%;
+
+          height:
+            100%;
+
+          min-height:
+            8px;
+
+          border-radius:
+            999px;
+
+          background:
+            var(--olive);
+
+          opacity:
+            calc(
+              0.18 +
+              var(--vector-opacity)
+            );
+
+          transform:
+            scaleY(
+              var(--vector-scale)
+            );
+
+          transform-origin:
+            center;
+
+          animation:
+            hlVectorPulse
+            3.6s
+            ease-in-out
+            infinite;
+        }
+
+
+        .hl-vector-dot:nth-child(
+          3n
+        ) {
+          animation-delay:
+            150ms;
+        }
+
+
+        .hl-vector-dot:nth-child(
+          5n
+        ) {
+          animation-delay:
+            310ms;
+        }
+
+
+        @keyframes hlVectorPulse {
+          0%,
+          100% {
+            transform:
+              scaleY(
+                calc(
+                  var(
+                    --vector-scale
+                  ) *
+                  0.82
+                )
+              );
+          }
+
+          50% {
+            transform:
+              scaleY(
+                var(
+                  --vector-scale
+                )
+              );
+          }
+        }
+
+
+        /* ======================================================
+           VECTOR CORE
+           ====================================================== */
+
+        .hl-vector-core {
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          width:
+            95px;
+
+          height:
+            95px;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            )
+            scale(
+              ${0.65 +
+              clamp(
+                (progress -
+                  0.38) /
+                  0.18
+              ) *
+                0.35}
+            );
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.35
+            );
+
+          border-radius:
+            50%;
+
+          box-shadow:
+            0 0 0 18px
+              rgba(
+                111,
+                125,
+                85,
+                0.055
+              ),
+
+            0 0 0 38px
+              rgba(
+                111,
+                125,
+                85,
+                0.025
+              );
+
+          opacity:
+            clamp(
+              (progress -
+                0.34) /
+                0.16,
+              0,
+              1
+            );
+
+          transition:
+            transform 500ms
+              cubic-bezier(
+                0.16,
+                1,
+                0.3,
+                1
+              );
+        }
+
+
+        .hl-vector-core::before {
+          content:
+            '';
+
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          width:
+            18px;
+
+          height:
+            18px;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          border-radius:
+            50%;
+
+          background:
+            var(--olive);
+
+          box-shadow:
+            0 0 28px
+            rgba(
+              111,
+              125,
+              85,
+              0.3
+            );
+        }
+
+
+        /* ======================================================
+           SEARCH CONNECTION
+           ====================================================== */
+
+        .hl-search-path {
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            50%;
+
+          width:
+            470px;
+
+          height:
+            180px;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          pointer-events:
+            none;
+
+          opacity:
+            clamp(
+              (progress -
+                0.48) /
+                0.16,
+              0,
+              1
+            );
+        }
+
+
+        .hl-search-path svg {
+          width:
+            100%;
+
+          height:
+            100%;
+
+          overflow:
+            visible;
+        }
+
+
+        .hl-search-path path {
+          fill:
+            none;
+
+          stroke:
+            var(--olive);
+
+          stroke-width:
+            1.5;
+
+          stroke-dasharray:
+            8 9;
+
+          stroke-linecap:
+            round;
+
+          animation:
+            hlSearchFlow
+            3s
+            linear
+            infinite;
+        }
+
+
+        @keyframes hlSearchFlow {
+          to {
+            stroke-dashoffset:
+              -80;
+          }
+        }
+
+
+        .hl-search-node {
+          position:
+            absolute;
+
+          top:
+            50%;
+
+          transform:
+            translateY(
+              -50%
+            );
+
+          padding:
+            13px 15px;
+
+          border:
+            1px solid
+            rgba(
+              111,
+              125,
+              85,
+              0.18
+            );
+
+          border-radius:
+            14px;
+
+          background:
+            rgba(
+              255,
+              255,
+              255,
+              0.86
+            );
+
+          box-shadow:
+            0 15px 35px
+            rgba(
+              47,
+              42,
+              37,
+              0.07
+            );
+        }
+
+
+        .hl-search-node.left {
+          left:
+            -12px;
+        }
+
+
+        .hl-search-node.right {
+          right:
+            -12px;
+        }
+
+
+        .hl-search-node-label {
+          display:
+            block;
+
+          color:
+            #877E74;
+
+          font-size:
+            7px;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            0.1em;
+
+          text-transform:
+            uppercase;
+        }
+
+
+        .hl-search-node-title {
+          margin-top:
+            6px;
+
+          color:
+            var(--espresso);
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            14px;
+        }
+
+
+        /* ======================================================
+           FINAL MATCH CARD
+           ====================================================== */
+
+        .hl-match-result {
+          position:
+            absolute;
+
+          left:
+            50%;
+
+          top:
+            46%;
+
+          width:
+            540px;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            )
+            scale(
+              ${0.94 +
+              clamp(
+                (progress -
+                  0.66) /
+                  0.2
+              ) *
+                0.06}
+            );
+
+          opacity:
+            clamp(
+              (progress -
+                0.63) /
+                0.16,
+              0,
+              1
+            );
+
+          z-index:
+            10;
+
+          border:
+            1px solid
+            rgba(
+              245,
+              241,
+              232,
+              0.14
+            );
+
+          border-radius:
+            22px;
+
+          background:
+            var(--espresso);
+
+          color:
+            var(--cream);
+
+          padding:
+            21px;
+
+          box-shadow:
+            0 35px 85px
+            rgba(
+              33,
+              28,
+              24,
+              0.19
+            );
+        }
+
+
+        .hl-match-top {
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            space-between;
+
+          gap:
+            14px;
+        }
+
+
+        .hl-match-person {
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            11px;
+        }
+
+
+        .hl-match-avatar {
+          width:
+            42px;
+
+          height:
+            42px;
+
+          display:
+            grid;
+
+          place-items:
+            center;
+
+          border-radius:
+            13px;
+
+          background:
+            #F1EDE4;
+
+          color:
+            var(--espresso);
+
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            15px;
+        }
+
+
+        .hl-match-name {
+          font-family:
+            Georgia,
+            'Times New Roman',
+            serif;
+
+          font-size:
+            19px;
+        }
+
+
+        .hl-match-role {
+          margin-top:
+            4px;
+
+          color:
+            #9C958B;
+
+          font-size:
+            8px;
+        }
+
+
+        .hl-match-score {
+          text-align:
+            right;
+        }
+
+
+        .hl-match-score-value {
+          display:
+            block;
+
+          color:
+            #B8C697;
+
+          font-size:
+            27px;
+
+          line-height:
+            1;
+
+          font-weight:
+            900;
+
+          letter-spacing:
+            -0.04em;
+        }
+
+
+        .hl-match-score-label {
+          display:
+            block;
+
+          margin-top:
+            4px;
+
+          color:
+            #8E877D;
+
+          font-size:
+            7px;
+
+          letter-spacing:
+            0.08em;
+
+          text-transform:
+            uppercase;
+        }
+
+
+        .hl-match-divider {
+          height:
+            1px;
+
+          margin:
+            19px 0;
+
+          background:
+            rgba(
+              245,
+              241,
+              232,
+              0.11
+            );
+        }
+
+
+        .hl-match-evidence {
+          display:
+            grid;
+
+          grid-template-columns:
+            1fr
+            1fr;
+
+          gap:
+            7px;
+        }
+
+
+        .hl-match-evidence-item {
+          padding:
+            9px 10px;
+
+          border-radius:
+            10px;
+
+          background:
+            rgba(
+              111,
+              125,
+              85,
+              0.13
+            );
+
+          color:
+            #B7C398;
+
+          font-size:
+            8px;
+
+          font-weight:
+            800;
+        }
+
+
+        .hl-match-footer {
+          display:
+            flex;
+
+          justify-content:
+            space-between;
+
+          align-items:
+            center;
+
+          gap:
+            10px;
+
+          margin-top:
+            13px;
+
+          color:
+            #827A71;
+
+          font-size:
+            7px;
 
           text-transform:
             uppercase;
@@ -1576,80 +2265,11 @@ export function HeroSection({
         }
 
 
-        /* ====================================================
-           SCROLL INDICATOR
-           ==================================================== */
+        /* ======================================================
+           STAGE TRANSITION COVER
+           ====================================================== */
 
-        .hl-scroll-indicator {
-          position:
-            absolute;
-
-          right:
-            24px;
-
-          top:
-            50%;
-
-          transform:
-            translateY(-50%);
-
-          z-index:
-            8;
-
-          writing-mode:
-            vertical-rl;
-
-          display:
-            flex;
-
-          align-items:
-            center;
-
-          gap:
-            10px;
-
-          color:
-            #8B8278;
-
-          font-size:
-            8px;
-
-          letter-spacing:
-            0.15em;
-
-          text-transform:
-            uppercase;
-
-          font-weight:
-            800;
-
-          opacity:
-            ${1 -
-            heroProgress *
-              0.55};
-        }
-
-        .hl-scroll-line {
-          width:
-            1px;
-
-          height:
-            62px;
-
-          background:
-            linear-gradient(
-              to bottom,
-              var(--hl-taupe),
-              transparent
-            );
-        }
-
-
-        /* ====================================================
-           GRAIN
-           ==================================================== */
-
-        .hl-grain {
+        .hl-stage-transition {
           position:
             absolute;
 
@@ -1657,303 +2277,430 @@ export function HeroSection({
             0;
 
           z-index:
-            0;
+            25;
 
           pointer-events:
             none;
 
+          background:
+            var(--cream);
+
           opacity:
-            0.14;
-
-          background-image:
-            radial-gradient(
-              rgba(
-                33,
-                28,
-                24,
-                0.13
-              )
-              0.55px,
-              transparent
-              0.55px
+            clamp(
+              0,
+              ${Math.max(
+                0,
+                smoothStage -
+                  0.78
+              ) *
+                5},
+              1
             );
 
-          background-size:
-            7px 7px;
-
-          mask-image:
-            linear-gradient(
-              to bottom,
-              black,
-              transparent 92%
-            );
+          transition:
+            opacity 250ms ease;
         }
 
 
-        /* ====================================================
-           FLOATING DOTS
-           ==================================================== */
+        /* ======================================================
+           PROGRESS INDICATOR
+           ====================================================== */
 
-        .hl-floating-dot {
+        .hl-story-progress {
           position:
             absolute;
 
-          border-radius:
+          right:
+            0;
+
+          top:
             50%;
 
+          transform:
+            translateY(
+              -50%
+            );
+
+          display:
+            flex;
+
+          flex-direction:
+            column;
+
+          gap:
+            8px;
+
+          z-index:
+            20;
+        }
+
+
+        .hl-story-progress-item {
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          gap:
+            7px;
+
+          color:
+            #988F84;
+
+          font-size:
+            7px;
+
+          font-weight:
+            800;
+
+          letter-spacing:
+            0.1em;
+
+          transition:
+            color 250ms ease;
+        }
+
+
+        .hl-story-progress-line {
+          width:
+            15px;
+
+          height:
+            1px;
+
           background:
-            var(--hl-olive);
+            #D4CDBF;
 
-          opacity:
-            0.23;
-
-          filter:
-            blur(1px);
-
-          pointer-events:
-            none;
-
-          animation:
-            hlHeroFloat
-            7s
-            ease-in-out
-            infinite;
+          transition:
+            width 300ms ease,
+            background 300ms ease;
         }
 
-        .hl-floating-dot.one {
-          width:
-            8px;
 
-          height:
-            8px;
+        .hl-story-progress-item.active {
+          color:
+            var(--olive-dark);
+        }
+
+
+        .hl-story-progress-item.active
+          .hl-story-progress-line {
+          width:
+            28px;
+
+          background:
+            var(--olive);
+        }
+
+
+        /* ======================================================
+           BOTTOM LABEL
+           ====================================================== */
+
+        .hl-story-bottom {
+          position:
+            absolute;
 
           left:
-            8%;
-
-          top:
-            27%;
-        }
-
-        .hl-floating-dot.two {
-          width:
-            5px;
-
-          height:
-            5px;
-
-          left:
-            46%;
-
-          top:
-            12%;
-
-          opacity:
-            0.14;
-
-          animation-delay:
-            1.5s;
-        }
-
-        .hl-floating-dot.three {
-          width:
-            6px;
-
-          height:
-            6px;
+            0;
 
           right:
-            10%;
+            0;
 
-          top:
-            32%;
+          bottom:
+            26px;
+
+          z-index:
+            20;
+
+          display:
+            flex;
+
+          align-items:
+            center;
+
+          justify-content:
+            space-between;
+
+          gap:
+            20px;
+
+          color:
+            #837A70;
+
+          font-size:
+            9px;
+
+          line-height:
+            1.45;
 
           opacity:
-            0.16;
-
-          animation-delay:
-            3s;
-        }
-
-        @keyframes hlHeroFloat {
-          0%,
-          100% {
-            transform:
-              translate3d(
-                0,
-                0,
-                0
-              );
-          }
-
-          50% {
-            transform:
-              translate3d(
-                0,
-                -10px,
-                0
-              );
-          }
+            ${1 -
+            progress *
+              0.45};
         }
 
 
-        /* ====================================================
+        .hl-story-bottom-left {
+          max-width:
+            300px;
+        }
+
+
+        .hl-story-bottom-right {
+          display:
+            inline-flex;
+
+          align-items:
+            center;
+
+          gap:
+            8px;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing:
+            0.08em;
+
+          font-weight:
+            800;
+        }
+
+
+        .hl-story-scroll-line {
+          width:
+            44px;
+
+          height:
+            1px;
+
+          background:
+            linear-gradient(
+              90deg,
+              var(--olive),
+              transparent
+            );
+        }
+
+
+        /* ======================================================
            TABLET
-           ==================================================== */
+           ====================================================== */
 
-        @media (max-width: 1100px) {
-          .hl-hero-grid {
-            grid-template-columns:
-              minmax(
-                0,
-                1fr
-              )
-              minmax(
-                360px,
-                0.85fr
+        @media (max-width: 1050px) {
+
+          .hl-story-copy {
+            width:
+              45%;
+          }
+
+          .hl-story-title {
+            font-size:
+              clamp(
+                50px,
+                6vw,
+                76px
               );
-
-            gap:
-              48px;
           }
 
-          .hl-detail-card {
+          .hl-story-stage {
+            width:
+              62%;
+          }
+
+          .hl-story-frame {
+            width:
+              670px;
+
+            height:
+              610px;
+          }
+
+          .hl-story-progress {
             right:
-              -8px;
+              2px;
           }
 
-          .hl-metric {
-            min-width:
-              125px;
-          }
         }
 
 
-        /* ====================================================
-           MOBILE / TABLET STACK
-           ==================================================== */
+        /* ======================================================
+           MOBILE / STACK
+           ====================================================== */
 
-        @media (max-width: 860px) {
-          .hirelabs-hero {
+        @media (max-width: 800px) {
+
+          .hl-story-hero {
             min-height:
               auto;
           }
 
-          .hl-hero-sticky {
+
+          .hl-story-sticky {
             position:
               relative;
-
-            min-height:
-              auto;
 
             height:
               auto;
 
+            min-height:
+              auto;
+
+            display:
+              block;
+
             padding:
-              88px 0
-              130px;
+              120px 0
+              100px;
           }
 
-          .hl-hero-grid {
-            grid-template-columns:
-              1fr;
 
-            gap:
-              70px;
+          .hl-story-shell {
+            width:
+              min(
+                100% - 30px,
+                1320px
+              );
+
+            height:
+              auto;
           }
 
-          .hl-copy {
+
+          .hl-story-meta {
+            position:
+              relative;
+
+            top:
+              auto;
+
+            left:
+              auto;
+
+            right:
+              auto;
+
+            margin-bottom:
+              55px;
+
+            opacity:
+              1 !important;
+          }
+
+
+          .hl-story-copy {
+            position:
+              relative;
+
+            left:
+              auto;
+
+            top:
+              auto;
+
+            width:
+              100%;
+
             transform:
               none !important;
 
             opacity:
               1 !important;
+
+            margin-bottom:
+              55px;
           }
 
-          .hl-product-stage {
-            min-height:
-              570px;
+
+          .hl-story-title {
+            font-size:
+              clamp(
+                50px,
+                14vw,
+                76px
+              );
           }
 
-          .hl-hero-bottom {
+
+          .hl-story-description {
+            font-size:
+              14px;
+          }
+
+
+          .hl-story-stage {
             position:
               relative;
 
-            bottom:
+            right:
+              auto;
+
+            top:
               auto;
 
             width:
-              min(
-                1240px,
-                calc(100% - 64px)
-              );
+              100%;
 
-            margin-top:
-              40px;
+            height:
+              600px;
 
-            flex-direction:
-              column;
-
-            align-items:
-              flex-start;
-
-            opacity:
-              1 !important;
+            transform:
+              none !important;
           }
 
-          .hl-metrics {
+
+          .hl-story-frame {
             width:
               100%;
+
+            height:
+              560px;
           }
 
-          .hl-metric {
-            flex:
-              1;
 
-            min-width:
-              0;
-          }
-
-          .hl-scroll-indicator {
+          .hl-story-progress,
+          .hl-story-bottom {
             display:
               none;
           }
+
         }
 
 
-        /* ====================================================
+        /* ======================================================
            PHONE
-           ==================================================== */
+           ====================================================== */
 
-        @media (max-width: 600px) {
-          .hl-hero-container,
-          .hl-hero-bottom {
-            width:
-              min(
-                100% - 32px,
-                1240px
-              );
+        @media (max-width: 560px) {
+
+          .hl-story-sticky {
+            padding:
+              100px 0
+              80px;
           }
 
-          .hl-hero-topline {
+
+          .hl-story-meta {
             margin-bottom:
-              50px;
+              44px;
           }
 
-          .hl-title {
+
+          .hl-story-meta-left {
             font-size:
-              clamp(
-                48px,
-                14vw,
-                70px
-              );
+              8px;
           }
 
-          .hl-description {
-            font-size:
-              15px;
+
+          .hl-story-description {
+            line-height:
+              1.65;
           }
 
-          .hl-actions {
+
+          .hl-story-actions {
             align-items:
               stretch;
 
@@ -1961,357 +2708,656 @@ export function HeroSection({
               column;
           }
 
-          .hl-actions > * {
+
+          .hl-story-actions > * {
             width:
               100%;
           }
 
-          .hl-product-stage {
-            min-height:
-              510px;
+
+          .hl-story-stage {
+            height:
+              520px;
           }
 
-          .hl-product-orbit {
-            width:
-              108%;
-          }
 
-          .hl-resume-card {
-            width:
-              94%;
-
-            min-height:
-              465px;
-
-            padding:
-              22px;
+          .hl-story-frame {
+            height:
+              500px;
 
             border-radius:
-              21px;
+              23px;
           }
 
-          .hl-resume-footer {
-            left:
-              22px;
 
-            right:
-              22px;
+          .hl-story-frame-top {
+            height:
+              55px;
 
-            bottom:
-              22px;
+            padding:
+              0 15px;
           }
 
-          .hl-transform-layer {
+
+          .hl-story-canvas {
+            inset:
+              55px 0 0 0;
+          }
+
+
+          .hl-scene-document {
             width:
-              90%;
+              270px;
+
+            min-height:
+              355px;
+
+            padding:
+              20px;
           }
 
-          .hl-detail-card {
-            right:
-              0;
 
-            bottom:
-              16px;
+          .hl-document-name {
+            font-size:
+              19px;
+          }
 
+
+          .hl-story-vector-grid {
             width:
-              205px;
+              88%;
+
+            height:
+              210px;
+
+            gap:
+              5px;
+
+            padding:
+              13px;
           }
 
-          .hl-metrics {
-            display:
-              grid;
 
+          .hl-match-result {
+            width:
+              87%;
+
+            padding:
+              17px;
+          }
+
+
+          .hl-match-evidence {
             grid-template-columns:
               1fr;
-
-            width:
-              100%;
           }
 
-          .hl-metric {
-            border-right:
-              0;
 
-            border-bottom:
-              1px solid
-              var(--hl-border);
+          .hl-stage-title {
+            left:
+              18px;
+
+            bottom:
+              18px;
+
+            font-size:
+              22px;
           }
 
-          .hl-metric:last-child {
-            border-bottom:
-              0;
+
+          .hl-stage-description {
+            right:
+              18px;
+
+            bottom:
+              18px;
+
+            max-width:
+              150px;
+
+            font-size:
+              7px;
           }
 
-          .hl-floating-dot {
-            display:
-              none;
+
+          .hl-stage-label {
+            left:
+              18px;
+
+            top:
+              18px;
           }
+
+
+          .hl-search-node {
+            padding:
+              9px 10px;
+          }
+
+
+          .hl-search-node.left {
+            left:
+              8px;
+          }
+
+
+          .hl-search-node.right {
+            right:
+              8px;
+          }
+
         }
 
 
-        /* ====================================================
+        /* ======================================================
            REDUCED MOTION
-           ==================================================== */
+           ====================================================== */
 
         @media (
           prefers-reduced-motion: reduce
         ) {
-          .hl-copy,
-          .hl-resume-card,
-          .hl-transform-layer,
-          .hl-detail-card,
-          .hl-product-orbit,
-          .hl-hero-topline,
-          .hl-hero-bottom {
-            transform:
-              none !important;
 
-            transition:
-              none !important;
-          }
-
-          .hl-floating-dot {
+          .hl-story-ring,
+          .hl-vector-dot,
+          .hl-search-path path {
             animation:
               none !important;
           }
+
         }
 
       `}</style>
 
-      <section
-        ref={sectionRef}
-        className="hirelabs-hero"
-        id="heroSection"
-        aria-label="HireLabs introduction"
-      >
-        <div className="hl-hero-sticky">
+      <div className="hl-story-sticky">
 
-          <div className="hl-grain" />
+        <div className="hl-story-grain" />
 
-          <div className="hl-floating-dot one" />
-          <div className="hl-floating-dot two" />
-          <div className="hl-floating-dot three" />
+        <div className="hl-story-ring one" />
+        <div className="hl-story-ring two" />
+        <div className="hl-story-ring three" />
 
-          <div className="hl-hero-container">
+        <div className="hl-story-shell">
 
-            {/* ==================================================
-                TOPLINE
-               ================================================== */}
+          {/* ==================================================
+              TOP META
+             ================================================== */}
 
-            <div className="hl-hero-topline">
+          <div className="hl-story-meta">
 
-              <div className="hl-eyebrow">
-                <span className="hl-eyebrow-dot" />
+            <div className="hl-story-meta-left">
+              <span className="hl-story-meta-dot" />
 
-                Intelligent hiring infrastructure
-              </div>
+              Intelligent hiring infrastructure
+            </div>
 
-              <div className="hl-version">
-                HireLabs · v2.4
-              </div>
+            <div className="hl-story-meta-pill">
+              HireLabs · v2.4
+            </div>
+
+          </div>
+
+
+          {/* ==================================================
+              LEFT INTRO
+             ================================================== */}
+
+          <div className="hl-story-copy">
+
+            <div className="hl-story-kicker">
+              <span className="hl-story-kicker-line" />
+
+              Semantic candidate matching
+            </div>
+
+            <h1 className="hl-story-title">
+
+              Hire better.
+              <br />
+
+              See the{' '}
+              <em>
+                signal.
+              </em>
+
+            </h1>
+
+            <p className="hl-story-description">
+              HireLabs turns resumes into structured,
+              searchable candidate intelligence — then
+              matches people to roles based on meaning,
+              experience, and evidence.
+            </p>
+
+            <div className="hl-story-actions">
+
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={
+                  onExploreClick
+                }
+              >
+                <span>
+                  Explore Live Sandbox
+                </span>
+
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+
+              </Button>
+
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={
+                  onViewArchClick
+                }
+              >
+                View Architecture
+              </Button>
 
             </div>
 
+            <div className="hl-story-note">
+              Gemini embeddings · pgvector ·
+              Supabase · evidence-backed matching
+            </div>
 
-            {/* ==================================================
-                MAIN HERO
-               ================================================== */}
+          </div>
 
-            <div className="hl-hero-grid">
 
-              {/* ================================================
-                  LEFT COPY
-                 ================================================ */}
+          {/* ==================================================
+              VISUAL STORY
+             ================================================== */}
 
-              <div className="hl-copy">
+          <div className="hl-story-stage">
 
-                <span className="hl-kicker">
-                  Semantic candidate matching
-                </span>
+            <div className="hl-story-frame">
 
-                <h1 className="hl-title">
+              {/* ==============================================
+                  FRAME HEADER
+                 ============================================== */}
 
-                  <span className="hl-title-line">
-                    Hire better.
-                  </span>
+              <div className="hl-story-frame-top">
 
-                  <span className="hl-title-line">
-                    Skip the{' '}
-                    <span className="hl-title-accent">
-                      guesswork.
-                    </span>
-                  </span>
+                <div className="hl-story-frame-status">
 
-                </h1>
+                  <span className="hl-story-frame-status-dot" />
 
-                <p className="hl-description">
-                  HireLabs turns resumes into structured,
-                  searchable candidate intelligence — then
-                  matches people to the roles where they can
-                  actually make an impact.
-                </p>
-
-                <div className="hl-actions">
-
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={
-                      onExploreClick
-                    }
-                  >
-                    <span>
-                      Explore Live Sandbox
-                    </span>
-
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    onClick={
-                      onViewArchClick
-                    }
-                  >
-                    <span>
-                      View Architecture
-                    </span>
-                  </Button>
+                  HireLabs intelligence engine
 
                 </div>
 
-                <div className="hl-quiet-note">
-                  Semantic matching · Gemini embeddings ·
-                  pgvector · Supabase
+                <div className="hl-story-frame-stage">
+
+                  Stage{' '}
+                  {String(
+                    activeStage + 1
+                  ).padStart(2, '0')}
+
                 </div>
 
               </div>
 
 
-              {/* ================================================
-                  RIGHT PRODUCT STORY
-                 ================================================ */}
+              {/* ==============================================
+                  CANVAS
+                 ============================================== */}
 
-              <div
-                className="hl-product-stage"
-                aria-hidden="true"
-              >
+              <div className="hl-story-canvas">
 
-                <div
-                  className="hl-product-orbit"
-                />
+                {/* ============================================
+                    STAGE LABEL
+                   ============================================ */}
+
+                <div className="hl-stage-label">
+                  {currentStage.label}
+                </div>
 
 
                 {/* ============================================
-                    RESUME
+                    STAGE TITLE
                    ============================================ */}
 
-                <div className="hl-resume-card">
+                <div className="hl-stage-title">
+                  {currentStage.title}
+                </div>
 
-                  <div className="hl-resume-top">
 
-                    <div>
+                <div className="hl-stage-description">
+                  {currentStage.description}
+                </div>
 
-                      <div className="hl-resume-name">
-                        Alex Mercer
-                      </div>
 
-                      <div className="hl-resume-role">
-                        Lead Full-Stack AI Engineer
-                      </div>
+                {/* ============================================
+                    STAGE 01 — RESUME
+                   ============================================ */}
 
-                    </div>
+                <div
+                  className="hl-scene-document"
+                  style={{
+                    opacity:
+                      activeStage ===
+                      0
+                        ? 0.98
+                        : activeStage ===
+                            1
+                          ? stageFade
+                          : 0,
 
-                    <div className="hl-resume-mark">
-                      AM
-                    </div>
+                    transform:
+                      activeStage ===
+                      0
+                        ? 'translate(-50%, -50%) rotate(-3deg) scale(1)'
+                        : activeStage ===
+                            1
+                          ? `translate(-50%, -50%) rotate(-1deg) scale(${0.98})`
+                          : 'translate(-50%, -58%) rotate(3deg) scale(0.82)',
+                  }}
+                >
 
+                  <div className="hl-document-name">
+                    Alex Mercer
                   </div>
 
-
-                  <div className="hl-resume-section">
-
-                    <div className="hl-resume-section-label">
-                      Experience
-                    </div>
-
-                    <div className="hl-resume-line long" />
-                    <div className="hl-resume-line medium" />
-                    <div className="hl-resume-line long" />
-                    <div className="hl-resume-line short" />
-
+                  <div className="hl-document-role">
+                    Lead Full-Stack AI Engineer
                   </div>
 
+                  <div className="hl-document-rule" />
 
-                  <div className="hl-resume-section">
-
-                    <div className="hl-resume-section-label">
-                      Skills
-                    </div>
-
-                    <div className="hl-resume-skills">
-
-                      <span className="hl-skill">
-                        React
-                      </span>
-
-                      <span className="hl-skill">
-                        Node.js
-                      </span>
-
-                      <span className="hl-skill">
-                        PostgreSQL
-                      </span>
-
-                      <span className="hl-skill">
-                        AWS
-                      </span>
-
-                      <span className="hl-skill">
-                        Python
-                      </span>
-
-                      <span className="hl-skill">
-                        AI / ML
-                      </span>
-
-                    </div>
-
+                  <div className="hl-document-label">
+                    Experience
                   </div>
 
+                  <div className="hl-document-line long" />
+                  <div className="hl-document-line medium" />
+                  <div className="hl-document-line long" />
+                  <div className="hl-document-line short" />
 
-                  <div className="hl-resume-section">
+                  <div className="hl-document-rule" />
 
-                    <div className="hl-resume-section-label">
-                      Education
-                    </div>
-
-                    <div className="hl-resume-line medium" />
-                    <div className="hl-resume-line short" />
-
+                  <div className="hl-document-label">
+                    Skills
                   </div>
 
+                  <div className="hl-document-skills">
 
-                  <div className="hl-resume-footer">
-
-                    <span>
-                      resume.pdf
+                    <span className="hl-document-skill">
+                      React
                     </span>
 
-                    <span>
-                      Parsed successfully
+                    <span className="hl-document-skill">
+                      Node.js
                     </span>
+
+                    <span className="hl-document-skill">
+                      PostgreSQL
+                    </span>
+
+                    <span className="hl-document-skill">
+                      Python
+                    </span>
+
+                    <span className="hl-document-skill">
+                      AWS
+                    </span>
+
+                    <span className="hl-document-skill">
+                      AI / ML
+                    </span>
+
+                  </div>
+
+                  <div className="hl-document-rule" />
+
+                  <div className="hl-document-label">
+                    Education
+                  </div>
+
+                  <div className="hl-document-line medium" />
+                  <div className="hl-document-line short" />
+
+                </div>
+
+
+                {/* ============================================
+                    STAGE 02 — EXTRACTION
+                   ============================================ */}
+
+                <div
+                  className="hl-extraction-layer"
+                  style={{
+                    opacity:
+                      activeStage ===
+                      1
+                        ? 1
+                        : 0,
+                    transform:
+                      activeStage ===
+                      1
+                        ? 'scale(1)'
+                        : 'scale(0.95)',
+                    transition:
+                      'opacity 600ms ease, transform 700ms cubic-bezier(0.16,1,0.3,1)',
+                  }}
+                >
+
+                  <div className="hl-extraction-tag one">
+                    Next.js 15
+                  </div>
+
+                  <div className="hl-extraction-tag two">
+                    8+ years experience
+                  </div>
+
+                  <div className="hl-extraction-tag three">
+                    PostgreSQL
+                  </div>
+
+                  <div className="hl-extraction-tag four">
+                    AI / ML
+                  </div>
+
+                </div>
+
+
+                {/* ============================================
+                    PARTICLES
+                   ============================================ */}
+
+                <div
+                  className="hl-particle-field"
+                  style={{
+                    opacity:
+                      activeStage >=
+                      1 &&
+                      activeStage <=
+                        3
+                        ? 1
+                        : 0,
+                  }}
+                >
+
+                  {particles.map(
+                    (_, index) => {
+
+                      const row =
+                        Math.floor(
+                          index /
+                            12
+                        );
+
+                      const column =
+                        index %
+                        12;
+
+                      const x =
+                        (column -
+                          5.5) *
+                          (14 +
+                            progress *
+                              18);
+
+                      const y =
+                        (row -
+                          2.5) *
+                          (24 +
+                            progress *
+                              12);
+
+                      const scale =
+                        0.45 +
+                        ((index *
+                          17) %
+                          70) /
+                          100;
+
+                      const opacity =
+                        ((index *
+                          13) %
+                          60) /
+                          100;
+
+                      return (
+                        <span
+                          key={index}
+                          className="hl-particle"
+                          style={{
+                            '--particle-x': `${x}px`,
+                            '--particle-y': `${y}px`,
+                            '--particle-scale': scale,
+                            '--particle-opacity': opacity,
+                          }}
+                        />
+                      );
+                    }
+                  )}
+
+                </div>
+
+
+                {/* ============================================
+                    STAGE 03 — VECTOR FIELD
+                   ============================================ */}
+
+                <div
+                  style={{
+                    position:
+                      'absolute',
+
+                    inset:
+                      0,
+
+                    opacity:
+                      activeStage >=
+                      2 &&
+                      activeStage <=
+                        3
+                        ? 1
+                        : 0,
+
+                    transition:
+                      'opacity 650ms ease',
+
+                    pointerEvents:
+                      'none',
+                  }}
+                >
+
+                  <div className="hl-story-vector-grid">
+
+                    {Array.from({
+                      length: 60,
+                    }).map(
+                      (_, index) => {
+
+                        const scale =
+                          0.45 +
+                          ((index *
+                            19) %
+                            55) /
+                            100;
+
+                        const opacity =
+                          ((index *
+                            11) %
+                            65) /
+                          100;
+
+                        return (
+                          <span
+                            key={index}
+                            className="hl-vector-dot"
+                            style={{
+                              '--vector-scale': scale,
+                              '--vector-opacity': opacity,
+                            }}
+                          />
+                        );
+                      }
+                    )}
+
+                  </div>
+
+
+                  <div className="hl-vector-core" />
+
+                </div>
+
+
+                {/* ============================================
+                    STAGE 04 — SEARCH
+                   ============================================ */}
+
+                <div
+                  className="hl-search-path"
+                  style={{
+                    transform:
+                      `translate(-50%, -50%) scale(${nextStageFade})`,
+                  }}
+                >
+
+                  <svg
+                    viewBox="0 0 470 180"
+                    preserveAspectRatio="none"
+                  >
+                    <path
+                      d="M0 110 C95 20 130 50 185 90 S315 160 470 55"
+                    />
+                  </svg>
+
+                  <div className="hl-search-node left">
+
+                    <span className="hl-search-node-label">
+                      Job requirements
+                    </span>
+
+                    <div className="hl-search-node-title">
+                      Full-Stack AI Engineer
+                    </div>
+
+                  </div>
+
+
+                  <div className="hl-search-node right">
+
+                    <span className="hl-search-node-label">
+                      Candidate vector
+                    </span>
+
+                    <div className="hl-search-node-title">
+                      Alex Mercer
+                    </div>
 
                   </div>
 
@@ -2319,115 +3365,82 @@ export function HeroSection({
 
 
                 {/* ============================================
-                    MATCH RESULT
+                    STAGE 05 — RESULT
                    ============================================ */}
 
-                <div className="hl-transform-layer">
+                <div className="hl-match-result">
 
-                  <div className="hl-insight-card">
+                  <div className="hl-match-top">
 
-                    <div className="hl-insight-header">
+                    <div className="hl-match-person">
+
+                      <div className="hl-match-avatar">
+                        AM
+                      </div>
 
                       <div>
 
-                        <div className="hl-insight-label">
-                          HireLabs analysis
+                        <div className="hl-match-name">
+                          Alex Mercer
                         </div>
 
-                        <div className="hl-insight-title">
-                          Strong candidate fit
+                        <div className="hl-match-role">
+                          Full-Stack AI Engineer · 8+ years
                         </div>
-
-                      </div>
-
-                      <div className="hl-score">
-
-                        <span className="hl-score-number">
-                          97.4%
-                        </span>
-
-                        <span className="hl-score-label">
-                          semantic match
-                        </span>
 
                       </div>
 
                     </div>
 
 
-                    <div className="hl-insight-divider" />
+                    <div className="hl-match-score">
 
+                      <span className="hl-match-score-value">
+                        97%
+                      </span>
 
-                    <div className="hl-match-grid">
-
-                      <div className="hl-match-row">
-
-                        <div className="hl-match-left">
-                          <span className="hl-check">
-                            ✓
-                          </span>
-
-                          React &amp; Node.js
-                        </div>
-
-                        <span className="hl-match-value">
-                          matched
-                        </span>
-
-                      </div>
-
-
-                      <div className="hl-match-row">
-
-                        <div className="hl-match-left">
-                          <span className="hl-check">
-                            ✓
-                          </span>
-
-                          System architecture
-                        </div>
-
-                        <span className="hl-match-value">
-                          matched
-                        </span>
-
-                      </div>
-
-
-                      <div className="hl-match-row">
-
-                        <div className="hl-match-left">
-                          <span className="hl-check">
-                            ✓
-                          </span>
-
-                          5+ years experience
-                        </div>
-
-                        <span className="hl-match-value">
-                          matched
-                        </span>
-
-                      </div>
-
-
-                      <div className="hl-match-row">
-
-                        <div className="hl-match-left">
-                          <span className="hl-check">
-                            ✓
-                          </span>
-
-                          AI / ML background
-                        </div>
-
-                        <span className="hl-match-value">
-                          strong fit
-                        </span>
-
-                      </div>
+                      <span className="hl-match-score-label">
+                        semantic match
+                      </span>
 
                     </div>
+
+                  </div>
+
+
+                  <div className="hl-match-divider" />
+
+
+                  <div className="hl-match-evidence">
+
+                    <div className="hl-match-evidence-item">
+                      ✓ Next.js experience
+                    </div>
+
+                    <div className="hl-match-evidence-item">
+                      ✓ PostgreSQL + pgvector
+                    </div>
+
+                    <div className="hl-match-evidence-item">
+                      ✓ AI / ML background
+                    </div>
+
+                    <div className="hl-match-evidence-item">
+                      ✓ Seniority aligned
+                    </div>
+
+                  </div>
+
+
+                  <div className="hl-match-footer">
+
+                    <span>
+                      Evidence-backed ranking
+                    </span>
+
+                    <span>
+                      Human decision support
+                    </span>
 
                   </div>
 
@@ -2435,31 +3448,10 @@ export function HeroSection({
 
 
                 {/* ============================================
-                    VECTOR DETAIL
+                    TRANSITION
                    ============================================ */}
 
-                <div className="hl-detail-card">
-
-                  <div className="hl-detail-label">
-                    Vector intelligence
-                  </div>
-
-                  <div className="hl-detail-title">
-                    Searchable candidate representation
-                  </div>
-
-                  <div className="hl-vector">
-                    [ -0.0234, 0.0841, -0.0519,
-                    <br />
-                    0.0911, 0.0172, ... ]
-                    <br />
-                    <br />
-                    1536 dimensions
-                    <br />
-                    cosine distance → 0.026
-                  </div>
-
-                </div>
+                <div className="hl-stage-transition" />
 
               </div>
 
@@ -2468,77 +3460,71 @@ export function HeroSection({
           </div>
 
 
-          {/* =====================================================
-              BOTTOM HERO INFORMATION
-             ===================================================== */}
+          {/* ==================================================
+              STAGE PROGRESS
+             ================================================== */}
 
-          <div className="hl-hero-bottom">
+          <div className="hl-story-progress">
 
-            <div className="hl-bottom-copy">
-              Scroll to see a resume transform into a
-              ranked candidate signal.
-            </div>
+            {stages.map(
+              (stage, index) => {
 
-            <div className="hl-metrics">
+                const active =
+                  index <=
+                  activeStage;
 
-              <div className="hl-metric">
+                return (
+                  <div
+                    key={stage.number}
+                    className={`hl-story-progress-item ${
+                      active
+                        ? 'active'
+                        : ''
+                    }`}
+                  >
 
-                <span className="hl-metric-number">
-                  1536
-                </span>
+                    <span className="hl-story-progress-line" />
 
-                <span className="hl-metric-label">
-                  Vector dimensions
-                </span>
+                    <span>
+                      {stage.number}
+                    </span>
 
-              </div>
-
-
-              <div className="hl-metric">
-
-                <span className="hl-metric-number">
-                  &lt; 85ms
-                </span>
-
-                <span className="hl-metric-label">
-                  Match query
-                </span>
-
-              </div>
-
-
-              <div className="hl-metric">
-
-                <span className="hl-metric-number">
-                  100%
-                </span>
-
-                <span className="hl-metric-label">
-                  RLS scoped
-                </span>
-
-              </div>
-
-            </div>
+                  </div>
+                );
+              }
+            )}
 
           </div>
 
 
-          {/* =====================================================
-              SCROLL INDICATOR
-             ===================================================== */}
+          {/* ==================================================
+              BOTTOM STORY
+             ================================================== */}
 
-          <div className="hl-scroll-indicator">
+          <div className="hl-story-bottom">
 
-            <span className="hl-scroll-line" />
+            <div className="hl-story-bottom-left">
 
-            Scroll to explore
+              Resumes become structured signals.
+              Signals become searchable meaning.
+              Meaning becomes better hiring decisions.
+
+            </div>
+
+
+            <div className="hl-story-bottom-right">
+
+              <span className="hl-story-scroll-line" />
+
+              Scroll to transform
+
+            </div>
 
           </div>
 
         </div>
 
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
