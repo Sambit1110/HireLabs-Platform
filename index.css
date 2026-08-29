@@ -5,7 +5,8 @@
    ========================================================================== */
 
 /* Navbar Component */
-.vector-field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: .75; mask-image: linear-gradient(to bottom, #000, transparent 88%); }
+.vector-field-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; opacity: 1; z-index: 0; }
+main { position: relative; z-index: 1; }
 .hero-section { isolation: isolate; }
 .hero-section > .container { position: relative; z-index: 1; }
 .custom-cursor, .custom-cursor-ring { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 10000; border-radius: 50%; transform: translate3d(-100px, -100px, 0); }
@@ -13,7 +14,7 @@
 .custom-cursor-ring { width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1px solid rgba(34, 211, 238, .75); transition: width .18s ease, height .18s ease, margin .18s ease, border-color .18s ease; }
 .cursor-hover .custom-cursor { opacity: 0; }
 .cursor-hover .custom-cursor-ring { width: 48px; height: 48px; margin: -24px 0 0 -24px; border-color: rgba(129, 140, 248, .95); background: rgba(30, 62, 98, .12); }
-@media (pointer: coarse), (prefers-reduced-motion: reduce) { .custom-cursor, .custom-cursor-ring, .vector-field { display: none; } }
+@media (pointer: coarse), (prefers-reduced-motion: reduce) { .custom-cursor, .custom-cursor-ring, .vector-field-bg { display: none; } }
 .navbar-header {
   position: fixed;
   top: 0;

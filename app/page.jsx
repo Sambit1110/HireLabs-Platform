@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
+import { VectorField } from '../components/landing/VectorField';
 import { HeroSection } from '../components/landing/HeroSection';
 import { InteractiveDemo } from '../components/landing/InteractiveDemo';
 import { FeaturesGrid } from '../components/landing/FeaturesGrid';
@@ -81,6 +82,7 @@ export default function LandingPage() {
 
   return (
     <main>
+      <VectorField />
       <CustomCursor />
       <ScrollReveal />
       <Navbar onOpenAuthModal={() => setIsAuthModalOpen(true)} />

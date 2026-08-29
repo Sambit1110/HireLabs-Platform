@@ -1,13 +1,11 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { VectorField } from './VectorField';
 
 export function HeroSection({ onExploreClick, onViewArchClick }) {
   return (
     <section className="hero-section" id="heroSection">
       <div className="hero-glow-bg" />
-      <VectorField />
       <div className="container hero-grid">
         <div className="hero-content">
           <Badge variant="pulse">
