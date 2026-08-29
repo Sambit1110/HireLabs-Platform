@@ -41,7 +41,7 @@ export function ArchitectureFlow() {
       num: '05',
       title: 'Explain & Rank',
       short: 'Make the result useful',
-      desc: 'AI generates evidence quotes & flags gap analysis for HR decision support.',
+      desc: 'AI generates evidence quotes and flags gap analysis for HR decision support.',
       label: 'DECISION SUPPORT',
       visual: 'explain',
     },
@@ -83,17 +83,12 @@ export function ArchitectureFlow() {
     };
   }, []);
 
-  const clamp = (value, min = 0, max = 1) =>
-    Math.min(max, Math.max(min, value));
-
   const activeIndex = Math.min(
     steps.length - 1,
     Math.floor(progress * steps.length)
   );
 
   const lineProgress = progress * (steps.length - 1);
-
-  const introFade = 1 - clamp(progress / 0.22) * 0.35;
 
   return (
     <section
@@ -104,13 +99,11 @@ export function ArchitectureFlow() {
       <style>{`
         .hl-architecture {
           --cream: #F5F1E8;
-          --cream-soft: #ECE6DA;
           --white: #FFFFFF;
           --espresso: #211C18;
           --espresso-soft: #615850;
           --olive: #6F7D55;
           --olive-dark: #596544;
-          --taupe: #C8C0AF;
           --border: #DED7CA;
 
           position: relative;
@@ -128,9 +121,9 @@ export function ArchitectureFlow() {
           box-sizing: border-box;
         }
 
-        /* =====================================================
-           STICKY SCENE
-           ===================================================== */
+        /* ================================
+           STICKY AREA
+           ================================ */
 
         .hl-arch-sticky {
           position: sticky;
@@ -139,48 +132,35 @@ export function ArchitectureFlow() {
           min-height: 100vh;
 
           display: flex;
-          flex-direction: column;
+          align-items: center;
 
-          justify-content: center;
-
-          padding:
-            clamp(90px, 10vh, 120px)
-            0
-            clamp(70px, 8vh, 95px);
+          padding: 100px 0 75px;
 
           overflow: hidden;
         }
 
         .hl-arch-shell {
           width: min(1180px, calc(100% - 56px));
-          height: min(860px, 100%);
-          min-height: 0;
 
           margin: 0 auto;
-
-          display: flex;
-          flex-direction: column;
 
           position: relative;
         }
 
-        /* =====================================================
+        /* ================================
            INTRO
-           ===================================================== */
+           ================================ */
 
         .hl-arch-intro {
-          flex: 0 0 auto;
-
-          width: min(730px, 100%);
-
-          margin-bottom: clamp(28px, 4vh, 48px);
-
           position: relative;
+
+          width: min(760px, 100%);
+
+          margin-bottom: 52px;
+
           z-index: 5;
 
-          opacity: ${introFade};
-
-          transition: opacity 120ms linear;
+          transition: opacity 180ms linear;
         }
 
         .hl-arch-kicker {
@@ -222,9 +202,9 @@ export function ArchitectureFlow() {
             'Times New Roman',
             serif;
 
-          font-size: clamp(48px, 5.2vw, 72px);
+          font-size: clamp(48px, 5.3vw, 74px);
 
-          line-height: 0.92;
+          line-height: 0.93;
 
           letter-spacing: -0.055em;
 
@@ -244,43 +224,31 @@ export function ArchitectureFlow() {
           color: var(--espresso-soft);
 
           font-size: 13px;
-          line-height: 1.65;
+          line-height: 1.68;
         }
 
-        /* =====================================================
-           MAIN STORY
-           ===================================================== */
+        /* ================================
+           STORY LAYOUT
+           ================================ */
 
         .hl-arch-story {
-          flex: 1 1 auto;
-
-          min-height: 0;
-
           display: grid;
 
           grid-template-columns:
-            minmax(280px, 0.78fr)
+            minmax(300px, 0.78fr)
             minmax(0, 1.22fr);
 
-          gap: clamp(38px, 6vw, 95px);
+          gap: clamp(40px, 6vw, 90px);
 
           align-items: center;
         }
 
-        /* =====================================================
-           LEFT STEP NAVIGATION
-           ===================================================== */
+        /* ================================
+           STEPS
+           ================================ */
 
         .hl-arch-nav {
-          position: relative;
-
           min-width: 0;
-
-          max-height: min(570px, 63vh);
-
-          padding-right: 12px;
-
-          overflow: hidden;
         }
 
         .hl-arch-step {
@@ -288,13 +256,15 @@ export function ArchitectureFlow() {
 
           display: grid;
 
-          grid-template-columns: 48px minmax(0, 1fr);
+          grid-template-columns:
+            48px
+            minmax(0, 1fr);
 
           gap: 14px;
 
           min-height: 78px;
 
-          padding-bottom: 19px;
+          padding-bottom: 18px;
         }
 
         .hl-arch-step-marker {
@@ -311,7 +281,7 @@ export function ArchitectureFlow() {
           position: absolute;
 
           top: 33px;
-          bottom: -2px;
+          bottom: -1px;
 
           width: 1px;
 
@@ -334,6 +304,7 @@ export function ArchitectureFlow() {
           place-items: center;
 
           border: 1px solid var(--border);
+
           border-radius: 50%;
 
           background: var(--cream);
@@ -345,8 +316,8 @@ export function ArchitectureFlow() {
 
           transition:
             background 220ms ease,
-            border-color 220ms ease,
             color 220ms ease,
+            border-color 220ms ease,
             transform 220ms ease;
         }
 
@@ -356,11 +327,11 @@ export function ArchitectureFlow() {
           border-color: var(--espresso);
           color: var(--cream);
 
-          transform: scale(1.08);
+          transform: scale(1.06);
         }
 
         .hl-arch-step-title {
-          margin-top: 1px;
+          margin-top: 2px;
 
           font-family:
             Georgia,
@@ -382,13 +353,14 @@ export function ArchitectureFlow() {
         }
 
         .hl-arch-step-desc {
-          max-width: 340px;
+          max-width: 345px;
 
           margin: 6px 0 0;
 
           color: #847B72;
 
           font-size: 9px;
+
           line-height: 1.5;
         }
 
@@ -407,6 +379,8 @@ export function ArchitectureFlow() {
 
           font-size: 6.5px;
 
+          line-height: 1;
+
           font-weight: 900;
 
           letter-spacing: 0.1em;
@@ -424,27 +398,40 @@ export function ArchitectureFlow() {
           color: var(--olive-dark);
         }
 
-        /* =====================================================
-           RIGHT VISUAL STAGE
-           ===================================================== */
+        /* ================================
+           RIGHT SIDE
+           ================================ */
 
         .hl-arch-stage {
-          position: relative;
-
           min-width: 0;
 
-          height: min(575px, 64vh);
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+
+          justify-content: center;
+
+          gap: 20px;
+        }
+
+        .hl-arch-card-wrap {
+          position: relative;
+
+          width: 100%;
+
+          min-height: 520px;
 
           display: grid;
-          place-items: center;
 
-          padding-bottom: 18px;
+          place-items: center;
         }
 
         .hl-arch-stage-bg {
           position: absolute;
 
-          width: min(575px, 46vw);
+          width: min(580px, 94%);
 
           aspect-ratio: 1;
 
@@ -480,12 +467,13 @@ export function ArchitectureFlow() {
           opacity: 0.55;
         }
 
-        /* =====================================================
+        /* ================================
            MAIN CARD
-           ===================================================== */
+           ================================ */
 
         .hl-arch-card {
           position: relative;
+          z-index: 3;
 
           width: min(500px, 88%);
 
@@ -500,7 +488,7 @@ export function ArchitectureFlow() {
           border-radius: 28px;
 
           background:
-            rgba(255,255,255,0.88);
+            rgba(255,255,255,0.89);
 
           box-shadow:
             0 30px 75px
@@ -509,8 +497,6 @@ export function ArchitectureFlow() {
             rgba(48,43,37,0.045);
 
           overflow: hidden;
-
-          z-index: 3;
         }
 
         .hl-arch-card-top {
@@ -533,6 +519,7 @@ export function ArchitectureFlow() {
           color: var(--olive-dark);
 
           font-size: 8px;
+
           line-height: 1;
 
           font-weight: 900;
@@ -573,6 +560,7 @@ export function ArchitectureFlow() {
           color: #7D746B;
 
           font-size: 7px;
+
           line-height: 1;
 
           font-weight: 800;
@@ -580,6 +568,8 @@ export function ArchitectureFlow() {
           letter-spacing: 0.08em;
 
           text-transform: uppercase;
+
+          white-space: nowrap;
         }
 
         .hl-arch-card-copy {
@@ -594,18 +584,14 @@ export function ArchitectureFlow() {
           line-height: 1.6;
         }
 
-        /* =====================================================
-           CARD VISUAL
-           ===================================================== */
+        /* ================================
+           VISUAL AREA
+           ================================ */
 
         .hl-visual {
-          position: absolute;
+          min-height: 205px;
 
-          left: 30px;
-          right: 30px;
-
-          top: 178px;
-          bottom: 30px;
+          margin-top: 28px;
 
           display: flex;
 
@@ -613,9 +599,9 @@ export function ArchitectureFlow() {
           justify-content: center;
         }
 
-        /* =====================================================
+        /* ================================
            UPLOAD
-           ===================================================== */
+           ================================ */
 
         .hl-upload-visual {
           width: 100%;
@@ -660,6 +646,7 @@ export function ArchitectureFlow() {
           border-radius: 11px;
 
           background: var(--espresso);
+
           color: var(--cream);
         }
 
@@ -689,9 +676,9 @@ export function ArchitectureFlow() {
           font-weight: 900;
         }
 
-        /* =====================================================
+        /* ================================
            NORMALIZE
-           ===================================================== */
+           ================================ */
 
         .hl-normalize-visual {
           width: 100%;
@@ -770,9 +757,9 @@ export function ArchitectureFlow() {
           font-weight: 800;
         }
 
-        /* =====================================================
+        /* ================================
            EMBEDDING
-           ===================================================== */
+           ================================ */
 
         .hl-embed-visual {
           width: 100%;
@@ -829,11 +816,13 @@ export function ArchitectureFlow() {
 
         .hl-vector-cell:nth-child(2n) {
           background: #CFD7BF;
+
           animation-delay: 120ms;
         }
 
         .hl-vector-cell:nth-child(3n) {
           background: #BFCBA7;
+
           animation-delay: 240ms;
         }
 
@@ -891,9 +880,9 @@ export function ArchitectureFlow() {
           letter-spacing: 0.08em;
         }
 
-        /* =====================================================
+        /* ================================
            SEARCH
-           ===================================================== */
+           ================================ */
 
         .hl-search-visual {
           width: 100%;
@@ -1005,16 +994,16 @@ export function ArchitectureFlow() {
         }
 
         .hl-search-score {
-          font-size: 10px;
-
           color: var(--olive-dark);
+
+          font-size: 10px;
 
           font-weight: 900;
         }
 
-        /* =====================================================
-           EXPLAIN
-           ===================================================== */
+        /* ================================
+           EXPLAIN / RANK
+           ================================ */
 
         .hl-explain-visual {
           width: 100%;
@@ -1073,6 +1062,7 @@ export function ArchitectureFlow() {
 
         .hl-score-circle span {
           font-size: 15px;
+
           font-weight: 900;
         }
 
@@ -1132,108 +1122,53 @@ export function ArchitectureFlow() {
           color: #8A6250;
         }
 
-        /* =====================================================
-           PROGRESS
-           ===================================================== */
+        /* ================================
+           FINAL NOTE
+           THIS IS THE IMPORTANT FIX
+           ================================ */
 
-        .hl-progress-bar {
-          position: absolute;
+        .hl-final-note {
+          position: relative;
 
-          left: 0;
-          right: 0;
-          bottom: 0;
+          width: min(500px, 88%);
 
-          height: 3px;
+          margin: 0 auto;
 
-          background: #E3DDD0;
-        }
+          padding:
+            15px
+            4px
+            0;
 
-        .hl-progress-fill {
-          height: 100%;
+          border-top:
+            1px solid
+            var(--border);
 
-          width: ${lineProgress * 100}%;
+          color: #887F75;
 
-          background: var(--olive);
+          font-size: 9px;
 
-          transition:
-            width 80ms linear;
-        }
+          line-height: 1.55;
 
-        .hl-progress-dots {
-          position: absolute;
-
-          left: 25px;
-          right: 25px;
-          bottom: -7px;
-
-          display: flex;
-
-          justify-content: space-between;
-
-          pointer-events: none;
+          text-align: right;
 
           z-index: 4;
         }
 
-        .hl-progress-dot {
-          width: 15px;
-          height: 15px;
-
-          border-radius: 50%;
-
-          border:
-            3px solid
-            var(--cream);
-
-          background: #C9C2B5;
-
-          box-shadow:
-            0 0 0 1px
-            var(--border);
-
-          transition:
-            background 180ms ease,
-            transform 180ms ease;
-        }
-
-        .hl-progress-dot.active {
-          background: var(--olive);
-
-          transform: scale(1.08);
-        }
-
-        /* =====================================================
-           FINAL NOTE
-           ===================================================== */
-
-        .hl-final-note {
-          position: absolute;
-
-          right: 0;
-          bottom: 15px;
-
-          width: 235px;
-
-          color: #887F75;
-
-          font-size: 8px;
-
-          line-height: 1.5;
-
-          text-align: right;
-
-          z-index: 6;
-        }
-
         .hl-final-note strong {
+          display: block;
+
+          margin-bottom: 3px;
+
           color: var(--espresso);
 
-          font-size: 10px;
+          font-size: 11px;
+
+          font-weight: 800;
         }
 
-        /* =====================================================
+        /* ================================
            TABLET
-           ===================================================== */
+           ================================ */
 
         @media (max-width: 950px) {
           .hl-architecture {
@@ -1251,17 +1186,8 @@ export function ArchitectureFlow() {
               115px;
           }
 
-          .hl-arch-shell {
-            width: min(
-              100% - 42px,
-              1180px
-            );
-
-            height: auto;
-          }
-
           .hl-arch-intro {
-            opacity: 1 !important;
+            width: 100%;
 
             margin-bottom: 55px;
           }
@@ -1269,47 +1195,31 @@ export function ArchitectureFlow() {
           .hl-arch-story {
             grid-template-columns: 1fr;
 
-            gap: 40px;
-          }
-
-          .hl-arch-nav {
-            max-height: none;
-
-            overflow: visible;
+            gap: 45px;
           }
 
           .hl-arch-stage {
-            height: 520px;
+            width: 100%;
+          }
+
+          .hl-arch-card-wrap {
+            min-height: 500px;
           }
 
           .hl-final-note {
-            position: relative;
+            width: min(500px, 88%);
 
-            right: auto;
-            bottom: auto;
-
-            width: auto;
-
-            max-width: 300px;
-
-            margin:
-              10px
-              0
-              0
-              auto;
+            text-align: left;
           }
         }
 
-        /* =====================================================
+        /* ================================
            MOBILE
-           ===================================================== */
+           ================================ */
 
         @media (max-width: 620px) {
           .hl-arch-shell {
-            width: min(
-              100% - 28px,
-              1180px
-            );
+            width: min(100% - 28px, 1180px);
           }
 
           .hl-arch-title {
@@ -1325,9 +1235,7 @@ export function ArchitectureFlow() {
               43px
               minmax(0, 1fr);
 
-            min-height: 68px;
-
-            padding-bottom: 16px;
+            min-height: 67px;
           }
 
           .hl-arch-step-title {
@@ -1338,12 +1246,8 @@ export function ArchitectureFlow() {
             font-size: 8px;
           }
 
-          .hl-arch-stage {
-            height: 500px;
-          }
-
-          .hl-arch-stage-bg {
-            width: 100%;
+          .hl-arch-card-wrap {
+            min-height: 510px;
           }
 
           .hl-arch-card {
@@ -1365,12 +1269,9 @@ export function ArchitectureFlow() {
           }
 
           .hl-visual {
-            left: 23px;
-            right: 23px;
+            min-height: 205px;
 
-            top: 180px;
-
-            bottom: 28px;
+            margin-top: 24px;
           }
 
           .hl-upload-visual {
@@ -1402,15 +1303,15 @@ export function ArchitectureFlow() {
           }
 
           .hl-final-note {
-            margin-top: 8px;
+            width: 94%;
 
-            max-width: 250px;
+            padding-top: 13px;
+
+            text-align: left;
+
+            font-size: 8px;
           }
         }
-
-        /* =====================================================
-           REDUCED MOTION
-           ===================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           .hl-vector-cell,
@@ -1419,6 +1320,7 @@ export function ArchitectureFlow() {
           .hl-arch-step-label,
           .hl-progress-dot {
             animation: none !important;
+
             transition: none !important;
           }
         }
@@ -1427,9 +1329,9 @@ export function ArchitectureFlow() {
       <div className="hl-arch-sticky">
         <div className="hl-arch-shell">
 
-          {/* ================================
-              INTRO — HAS ITS OWN SPACE NOW
-             ================================= */}
+          {/* =========================================
+              INTRO
+             ========================================= */}
 
           <div className="hl-arch-intro">
             <div className="hl-arch-kicker">
@@ -1451,21 +1353,18 @@ export function ArchitectureFlow() {
             </p>
           </div>
 
-          {/* ================================
-              MAIN STORY
-             ================================= */}
+          {/* =========================================
+              STORY
+             ========================================= */}
 
           <div className="hl-arch-story">
 
-            {/* LEFT — STEPS */}
+            {/* LEFT SIDE */}
 
             <div className="hl-arch-nav">
               {steps.map((step, index) => {
-                const isActive =
-                  index === activeIndex;
-
-                const isPassed =
-                  index < activeIndex;
+                const isActive = index === activeIndex;
+                const isPassed = index < activeIndex;
 
                 return (
                   <div
@@ -1500,364 +1399,401 @@ export function ArchitectureFlow() {
               })}
             </div>
 
-            {/* RIGHT — ANIMATED STORY */}
+            {/* RIGHT SIDE */}
 
             <div className="hl-arch-stage">
-              <div className="hl-arch-stage-bg" />
 
-              <div className="hl-arch-card">
-                <div className="hl-arch-card-top">
-                  <div>
-                    <div className="hl-arch-card-index">
-                      Stage{' '}
-                      {String(activeIndex + 1).padStart(
-                        2,
-                        '0'
-                      )}
+              {/* Card gets its own wrapper */}
+              <div className="hl-arch-card-wrap">
+
+                <div className="hl-arch-stage-bg" />
+
+                <div className="hl-arch-card">
+
+                  <div className="hl-arch-card-top">
+                    <div>
+                      <div className="hl-arch-card-index">
+                        Stage{' '}
+                        {String(activeIndex + 1).padStart(
+                          2,
+                          '0'
+                        )}
+                      </div>
+
+                      <div className="hl-arch-card-title">
+                        {steps[activeIndex].short}
+                      </div>
                     </div>
 
-                    <div className="hl-arch-card-title">
-                      {steps[activeIndex].short}
+                    <div className="hl-arch-card-pill">
+                      {steps[activeIndex].label}
                     </div>
                   </div>
 
-                  <div className="hl-arch-card-pill">
-                    {steps[activeIndex].label}
-                  </div>
-                </div>
+                  <p className="hl-arch-card-copy">
+                    {steps[activeIndex].desc}
+                  </p>
 
-                <p className="hl-arch-card-copy">
-                  {steps[activeIndex].desc}
-                </p>
+                  {/* VISUAL */}
 
-                <div className="hl-visual">
-                  {/* =========================================
-                      STAGE 01
-                     ========================================= */}
+                  <div className="hl-visual">
 
-                  {steps[activeIndex].visual ===
-                    'upload' && (
-                    <div className="hl-upload-visual">
-                      <div className="hl-file-box">
-                        <div className="hl-file-icon">
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                          </svg>
+                    {/* -------------------------
+                        Stage 1
+                       ------------------------- */}
+
+                    {steps[activeIndex].visual ===
+                      'upload' && (
+                      <div className="hl-upload-visual">
+
+                        <div className="hl-file-box">
+                          <div className="hl-file-icon">
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                          </div>
+
+                          <div className="hl-visual-title">
+                            alex-mercer.pdf
+                          </div>
+
+                          <div className="hl-visual-sub">
+                            PDF · 2.4 MB
+                          </div>
                         </div>
 
-                        <div className="hl-visual-title">
-                          alex-mercer.pdf
+                        <div className="hl-arrow">
+                          →
                         </div>
 
-                        <div className="hl-visual-sub">
-                          PDF · 2.4 MB
+                        <div className="hl-storage-box">
+                          <div className="hl-storage-icon">
+                            <svg
+                              width="17"
+                              height="17"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            >
+                              <path d="M3 7h18" />
+                              <path d="M5 7v13h14V7" />
+                              <path d="M8 3h8l2 4H6z" />
+                            </svg>
+                          </div>
+
+                          <div className="hl-visual-title">
+                            Private storage
+                          </div>
+
+                          <div className="hl-visual-sub">
+                            User-scoped Supabase bucket
+                          </div>
                         </div>
+
                       </div>
+                    )}
 
-                      <div className="hl-arrow">
-                        →
-                      </div>
+                    {/* -------------------------
+                        Stage 2
+                       ------------------------- */}
 
-                      <div className="hl-storage-box">
-                        <div className="hl-storage-icon">
-                          <svg
-                            width="17"
-                            height="17"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <path d="M3 7h18" />
-                            <path d="M5 7v13h14V7" />
-                            <path d="M8 3h8l2 4H6z" />
-                          </svg>
+                    {steps[activeIndex].visual ===
+                      'normalize' && (
+                      <div className="hl-normalize-visual">
+
+                        <div className="hl-document-mini">
+                          <div className="hl-mini-heading">
+                            Raw resume
+                          </div>
+
+                          <div className="hl-mini-line" />
+                          <div className="hl-mini-line mid" />
+                          <div className="hl-mini-line" />
+                          <div className="hl-mini-line short" />
+                          <div className="hl-mini-line mid" />
+                          <div className="hl-mini-line" />
                         </div>
 
-                        <div className="hl-visual-title">
-                          Private storage
-                        </div>
+                        <div className="hl-profile-mini">
+                          <div className="hl-mini-heading">
+                            Gemini profile
+                          </div>
 
-                        <div className="hl-visual-sub">
-                          User-scoped Supabase bucket
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                          <span className="hl-profile-tag">
+                            React
+                          </span>
 
-                  {/* =========================================
-                      STAGE 02
-                     ========================================= */}
+                          <span className="hl-profile-tag">
+                            PostgreSQL
+                          </span>
 
-                  {steps[activeIndex].visual ===
-                    'normalize' && (
-                    <div className="hl-normalize-visual">
-                      <div className="hl-document-mini">
-                        <div className="hl-mini-heading">
-                          Raw resume
-                        </div>
+                          <span className="hl-profile-tag">
+                            AI / ML
+                          </span>
 
-                        <div className="hl-mini-line" />
-                        <div className="hl-mini-line mid" />
-                        <div className="hl-mini-line" />
-                        <div className="hl-mini-line short" />
-                        <div className="hl-mini-line mid" />
-                        <div className="hl-mini-line" />
-                      </div>
+                          <span className="hl-profile-tag">
+                            8 yrs
+                          </span>
 
-                      <div className="hl-profile-mini">
-                        <div className="hl-mini-heading">
-                          Gemini profile
-                        </div>
-
-                        <span className="hl-profile-tag">
-                          React
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          PostgreSQL
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          AI / ML
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          8 yrs
-                        </span>
-
-                        <span className="hl-profile-tag">
-                          Next.js
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* =========================================
-                      STAGE 03
-                     ========================================= */}
-
-                  {steps[activeIndex].visual ===
-                    'embed' && (
-                    <div className="hl-embed-visual">
-                      <div className="hl-embedding-label">
-                        Gemini Embedding-002
-                      </div>
-
-                      <div className="hl-vector-field">
-                        {Array.from({
-                          length: 40,
-                        }).map((_, index) => (
-                          <span
-                            className="hl-vector-cell"
-                            key={index}
-                          />
-                        ))}
-                      </div>
-
-                      <div className="hl-embed-meta">
-                        <div className="hl-embed-stat">
-                          <strong>
-                            1536
-                          </strong>
-
-                          <span>
-                            dimensions
+                          <span className="hl-profile-tag">
+                            Next.js
                           </span>
                         </div>
 
-                        <div className="hl-embed-stat">
-                          <strong>
-                            Vector
-                          </strong>
-
-                          <span>
-                            representation
-                          </span>
-                        </div>
-
-                        <div className="hl-embed-stat">
-                          <strong>
-                            Searchable
-                          </strong>
-
-                          <span>
-                            signal
-                          </span>
-                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* =========================================
-                      STAGE 04
-                     ========================================= */}
+                    {/* -------------------------
+                        Stage 3
+                       ------------------------- */}
 
-                  {steps[activeIndex].visual ===
-                    'search' && (
-                    <div className="hl-search-visual">
-                      <div className="hl-query-box">
-                        <div className="hl-query-label">
-                          Semantic query
+                    {steps[activeIndex].visual ===
+                      'embed' && (
+                      <div className="hl-embed-visual">
+
+                        <div className="hl-embedding-label">
+                          Gemini Embedding-002
                         </div>
 
-                        <div className="hl-query-text">
-                          Senior Full-Stack AI Engineer
-                        </div>
-                      </div>
-
-                      <div className="hl-search-results">
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #1
-                          </div>
-
-                          <div>
-                            <div className="hl-search-name">
-                              Alex Mercer
-                            </div>
-
-                            <div className="hl-search-role">
-                              Lead Full-Stack AI Engineer
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            97.4%
-                          </div>
+                        <div className="hl-vector-field">
+                          {Array.from({
+                            length: 40,
+                          }).map((_, index) => (
+                            <span
+                              className="hl-vector-cell"
+                              key={index}
+                            />
+                          ))}
                         </div>
 
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #2
-                          </div>
+                        <div className="hl-embed-meta">
 
-                          <div>
-                            <div className="hl-search-name">
-                              Dr. Sarah Lin
-                            </div>
+                          <div className="hl-embed-stat">
+                            <strong>
+                              1536
+                            </strong>
 
-                            <div className="hl-search-role">
-                              Staff ML &amp; Vector Systems Engineer
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            84.7%
-                          </div>
-                        </div>
-
-                        <div className="hl-search-result">
-                          <div className="hl-search-rank">
-                            #3
-                          </div>
-
-                          <div>
-                            <div className="hl-search-name">
-                              Elena Rostova
-                            </div>
-
-                            <div className="hl-search-role">
-                              Principal Cloud Architect
-                            </div>
-                          </div>
-
-                          <div className="hl-search-score">
-                            71.2%
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* =========================================
-                      STAGE 05
-                     ========================================= */}
-
-                  {steps[activeIndex].visual ===
-                    'explain' && (
-                    <div className="hl-explain-visual">
-                      <div className="hl-score-card">
-                        <div className="hl-score-main">
-                          <div className="hl-score-circle">
                             <span>
-                              97%
+                              dimensions
                             </span>
                           </div>
 
-                          <div>
-                            <div className="hl-score-name">
-                              Alex Mercer
-                            </div>
+                          <div className="hl-embed-stat">
+                            <strong>
+                              Vector
+                            </strong>
 
-                            <div className="hl-score-role">
-                              Lead Full-Stack AI Engineer
-                            </div>
+                            <span>
+                              representation
+                            </span>
+                          </div>
+
+                          <div className="hl-embed-stat">
+                            <strong>
+                              Searchable
+                            </strong>
+
+                            <span>
+                              signal
+                            </span>
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+
+                    {/* -------------------------
+                        Stage 4
+                       ------------------------- */}
+
+                    {steps[activeIndex].visual ===
+                      'search' && (
+                      <div className="hl-search-visual">
+
+                        <div className="hl-query-box">
+                          <div className="hl-query-label">
+                            Semantic query
+                          </div>
+
+                          <div className="hl-query-text">
+                            Senior Full-Stack AI Engineer
                           </div>
                         </div>
+
+                        <div className="hl-search-results">
+
+                          <div className="hl-search-result">
+                            <div className="hl-search-rank">
+                              #1
+                            </div>
+
+                            <div>
+                              <div className="hl-search-name">
+                                Alex Mercer
+                              </div>
+
+                              <div className="hl-search-role">
+                                Lead Full-Stack AI Engineer
+                              </div>
+                            </div>
+
+                            <div className="hl-search-score">
+                              97.4%
+                            </div>
+                          </div>
+
+                          <div className="hl-search-result">
+                            <div className="hl-search-rank">
+                              #2
+                            </div>
+
+                            <div>
+                              <div className="hl-search-name">
+                                Dr. Sarah Lin
+                              </div>
+
+                              <div className="hl-search-role">
+                                Staff ML &amp; Vector Systems Engineer
+                              </div>
+                            </div>
+
+                            <div className="hl-search-score">
+                              84.7%
+                            </div>
+                          </div>
+
+                          <div className="hl-search-result">
+                            <div className="hl-search-rank">
+                              #3
+                            </div>
+
+                            <div>
+                              <div className="hl-search-name">
+                                Elena Rostova
+                              </div>
+
+                              <div className="hl-search-role">
+                                Principal Cloud Architect
+                              </div>
+                            </div>
+
+                            <div className="hl-search-score">
+                              71.2%
+                            </div>
+                          </div>
+
+                        </div>
                       </div>
+                    )}
 
-                      <div className="hl-evidence-list">
-                        <div className="hl-evidence">
-                          ✓ Next.js App Router experience
+                    {/* -------------------------
+                        Stage 5
+                       ------------------------- */}
+
+                    {steps[activeIndex].visual ===
+                      'explain' && (
+                      <div className="hl-explain-visual">
+
+                        <div className="hl-score-card">
+
+                          <div className="hl-score-main">
+
+                            <div className="hl-score-circle">
+                              <span>
+                                97%
+                              </span>
+                            </div>
+
+                            <div>
+                              <div className="hl-score-name">
+                                Alex Mercer
+                              </div>
+
+                              <div className="hl-score-role">
+                                Lead Full-Stack AI Engineer
+                              </div>
+                            </div>
+
+                          </div>
+
                         </div>
 
-                        <div className="hl-evidence">
-                          ✓ PostgreSQL + pgvector
+                        <div className="hl-evidence-list">
+
+                          <div className="hl-evidence">
+                            ✓ Next.js App Router experience
+                          </div>
+
+                          <div className="hl-evidence">
+                            ✓ PostgreSQL + pgvector
+                          </div>
+
+                          <div className="hl-evidence">
+                            ✓ AI / ML background
+                          </div>
+
+                          <div className="hl-gap">
+                            Gap: limited Kubernetes experience
+                          </div>
+
                         </div>
 
-                        <div className="hl-evidence">
-                          ✓ AI / ML background
-                        </div>
-
-                        <div className="hl-gap">
-                          Gap: limited Kubernetes experience
-                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
 
-                {/* Progress line */}
-                <div className="hl-progress-bar">
-                  <div className="hl-progress-fill" />
-                </div>
+                  </div>
 
-                <div className="hl-progress-dots">
-                  {steps.map((step, index) => (
-                    <span
-                      key={step.num}
-                      className={`hl-progress-dot ${
-                        index <= activeIndex
-                          ? 'active'
-                          : ''
-                      }`}
+                  {/* Progress */}
+
+                  <div className="hl-progress-bar">
+                    <div
+                      className="hl-progress-fill"
+                      style={{
+                        width: `${lineProgress * 100}%`,
+                      }}
                     />
-                  ))}
+                  </div>
+
+                  <div className="hl-progress-dots">
+                    {steps.map((step, index) => (
+                      <span
+                        key={step.num}
+                        className={`hl-progress-dot ${
+                          index <= activeIndex
+                            ? 'active'
+                            : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+
                 </div>
+
               </div>
 
-              {/* This note now sits INSIDE the stage,
-                  but completely outside the card. */}
+              {/* =========================================
+                  FINAL NOTE
+                  OUTSIDE THE CARD
+                 ========================================= */}
 
               <div className="hl-final-note">
                 <strong>
                   One pipeline. One hiring signal.
                 </strong>
 
-                <br />
-
-                Built to keep the technical complexity
-                underneath a simple recruiting experience.
+                Built to keep the technical complexity underneath a simple
+                recruiting experience.
               </div>
+
             </div>
           </div>
         </div>
