@@ -3502,19 +3502,7 @@ export function ArchitectureFlow() {
                   FINAL NOTE
                  ============================================= */}
 
-              <div className="hl-final-note">
-
-                <strong>
-                  One pipeline.
-                  <br />
-                  One hiring signal.
-                </strong>
-
-
-                Built to keep the technical complexity
-                underneath a simple recruiting experience.
-
-              </div>
+              
 
             </div>
 
