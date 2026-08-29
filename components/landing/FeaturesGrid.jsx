@@ -176,7 +176,7 @@ export function FeaturesGrid() {
 
     if (type === 'security') {
       return (
-        <div className="hl-feature-visual hl-security-visual">
+        <div className="hl-feature-visual hl-feature-security-visual">
           <div className="hl-security-lock">
             <svg
               width="25"
@@ -1478,9 +1478,28 @@ export function FeaturesGrid() {
            SECURITY
            ===================================================== */
 
-        .hl-security-visual {
+        .hl-feature-security-visual {
+          width:
+          100%;
+
+          min-height:
+          185px;
+
           padding:
-            21px;
+          21px;
+
+          border:
+          1px solid
+          var(--border);
+
+          border-radius:
+          18px;
+
+          background:
+         #FAF8F3;
+
+          overflow:
+          hidden;
         }
 
 
