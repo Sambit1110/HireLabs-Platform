@@ -294,14 +294,38 @@ export function InteractiveDemo({ onAuthRequired }) {
       return;
     }
 
-    const target =
-      `${role} ${jobDescription}`
-        .toLowerCase()
-        .match(/[a-z0-9.+#-]{2,}/g) || [];
+    const STOP_WORDS = new Set([
+      'the', 'and', 'for', 'with', 'from', 'this', 'that',
+      'into', 'your', 'you', 'our', 'are', 'was', 'were',
+      'will', 'have', 'has', 'had', 'who', 'what', 'where',
+      'when', 'how', 'not', 'but', 'all', 'any', 'can', 'its',
+      'their', 'they', 'them', 'job', 'role', 'looking',
+      'engineer', 'engineer', 'candidate', 'experience',
+      'experienced', 'years', 'year', 'need', 'needed',
+      'strong', 'good', 'work', 'working', 'team',
+    ]);
 
-    const uniqueTerms = [
-      ...new Set(target),
-    ];
+    const normalize = (value = '') =>
+      value
+        .toLowerCase()
+        .replace(/[’']/g, '')
+        .replace(/[^a-z0-9.+#/-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const targetText = normalize(`${role} ${jobDescription}`);
+
+    const rawTerms = targetText.match(/[a-z0-9.+#/-]{3,}/g) || [];
+
+    const uniqueTerms = [...new Set(
+      rawTerms.filter((term) => !STOP_WORDS.has(term))
+    )];
+
+    const roleTerms = [...new Set(
+      normalize(role)
+        .match(/[a-z0-9.+#/-]{3,}/g)
+        ?.filter((term) => !STOP_WORDS.has(term)) || []
+    )];
 
     const pool =
       matchMode === 'specific'
@@ -311,45 +335,96 @@ export function InteractiveDemo({ onAuthRequired }) {
           )
         : candidates;
 
-    setMatchResult(
-      pool
-        .map((candidate) => {
-          const evidence =
-            uniqueTerms.filter(
-              (term) =>
-                candidate.skills.includes(
-                  term
-                ) ||
-                candidate.title
-                  .toLowerCase()
-                  .includes(term)
-            );
+    const results = pool.map((candidate) => {
+      const profileText = normalize(
+        `${candidate.title} ${candidate.skills}`
+      );
 
-          return {
-            ...candidate,
-            evidence,
-            score: Math.min(
-              99,
-              Math.max(
-                35,
-                Math.round(
-                  42 +
-                    (evidence.length /
-                      Math.max(
-                        uniqueTerms.length,
-                        1
-                      )) *
-                      55
-                )
-              )
-            ),
-          };
-        })
-        .sort(
-          (a, b) =>
-            b.score - a.score
-        )
-    );
+      const profileTerms = new Set(
+        profileText.match(/[a-z0-9.+#/-]{2,}/g) || []
+      );
+
+      const matchedRequirements = uniqueTerms.filter((term) => {
+        if (term.length < 3) return false;
+
+        if (profileText.includes(term)) return true;
+
+        for (const skill of profileTerms) {
+          if (skill === term) return true;
+          if (skill.includes(term) || term.includes(skill)) return true;
+        }
+
+        return false;
+      });
+
+      const missingRequirements = uniqueTerms.filter(
+        (term) => !matchedRequirements.includes(term)
+      );
+
+      const roleMatches = roleTerms.filter((term) =>
+        profileText.includes(term)
+      );
+
+      const hasStructuredProfile =
+        candidate.source === 'sample' ||
+        Boolean(candidate.skills?.trim());
+
+      if (!hasStructuredProfile) {
+        return {
+          ...candidate,
+          evidence: [],
+          missingRequirements,
+          roleMatches,
+          matchedRequirements: [],
+          score: null,
+          profilePending: true,
+          profileCompleteness: 20,
+          analysisText:
+            'Resume saved successfully, but its text profile has not been extracted yet. Compatibility scoring will appear after parsing.',
+        };
+      }
+
+      const skillCoverage = uniqueTerms.length
+        ? matchedRequirements.length / uniqueTerms.length
+        : 0;
+
+      const roleCoverage = roleTerms.length
+        ? roleMatches.length / roleTerms.length
+        : 0;
+
+      const score = Math.min(99, Math.max(18, Math.round(
+        30 +
+        skillCoverage * 54 +
+        roleCoverage * 16
+      )));
+
+      const analysisText =
+        matchedRequirements.length && missingRequirements.length
+          ? `${matchedRequirements.length} of ${uniqueTerms.length} key requirements are supported by this profile. The strongest overlap is ${matchedRequirements.slice(0, 4).join(', ')}. ${missingRequirements.length} requirement${missingRequirements.length === 1 ? '' : 's'} still need evidence.`
+          : matchedRequirements.length
+            ? `${matchedRequirements.length} of ${uniqueTerms.length} key requirements are supported by this profile. Strong alignment across ${matchedRequirements.slice(0, 5).join(', ')}.`
+            : `No meaningful requirement overlap was found in the current profile. Review the resume against the role before shortlisting.`;
+
+      return {
+        ...candidate,
+        evidence: matchedRequirements.slice(0, 8),
+        matchedRequirements,
+        missingRequirements: missingRequirements.slice(0, 8),
+        roleMatches,
+        score,
+        profilePending: false,
+        profileCompleteness: 100,
+        analysisText,
+      };
+    });
+
+    results.sort((a, b) => {
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      return b.score - a.score;
+    });
+
+    setMatchResult(results);
   };
 
   const handleDrop = (event) => {
@@ -2384,70 +2459,123 @@ export function InteractiveDemo({ onAuthRequired }) {
         .hl-result-score {
           flex-shrink: 0;
 
-          padding:
-            8px 10px;
+          min-width: 88px;
+          text-align: center;
+          padding: 8px 10px;
 
           border-radius: 999px;
 
-          background:
-            #EDF1E5;
+          background: #EDF1E5;
 
-          color:
-            var(--olive-dark);
+          color: var(--olive-dark);
 
           font-size: 10px;
 
           font-weight: 900;
         }
 
-        .hl-reasoning {
-          margin-top: 15px;
-
-          padding: 13px;
-
-          border-radius: 13px;
-
-          background:
-            #F6F3EB;
-
-          color:
-            #6E665D;
-
-          font-size: 10px;
-
-          line-height: 1.6;
+        .hl-result-score.pending {
+          background: #F1EEE7;
+          color: #7D756C;
         }
 
-        .hl-reasoning strong {
-          color:
-            var(--espresso);
+        .hl-reasoning {
+          margin-top: 15px;
+          padding: 14px;
+          border: 1px solid rgba(94, 85, 76, 0.07);
+          border-radius: 15px;
+          background: #F7F4ED;
+          color: #6E665D;
+          font-size: 10px;
+          line-height: 1.65;
+        }
+
+        .hl-analysis-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 7px;
+        }
+
+        .hl-analysis-label {
+          color: var(--espresso);
+          font-size: 9px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .hl-analysis-meta {
+          color: #8A8177;
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .hl-analysis-copy {
+          margin: 0;
+        }
+
+        .hl-analysis-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .hl-analysis-block {
+          padding: 10px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.62);
+        }
+
+        .hl-analysis-block-title {
+          margin-bottom: 7px;
+          color: #8A8177;
+          font-size: 7px;
+          font-weight: 900;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
         }
 
         .hl-evidence {
           display: flex;
-
           flex-wrap: wrap;
-
           gap: 6px;
-
-          margin-top: 10px;
         }
 
         .hl-evidence-tag {
-          padding:
-            6px 8px;
-
+          padding: 6px 8px;
           border-radius: 999px;
-
-          background:
-            #EDEFE5;
-
-          color:
-            var(--olive-dark);
-
+          background: #EDEFE5;
+          color: var(--olive-dark);
           font-size: 8px;
-
           font-weight: 800;
+        }
+
+        .hl-evidence-tag.missing {
+          background: #F1ECE4;
+          color: #746B62;
+        }
+
+        .hl-evidence-tag.pending {
+          background: #ECE8DE;
+          color: #756D63;
+        }
+
+        .hl-analysis-bar {
+          height: 6px;
+          margin-top: 11px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #E7E1D7;
+        }
+
+        .hl-analysis-fill {
+          height: 100%;
+          border-radius: inherit;
+          background: var(--olive);
+          transition: width 500ms ease;
         }
 
 
@@ -3826,57 +3954,94 @@ export function InteractiveDemo({ onAuthRequired }) {
                                 </div>
 
 
-                                <div className="hl-result-score">
-                                  {
-                                    candidate.score
-                                  }%
-                                  {' '}
-                                  match
-                                </div>
+                                <div
+                                className={`hl-result-score ${
+                                  candidate.score === null ? 'pending' : ''
+                                }`}
+                              >
+                                {candidate.score === null
+                                  ? 'Profile pending'
+                                  : `${candidate.score}% match`}
+                              </div>
 
                               </div>
 
 
                               <div className="hl-reasoning">
 
-                                <strong>
-                                  Compatibility analysis:
-                                </strong>
-                                {' '}
+                                <div className="hl-analysis-head">
+                                  <span className="hl-analysis-label">
+                                    Compatibility analysis
+                                  </span>
+                                  <span className="hl-analysis-meta">
+                                    {candidate.score === null
+                                      ? 'Parsing required'
+                                      : `${candidate.matchedRequirements.length} matched · ${candidate.missingRequirements.length} missing`}
+                                  </span>
+                                </div>
 
-                                {candidate
-                                  .evidence
-                                  .length
-                                  ? `Matched ${candidate.evidence.join(
-                                      ', '
-                                    )} to this role.`
-                                  : 'No direct skill terms were found; review this candidate manually.'}
+                                <p className="hl-analysis-copy">
+                                  {candidate.analysisText}
+                                </p>
 
+                                {!candidate.profilePending && (
+                                  <div className="hl-analysis-bar">
+                                    <div
+                                      className="hl-analysis-fill"
+                                      style={{
+                                        width: `${candidate.score}%`,
+                                      }}
+                                    />
+                                  </div>
+                                )}
 
-                                <div className="hl-evidence">
+                                <div className="hl-analysis-grid">
 
-                                  {candidate
-                                    .evidence
-                                    .length ? (
-                                    candidate.evidence.map(
-                                      (
-                                        term
-                                      ) => (
-                                        <span
-                                          className="hl-evidence-tag"
-                                          key={
-                                            term
-                                          }
-                                        >
-                                          ✓ {term}
+                                  <div className="hl-analysis-block">
+                                    <div className="hl-analysis-block-title">
+                                      Matched requirements
+                                    </div>
+
+                                    <div className="hl-evidence">
+                                      {candidate.evidence.length ? (
+                                        candidate.evidence.map((term) => (
+                                          <span
+                                            className="hl-evidence-tag"
+                                            key={`matched-${term}`}
+                                          >
+                                            ✓ {term}
+                                          </span>
+                                        ))
+                                      ) : (
+                                        <span className="hl-evidence-tag pending">
+                                          No extracted evidence yet
                                         </span>
-                                      )
-                                    )
-                                  ) : (
-                                    <span className="hl-evidence-tag">
-                                      Needs human review
-                                    </span>
-                                  )}
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="hl-analysis-block">
+                                    <div className="hl-analysis-block-title">
+                                      Missing / needs evidence
+                                    </div>
+
+                                    <div className="hl-evidence">
+                                      {candidate.missingRequirements.length ? (
+                                        candidate.missingRequirements.map((term) => (
+                                          <span
+                                            className="hl-evidence-tag missing"
+                                            key={`missing-${term}`}
+                                          >
+                                            − {term}
+                                          </span>
+                                        ))
+                                      ) : (
+                                        <span className="hl-evidence-tag">
+                                          None identified
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
 
                                 </div>
 

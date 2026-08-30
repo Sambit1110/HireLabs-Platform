@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createClient } from '../../lib/supabase/client';
 
 /**
  * HireLabs Navigation
@@ -16,6 +17,94 @@ import React, { useEffect, useState } from 'react';
 export function Navbar({ onOpenAuthModal }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const supabase = useMemo(() => {
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const getUserInitials = (email) => {
+    if (!email) return 'HL';
+
+    const localPart = email.split('@')[0] || '';
+    const words = localPart
+      .replace(/[._-]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+
+    return localPart.slice(0, 2).toUpperCase() || 'HL';
+  };
+
+  const getAvatarStyle = (email) => {
+    let hash = 0;
+
+    for (let index = 0; index < (email || '').length; index += 1) {
+      hash = (hash * 31 + email.charCodeAt(index)) >>> 0;
+    }
+
+    const hue = hash % 360;
+    const secondHue = (hue + 42) % 360;
+
+    return {
+      background: `linear-gradient(135deg, hsl(${hue} 18% 24%), hsl(${secondHue} 22% 38%))`,
+    };
+  };
+
+  const userInitials = getUserInitials(user?.email);
+  const userAvatarStyle = getAvatarStyle(user?.email);
+
+  const handleSignOut = async () => {
+    if (!supabase || isSigningOut) return;
+
+    setIsSigningOut(true);
+    closeMobileMenu();
+
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) throw error;
+
+      setUser(null);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      setIsSigningOut(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (mounted) setUser(data.user ?? null);
+    };
+
+    void loadUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (mounted) setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -230,6 +319,57 @@ export function Navbar({ onOpenAuthModal }) {
           height: 5px;
           border-radius: 50%;
           background: var(--olive);
+        }
+
+        .hl-navbar-user-area {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .hl-navbar-avatar {
+          width: 36px;
+          height: 36px;
+          flex: 0 0 36px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(111, 125, 85, 0.3);
+          border-radius: 50%;
+          background: linear-gradient(135deg, #211C18, #596544);
+          color: #F5F1E8;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          box-shadow: 0 5px 14px rgba(33, 28, 24, 0.12);
+          user-select: none;
+        }
+
+        .hl-navbar-avatar[title] {
+          cursor: default;
+        }
+
+        .hl-navbar-signout {
+          min-height: 38px;
+          padding: 0 14px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.56);
+          color: #746B62;
+          font-size: 10px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        .hl-navbar-signout:hover {
+          background: var(--espresso);
+          color: var(--cream);
+          transform: translateY(-1px);
+        }
+
+        .hl-navbar-signout:disabled {
+          opacity: 0.65;
+          cursor: wait;
         }
 
         /* -------------------------
@@ -681,13 +821,35 @@ export function Navbar({ onOpenAuthModal }) {
 
           {/* Desktop actions */}
           <div className="hl-navbar-actions">
-            <button
-              type="button"
-              className="hl-navbar-signin"
-              onClick={onOpenAuthModal}
-            >
-              Sign in
-            </button>
+            {user ? (
+              <div className="hl-navbar-user-area">
+                <span
+                  className="hl-navbar-avatar"
+                  style={userAvatarStyle}
+                  title={user.email || 'Signed-in user'}
+                  aria-label={`Signed in as ${user.email || 'user'}`}
+                >
+                  {userInitials}
+                </span>
+
+                <button
+                  type="button"
+                  className="hl-navbar-signout"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                >
+                  {isSigningOut ? 'Signing out…' : 'Sign out'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="hl-navbar-signin"
+                onClick={onOpenAuthModal}
+              >
+                Sign in
+              </button>
+            )}
 
             <button
               type="button"
@@ -780,16 +942,38 @@ export function Navbar({ onOpenAuthModal }) {
           <div className="hl-mobile-divider" />
 
           <div className="hl-mobile-actions">
-            <button
-              type="button"
-              className="hl-mobile-signin"
-              onClick={() => {
-                closeMobileMenu();
-                onOpenAuthModal?.();
-              }}
-            >
-              Sign in
-            </button>
+            {user ? (
+              <div className="hl-navbar-user-area" style={{ justifyContent: 'space-between', width: '100%' }}>
+                <span
+                  className="hl-navbar-avatar"
+                  style={userAvatarStyle}
+                  title={user.email || 'Signed-in user'}
+                  aria-label={`Signed in as ${user.email || 'user'}`}
+                >
+                  {userInitials}
+                </span>
+
+                <button
+                  type="button"
+                  className="hl-mobile-signin"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                >
+                  {isSigningOut ? 'Signing out…' : 'Sign out'}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="hl-mobile-signin"
+                onClick={() => {
+                  closeMobileMenu();
+                  onOpenAuthModal?.();
+                }}
+              >
+                Sign in
+              </button>
+            )}
 
             <button
               type="button"

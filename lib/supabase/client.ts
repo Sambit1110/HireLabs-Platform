@@ -1,6 +1,8 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-/** Creates the browser client only when the public Supabase configuration is present. */
+let browserClient: ReturnType<typeof createSupabaseClient> | null = null;
+
+/** Creates one shared browser client for the current app. */
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -11,5 +13,9 @@ export function createClient() {
     );
   }
 
-  return createSupabaseClient(url, key);
+  if (!browserClient) {
+    browserClient = createSupabaseClient(url, key);
+  }
+
+  return browserClient;
 }
