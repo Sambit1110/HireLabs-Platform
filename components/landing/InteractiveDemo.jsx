@@ -260,8 +260,8 @@ export function InteractiveDemo({ onAuthRequired }) {
         const {
           data: savedResume,
           error: dbError,
-        } = await (supabase
-          .from('resumes') as any)
+        } = await supabase
+          .from('resumes')
           .insert({
             user_id: user.id,
             file_name: file.name,
