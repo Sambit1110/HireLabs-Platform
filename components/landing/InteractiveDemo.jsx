@@ -22,6 +22,8 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [isParsing, setIsParsing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadMessage, setUploadMessage] = useState('');
+  const [uploadedResumes, setUploadedResumes] = useState([]);
+  const [isLoadingResumes, setIsLoadingResumes] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -50,13 +52,15 @@ export function InteractiveDemo({ onAuthRequired }) {
     return () => observer.disconnect();
   }, []);
 
-  const candidates = [
+  const defaultCandidates = [
     {
       id: 'alex',
       name: 'Alex Mercer',
       title: 'Lead Full-Stack AI Engineer',
       skills:
         'next.js react typescript supabase postgresql pgvector gemini embeddings',
+      source: 'sample',
+      yearsExperience: 8,
     },
     {
       id: 'sarah',
@@ -64,6 +68,8 @@ export function InteractiveDemo({ onAuthRequired }) {
       title: 'Staff ML & Vector Systems Engineer',
       skills:
         'python machine learning vector search pgvector hnsw gemini embeddings',
+      source: 'sample',
+      yearsExperience: 10,
     },
     {
       id: 'elena',
@@ -71,14 +77,88 @@ export function InteractiveDemo({ onAuthRequired }) {
       title: 'Principal Cloud Architect',
       skills:
         'aws cloud architecture kubernetes postgres security terraform',
+      source: 'sample',
+      yearsExperience: 12,
     },
   ];
+
+  const uploadedCandidates = uploadedResumes.map((resume) => {
+    const displayName = resume.file_name
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return {
+      id: `uploaded-${resume.id}`,
+      resumeId: resume.id,
+      name: displayName || resume.file_name,
+      title: 'Uploaded candidate resume',
+      skills: '',
+      source: 'uploaded',
+      fileName: resume.file_name,
+      filePath: resume.file_path,
+      processingStatus: resume.processing_status,
+      createdAt: resume.created_at,
+      yearsExperience: null,
+    };
+  });
+
+  const candidates = [
+    ...defaultCandidates,
+    ...uploadedCandidates,
+  ];
+
 
   const activeCandidate =
     candidates.find(
       (candidate) =>
         candidate.id === selectedResume
     ) || candidates[0];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUploadedResumes = async () => {
+      setIsLoadingResumes(true);
+
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          if (!cancelled) setUploadedResumes([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('resumes')
+          .select(
+            'id, file_name, file_path, file_type, file_size, processing_status, created_at'
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!cancelled) {
+          setUploadedResumes(data || []);
+        }
+      } catch (error) {
+        console.error('Unable to load uploaded resumes:', error);
+      } finally {
+        if (!cancelled) setIsLoadingResumes(false);
+      }
+    };
+
+    void loadUploadedResumes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const acceptResume = async (file) => {
     if (!file) return;
@@ -151,6 +231,7 @@ export function InteractiveDemo({ onAuthRequired }) {
       }
 
       const {
+        data: savedResume,
         error: dbError,
       } = await supabase
         .from('resumes')
@@ -158,10 +239,14 @@ export function InteractiveDemo({ onAuthRequired }) {
           user_id: user.id,
           file_name: file.name,
           file_path: filePath,
-          file_type: file.type,
+          file_type: file.type || 'application/octet-stream',
           file_size: file.size,
           processing_status: 'uploaded',
-        });
+        })
+        .select(
+          'id, file_name, file_path, file_type, file_size, processing_status, created_at'
+        )
+        .single();
 
       if (dbError) {
         await supabase.storage
@@ -171,8 +256,15 @@ export function InteractiveDemo({ onAuthRequired }) {
         throw dbError;
       }
 
+      setUploadedResumes((current) => [
+        savedResume,
+        ...current.filter((resume) => resume.id !== savedResume.id),
+      ]);
+
+      setSelectedResume(`uploaded-${savedResume.id}`);
+
       setUploadMessage(
-        `${file.name} was saved to your resume library.`
+        `${file.name} was saved and selected.`
       );
     } catch (error) {
       setUploadedFile(null);
@@ -1203,6 +1295,30 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           color:
             var(--cream);
+        }
+
+        .hl-sample-divider {
+          flex-basis: 100%;
+          margin-top: 4px;
+          color: #8A8177;
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .hl-uploaded-sample {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .hl-sample-loading {
+          flex-basis: 100%;
+          color: #8A8177;
+          font-size: 9px;
         }
 
 
@@ -2769,38 +2885,53 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     <div className="hl-sample-list">
 
-                      {candidates.map(
-                        (candidate) => (
-                          <button
-                            key={
-                              candidate.id
-                            }
-                            type="button"
-                            className={`hl-sample-button ${
-                              selectedResume ===
-                              candidate.id
-                                ? 'active'
-                                : ''
-                            }`}
-                            onClick={() => {
-                              setSelectedResume(
-                                candidate.id
-                              );
+                      {defaultCandidates.map((candidate) => (
+                        <button
+                          key={candidate.id}
+                          type="button"
+                          className={`hl-sample-button ${
+                            selectedResume === candidate.id ? 'active' : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedResume(candidate.id);
+                            setUploadMessage('');
+                            setUploadedFile(null);
+                          }}
+                        >
+                          {candidate.name}
+                        </button>
+                      ))}
 
-                              setUploadMessage(
-                                ''
-                              );
+                      {uploadedCandidates.length > 0 && (
+                        <>
+                          <div className="hl-sample-divider">
+                            Your resumes
+                          </div>
 
-                              setUploadedFile(
-                                null
-                              );
-                            }}
-                          >
-                            {
-                              candidate.name
-                            }
-                          </button>
-                        )
+                          {uploadedCandidates.map((candidate) => (
+                            <button
+                              key={candidate.id}
+                              type="button"
+                              title={candidate.fileName}
+                              className={`hl-sample-button hl-uploaded-sample ${
+                                selectedResume === candidate.id ? 'active' : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedResume(candidate.id);
+                                setUploadMessage('');
+                                setUploadedFile(null);
+                              }}
+                            >
+                              {candidate.fileName}
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {isLoadingResumes && (
+                        <div className="hl-sample-loading">
+                          Loading your saved resumes…
+                        </div>
                       )}
 
                     </div>
@@ -3136,67 +3267,86 @@ export function InteractiveDemo({ onAuthRequired }) {
   "years_experience"
 </span>{`: `}
 <span className="hl-code-number">
-  {selectedResume === 'alex'
-    ? 8
-    : selectedResume ===
-        'sarah'
-      ? 10
-      : 12}
+  {activeCandidate.source === 'sample'
+    ? activeCandidate.yearsExperience
+    : 'pending'}
 </span>{`
   },
   `}
-<span className="hl-code-key">
-  "skills_normalized"
-</span>{`: {
+{activeCandidate.source === 'uploaded' ? (
+  <>
+    <span className="hl-code-key">
+      "source_file"
+    </span>{`: `}
+    <span className="hl-code-string">
+      "${activeCandidate.fileName}"
+    </span>{`,
     `}
-<span className="hl-code-key">
-  "frontend"
-</span>{`: [
-      `}
-<span className="hl-code-string">
-  "Next.js 15"
-</span>{`,
-      `}
-<span className="hl-code-string">
-  "React"
-</span>{`,
-      `}
-<span className="hl-code-string">
-  "TypeScript"
-</span>{`
-    ],
-    `}
-<span className="hl-code-key">
-  "backend_database"
-</span>{`: [
-      `}
-<span className="hl-code-string">
-  "Supabase"
-</span>{`,
-      `}
-<span className="hl-code-string">
-  "PostgreSQL"
-</span>{`,
-      `}
-<span className="hl-code-string">
-  "pgvector"
-</span>{`
-    ],
-    `}
-<span className="hl-code-key">
-  "ai_ml"
-</span>{`: [
-      `}
-<span className="hl-code-string">
-  "Gemini Embeddings"
-</span>{`,
-      `}
-<span className="hl-code-string">
-  "RAG Pipelines"
-</span>{`
-    ]
+    <span className="hl-code-key">
+      "processing_status"
+    </span>{`: `}
+    <span className="hl-code-string">
+      "${activeCandidate.processingStatus}"
+    </span>{`
   },
   `}
+  </>
+) : (
+  <>
+    <span className="hl-code-key">
+      "skills_normalized"
+    </span>{`: {
+      `}
+    <span className="hl-code-key">
+      "frontend"
+    </span>{`: [
+        `}
+    <span className="hl-code-string">
+      "Next.js 15"
+    </span>{`,
+        `}
+    <span className="hl-code-string">
+      "React"
+    </span>{`,
+        `}
+    <span className="hl-code-string">
+      "TypeScript"
+    </span>{`
+      ],
+      `}
+    <span className="hl-code-key">
+      "backend_database"
+    </span>{`: [
+        `}
+    <span className="hl-code-string">
+      "Supabase"
+    </span>{`,
+        `}
+    <span className="hl-code-string">
+      "PostgreSQL"
+    </span>{`,
+        `}
+    <span className="hl-code-string">
+      "pgvector"
+    </span>{`
+      ],
+      `}
+    <span className="hl-code-key">
+      "ai_ml"
+    </span>{`: [
+        `}
+    <span className="hl-code-string">
+      "Gemini Embeddings"
+    </span>{`,
+        `}
+    <span className="hl-code-string">
+      "RAG Pipelines"
+    </span>{`
+      ]
+    },
+    `}
+  </>
+)}
 <span className="hl-code-key">
   "vector_embedding"
 </span>{`: {
