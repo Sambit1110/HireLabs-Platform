@@ -168,7 +168,7 @@ export default function LandingPage() {
       }
 
       if (data.session) {
-        window.location.href = '/dashboard/resumes';
+        window.location.href = '/';
       } else {
         setAuthMessage(
           'Signed in, but no active session was returned. Please try again.'
@@ -281,7 +281,7 @@ export default function LandingPage() {
         window.setTimeout(
           () => {
             window.location.href =
-              '/dashboard/resumes';
+              '/';
           },
           700
         );

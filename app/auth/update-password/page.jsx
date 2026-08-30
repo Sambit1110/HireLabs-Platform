@@ -177,13 +177,11 @@ export default function UpdatePasswordPage() {
       }
 
       setMessage(
-        'Password updated successfully. Redirecting to your dashboard…'
+        'Password updated successfully. Redirecting to HireLabs…'
       );
 
       window.setTimeout(() => {
-        router.replace(
-          '/dashboard/resumes'
-        );
+        router.replace('/');
       }, 700);
     } catch (error) {
       setMessage(
