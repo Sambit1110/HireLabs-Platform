@@ -4,7 +4,9 @@ import {
   useEffect,
   useState,
 } from 'react';
+
 import { useRouter } from 'next/navigation';
+
 import { createClient } from '@/lib/supabase/client';
 
 export default function UpdatePasswordPage() {
@@ -12,41 +14,123 @@ export default function UpdatePasswordPage() {
 
   const [password, setPassword] =
     useState('');
+
   const [confirmPassword, setConfirmPassword] =
     useState('');
+
   const [showPassword, setShowPassword] =
     useState(false);
+
   const [message, setMessage] =
     useState('');
+
   const [isLoading, setIsLoading] =
     useState(false);
+
   const [isCheckingSession, setIsCheckingSession] =
     useState(true);
 
+  const [hasSession, setHasSession] =
+    useState(false);
+
   useEffect(() => {
+    const supabase = createClient();
+
+    let isMounted = true;
+
     const checkSession = async () => {
-      const supabase = createClient();
-      const { data } =
-        await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (!data.session) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (session) {
+          setHasSession(true);
+          setMessage('');
+        } else {
+          setHasSession(false);
+          setMessage(
+            'This password reset link is invalid or has expired. Please request a new one.'
+          );
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setHasSession(false);
+
         setMessage(
-          'This password reset link is invalid or has expired. Please request a new one.'
+          error instanceof Error
+            ? error.message
+            : 'Unable to verify your password reset session.'
         );
+      } finally {
+        if (isMounted) {
+          setIsCheckingSession(false);
+        }
       }
-
-      setIsCheckingSession(false);
     };
 
     checkSession();
+
+    /*
+     * Keep the page synchronized if Supabase establishes
+     * or refreshes the authentication session.
+     */
+    const {
+      data: authListener,
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (session) {
+          setHasSession(true);
+
+          /*
+           * Don't overwrite an existing success/error message.
+           */
+          if (
+            event === 'SIGNED_IN' ||
+            event === 'TOKEN_REFRESHED'
+          ) {
+            setMessage('');
+          }
+        } else if (
+          event === 'SIGNED_OUT'
+        ) {
+          setHasSession(false);
+
+          setMessage(
+            'Your authentication session has ended. Please request a new password reset link.'
+          );
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const updatePassword = async (
-    event
-  ) => {
+  const updatePassword = async (event) => {
     event.preventDefault();
 
     setMessage('');
+
+    if (!hasSession) {
+      setMessage(
+        'Auth session missing. Please request a new password reset link.'
+      );
+      return;
+    }
 
     if (password.length < 8) {
       setMessage(
@@ -66,6 +150,22 @@ export default function UpdatePasswordPage() {
 
     try {
       const supabase = createClient();
+
+      /*
+       * Verify the session one more time immediately
+       * before changing the password.
+       */
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setHasSession(false);
+
+        throw new Error(
+          'Auth session missing. Please request a new password reset link.'
+        );
+      }
 
       const { error } =
         await supabase.auth.updateUser({
@@ -104,6 +204,8 @@ export default function UpdatePasswordPage() {
           display: 'grid',
           placeItems: 'center',
           padding: '24px',
+          background: '#F5F1E8',
+          color: '#211C18',
         }}
       >
         Checking your reset link…
@@ -164,6 +266,8 @@ export default function UpdatePasswordPage() {
             gap: '15px',
           }}
         >
+          {/* NEW PASSWORD */}
+
           <label>
             <span
               style={{
@@ -208,6 +312,7 @@ export default function UpdatePasswordPage() {
                   background: '#FAF8F3',
                   color: '#211C18',
                   outline: 'none',
+                  boxSizing: 'border-box',
                 }}
               />
 
@@ -238,6 +343,8 @@ export default function UpdatePasswordPage() {
               </button>
             </div>
           </label>
+
+          {/* CONFIRM PASSWORD */}
 
           <label>
             <span
@@ -278,27 +385,42 @@ export default function UpdatePasswordPage() {
                 background: '#FAF8F3',
                 color: '#211C18',
                 outline: 'none',
+                boxSizing: 'border-box',
               }}
             />
           </label>
 
+          {/* UPDATE BUTTON */}
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              !hasSession
+            }
             style={{
               minHeight: '48px',
               border: 0,
               borderRadius: '13px',
-              cursor: isLoading
-                ? 'not-allowed'
-                : 'pointer',
+              cursor:
+                isLoading ||
+                !hasSession
+                  ? 'not-allowed'
+                  : 'pointer',
               fontWeight: 800,
+              opacity:
+                isLoading ||
+                !hasSession
+                  ? 0.6
+                  : 1,
             }}
           >
             {isLoading
               ? 'Updating…'
               : 'Update password'}
           </button>
+
+          {/* MESSAGE */}
 
           {message && (
             <p
