@@ -385,7 +385,7 @@ export function HeroSection({
             0;
 
           top:
-            28px;
+            7.5vh;
 
           display:
             flex;
@@ -532,7 +532,7 @@ export function HeroSection({
             center;
 
           padding-top:
-            175px;
+            68px;
 
           padding-bottom:
             80px;
