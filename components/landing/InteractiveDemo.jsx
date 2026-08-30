@@ -27,6 +27,7 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
 
   const sectionRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -2367,6 +2368,57 @@ export function InteractiveDemo({ onAuthRequired }) {
           letter-spacing: 0.08em;
         }
 
+        .hl-result-view-switcher {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.6);
+        }
+
+        .hl-result-view-button {
+          border: 0;
+          border-radius: 999px;
+          padding: 8px 11px;
+          background: transparent;
+          color: #81786F;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+          cursor: pointer;
+          transition: background 200ms ease, color 200ms ease, transform 200ms ease;
+        }
+
+        .hl-result-view-button:hover {
+          transform: translateY(-1px);
+        }
+
+        .hl-result-view-button.active {
+          background: var(--espresso);
+          color: var(--cream);
+          box-shadow: 0 8px 18px rgba(33, 28, 24, 0.12);
+        }
+
+        .hl-results-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 16px;
+        }
+
+        .hl-results-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        @media (min-width: 1280px) {
+          .hl-results-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
         .hl-empty-state {
           min-height: 390px;
 
@@ -4021,13 +4073,34 @@ export function InteractiveDemo({ onAuthRequired }) {
                       </div>
 
 
-                      {matchResult && (
-                        <div className="hl-result-count">
-                          {
-                            matchResult.length
-                          } candidates
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {matchResult && (
+                          <div className="hl-result-count">
+                            {
+                              matchResult.length
+                            } candidates
+                          </div>
+                        )}
+
+                        <div className="hl-result-view-switcher" aria-label="Candidate result layout">
+                          <button
+                            type="button"
+                            className={`hl-result-view-button ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewMode('grid')}
+                            aria-pressed={viewMode === 'grid'}
+                          >
+                            Grid View
+                          </button>
+                          <button
+                            type="button"
+                            className={`hl-result-view-button ${viewMode === 'list' ? 'active' : ''}`}
+                            onClick={() => setViewMode('list')}
+                            aria-pressed={viewMode === 'list'}
+                          >
+                            List View
+                          </button>
                         </div>
-                      )}
+                      </div>
 
                     </div>
 
@@ -4082,7 +4155,13 @@ export function InteractiveDemo({ onAuthRequired }) {
                     {/* RESULTS */}
 
                     {matchResult && (
-                      <div className="hl-results">
+                      <div
+                        className={`hl-results ${
+                          viewMode === 'grid'
+                            ? 'grid grid-cols-1 xl:grid-cols-2 gap-4 hl-results-grid'
+                            : 'flex flex-col gap-4 hl-results-list'
+                        }`}
+                      >
 
                         {matchResult.map(
                           (
