@@ -4,20 +4,33 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { validateResume } from "@/lib/resume/validation";
 
-export default function ResumeUpload({ onUploaded }: { onUploaded?: () => void }) {
-  const [file, setFile] = useState<File | null>(null);
+type SavedResume = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  processing_status: string;
+  created_at: string;
+};
+
+export default function ResumeUpload({ onUploaded }: { onUploaded?: (resumes: SavedResume[]) => void }) {
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleUpload = async () => {
-    if (!file) {
-      setMessage("Please select a resume.");
+    if (!files.length) {
+      setMessage("Please select at least one resume.");
       return;
     }
 
-    const validationError = validateResume(file);
-    if (validationError) {
-      setMessage(validationError);
+    const invalidFile = files
+      .map((file) => ({ file, error: validateResume(file) }))
+      .find((item) => item.error);
+
+    if (invalidFile) {
+      setMessage(`${invalidFile.file.name}: ${invalidFile.error}`);
       return;
     }
 
@@ -34,54 +47,70 @@ export default function ResumeUpload({ onUploaded }: { onUploaded?: () => void }
         throw new Error("Please log in first.");
       }
 
-      const extension = file.name.split(".").pop();
-      const filePath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const saved: SavedResume[] = [];
+      const failed: string[] = [];
 
-      // Upload actual file
-      const { error: uploadError } = await supabase.storage
-        .from("resumes")
-        .upload(filePath, file, {
-          contentType: file.type,
-          upsert: false,
-        });
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        setMessage(`Uploading ${index + 1} of ${files.length}: ${file.name}`);
 
-      if (uploadError) throw uploadError;
+        const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
+        const filePath = `${user.id}/${crypto.randomUUID()}.${extension}`;
 
-      // Save file information.
-      // The project does not ship generated Supabase database types,
-      // so the table insert is intentionally cast to avoid TypeScript
-      // rejecting the valid public.resumes columns during Vercel builds.
-      const resumeRecord = {
-        user_id: user.id,
-        file_name: file.name,
-        file_path: filePath,
-        file_type: file.type,
-        file_size: file.size,
-        processing_status: "uploaded",
-      };
-
-      const { error: dbError } = await (supabase
-        .from("resumes") as any)
-        .insert(resumeRecord);
-
-      if (dbError) {
-        // Remove storage file if database insert fails
-        await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("resumes")
-          .remove([filePath]);
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
 
-        throw dbError;
+        if (uploadError) {
+          failed.push(file.name);
+          continue;
+        }
+
+        const resumeRecord = {
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_type: file.type || "application/octet-stream",
+          file_size: file.size,
+          processing_status: "uploaded",
+        };
+
+        const { data: savedResume, error: dbError } = await (supabase
+          .from("resumes") as any)
+          .insert(resumeRecord)
+          .select(
+            "id, file_name, file_path, file_type, file_size, processing_status, created_at"
+          )
+          .single();
+
+        if (dbError) {
+          await supabase.storage.from("resumes").remove([filePath]);
+          failed.push(file.name);
+          continue;
+        }
+
+        saved.push(savedResume);
       }
 
-      setFile(null);
-      setMessage("Resume uploaded successfully!");
-      onUploaded?.();
+      setFiles([]);
+      onUploaded?.(saved);
+
+      if (!saved.length) {
+        throw new Error("None of the selected resumes could be uploaded.");
+      }
+
+      setMessage(
+        failed.length
+          ? `${saved.length} uploaded, ${failed.length} failed.`
+          : `${saved.length} resume${saved.length === 1 ? "" : "s"} uploaded successfully!`
+      );
     } catch (error) {
       console.error(error);
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Upload failed."
+        error instanceof Error ? error.message : "Upload failed."
       );
     } finally {
       setUploading(false);
@@ -90,35 +119,41 @@ export default function ResumeUpload({ onUploaded }: { onUploaded?: () => void }
 
   return (
     <section className="resume-upload-card">
-      <h2>Upload Resume</h2>
+      <h2>Upload Resumes</h2>
 
       <p className="resume-upload-help">
-        PDF or DOCX, maximum 5 MB.
+        PDF or DOCX, maximum 5 MB each. Multiple files supported.
       </p>
 
       <input
         className="resume-upload-input"
         type="file"
         accept=".pdf,.docx"
+        multiple
         onChange={(e) => {
-          setFile(e.target.files?.[0] ?? null);
+          setFiles(Array.from(e.target.files ?? []));
           setMessage("");
         }}
       />
 
-      {file && (
-        <p className="resume-upload-selected">
-          Selected: {file.name}
-        </p>
+      {files.length > 0 && (
+        <div className="resume-upload-selected">
+          <strong>{files.length} file{files.length === 1 ? "" : "s"} selected</strong>
+          {files.map((file) => (
+            <div key={`${file.name}-${file.size}-${file.lastModified}`}>
+              {file.name}
+            </div>
+          ))}
+        </div>
       )}
 
       <button
         type="button"
         onClick={handleUpload}
-        disabled={!file || uploading}
+        disabled={!files.length || uploading}
         className="btn btn-primary resume-upload-button"
       >
-        {uploading ? "Uploading..." : "Upload Resume"}
+        {uploading ? "Uploading..." : "Upload Resumes"}
       </button>
 
       {message && (

@@ -21,6 +21,7 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [matchResult, setMatchResult] = useState(null);
   const [isParsing, setIsParsing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
   const [uploadMessage, setUploadMessage] = useState('');
   const [uploadedResumes, setUploadedResumes] = useState([]);
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
@@ -160,33 +161,44 @@ export function InteractiveDemo({ onAuthRequired }) {
     };
   }, []);
 
-  const acceptResume = async (file) => {
-    if (!file) return;
+  const acceptResume = async (filesInput) => {
+    const files = Array.from(filesInput || []).filter(Boolean);
 
-    const isSupported =
-      [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ].includes(file.type) ||
-      /\.(pdf|docx)$/i.test(file.name);
+    if (!files.length) return;
 
-    if (!isSupported) {
+    const invalidFile = files.find((file) => {
+      const isSupported =
+        [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ].includes(file.type) ||
+        /\.(pdf|docx)$/i.test(file.name);
+
+      return !isSupported || file.size > 5 * 1024 * 1024;
+    });
+
+    if (invalidFile) {
+      const isSupported =
+        [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ].includes(invalidFile.type) ||
+        /\.(pdf|docx)$/i.test(invalidFile.name);
+
       setUploadMessage(
-        'Please choose a PDF or DOCX resume.'
+        !isSupported
+          ? `${invalidFile.name}: please choose a PDF or DOCX file.`
+          : `${invalidFile.name}: files must be 5 MB or smaller.`
       );
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadMessage(
-        'This demo accepts files up to 5 MB.'
-      );
-      return;
-    }
-
-    setUploadedFile(file);
+    setSelectedUploadFiles(files);
+    setUploadedFile(files[0] || null);
     setUploadMessage(
-      'Uploading your resume securely…'
+      files.length === 1
+        ? 'Uploading your resume securely…'
+        : `Uploading ${files.length} resumes securely…`
     );
     setIsParsing(true);
 
@@ -199,76 +211,124 @@ export function InteractiveDemo({ onAuthRequired }) {
 
       if (!user) {
         onAuthRequired?.();
-
         throw new Error(
           'Sign in to upload and save resumes.'
         );
       }
 
-      const extension = file.name
-        .split('.')
-        .pop()
-        ?.toLowerCase();
+      const savedResumes = [];
+      const failedFiles = [];
 
-      const filePath =
-        `${user.id}/${crypto.randomUUID()}.${extension}`;
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
 
-      const {
-        error: storageError,
-      } = await supabase.storage
-        .from('resumes')
-        .upload(
-          filePath,
-          file,
-          {
-            contentType: file.type,
-            upsert: false,
-          }
+        setUploadMessage(
+          files.length === 1
+            ? `Uploading ${file.name}…`
+            : `Uploading ${index + 1} of ${files.length}: ${file.name}…`
         );
 
-      if (storageError) {
-        throw storageError;
-      }
+        const extension = file.name
+          .split('.')
+          .pop()
+          ?.toLowerCase() || 'bin';
 
-      const {
-        data: savedResume,
-        error: dbError,
-      } = await supabase
-        .from('resumes')
-        .insert({
-          user_id: user.id,
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type || 'application/octet-stream',
-          file_size: file.size,
-          processing_status: 'uploaded',
-        })
-        .select(
-          'id, file_name, file_path, file_type, file_size, processing_status, created_at'
-        )
-        .single();
+        const filePath =
+          `${user.id}/${crypto.randomUUID()}.${extension}`;
 
-      if (dbError) {
-        await supabase.storage
+        const {
+          error: storageError,
+        } = await supabase.storage
           .from('resumes')
-          .remove([filePath]);
+          .upload(
+            filePath,
+            file,
+            {
+              contentType: file.type || 'application/octet-stream',
+              upsert: false,
+            }
+          );
 
-        throw dbError;
+        if (storageError) {
+          failedFiles.push({
+            file,
+            error: storageError,
+          });
+          continue;
+        }
+
+        const {
+          data: savedResume,
+          error: dbError,
+        } = await (supabase
+          .from('resumes') as any)
+          .insert({
+            user_id: user.id,
+            file_name: file.name,
+            file_path: filePath,
+            file_type: file.type || 'application/octet-stream',
+            file_size: file.size,
+            processing_status: 'uploaded',
+          })
+          .select(
+            'id, file_name, file_path, file_type, file_size, processing_status, created_at'
+          )
+          .single();
+
+        if (dbError) {
+          await supabase.storage
+            .from('resumes')
+            .remove([filePath]);
+
+          failedFiles.push({
+            file,
+            error: dbError,
+          });
+          continue;
+        }
+
+        savedResumes.push(savedResume);
       }
 
-      setUploadedResumes((current) => [
-        savedResume,
-        ...current.filter((resume) => resume.id !== savedResume.id),
-      ]);
+      if (!savedResumes.length) {
+        throw new Error(
+          'None of the selected resumes could be uploaded.'
+        );
+      }
 
-      setSelectedResume(`uploaded-${savedResume.id}`);
+      setUploadedResumes((current) => {
+        const merged = [
+          ...savedResumes,
+          ...current,
+        ];
 
-      setUploadMessage(
-        `${file.name} was saved and selected.`
+        const unique = new Map(
+          merged.map((resume) => [resume.id, resume])
+        );
+
+        return Array.from(unique.values());
+      });
+
+      // Select the most recently uploaded resume.
+      const lastSavedResume =
+        savedResumes[savedResumes.length - 1];
+
+      setSelectedResume(
+        `uploaded-${lastSavedResume.id}`
       );
-    } catch (error) {
-      setUploadedFile(null);
 
+      if (failedFiles.length) {
+        setUploadMessage(
+          `${savedResumes.length} of ${files.length} resumes were saved. ${failedFiles.length} failed.`
+        );
+      } else {
+        setUploadMessage(
+          savedResumes.length === 1
+            ? `${savedResumes[0].file_name} was saved and selected.`
+            : `${savedResumes.length} resumes were saved. ${lastSavedResume.file_name} is selected.`
+        );
+      }
+    } catch (error) {
       setUploadMessage(
         error instanceof Error
           ? error.message
@@ -430,13 +490,12 @@ export function InteractiveDemo({ onAuthRequired }) {
   const handleDrop = (event) => {
     event.preventDefault();
 
-    acceptResume(
-      event.dataTransfer.files?.[0]
-    );
+    acceptResume(event.dataTransfer.files);
   };
 
   const resetUpload = () => {
     setUploadedFile(null);
+    setSelectedUploadFiles([]);
     setUploadMessage('');
 
     if (fileInputRef.current) {
@@ -3070,18 +3129,15 @@ export function InteractiveDemo({ onAuthRequired }) {
                     <input
                       ref={fileInputRef}
                       type="file"
+                      multiple
                       accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       style={{
                         display: 'none',
                       }}
-                      onChange={(
-                        event
-                      ) =>
-                        acceptResume(
-                          event.target
-                            .files?.[0]
-                        )
-                      }
+                      onChange={(event) => {
+                        acceptResume(event.target.files);
+                        event.target.value = '';
+                      }}
                     />
 
 
@@ -3115,7 +3171,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                       onDrop={
                         handleDrop
                       }
-                      aria-label="Upload a PDF or DOCX resume"
+                      aria-label="Upload one or more PDF or DOCX resumes"
                     >
 
                       <div className="hl-drop-icon">
@@ -3141,19 +3197,21 @@ export function InteractiveDemo({ onAuthRequired }) {
                         <div className="hl-upload-title">
 
                           {isParsing
-                            ? 'Reading your resume…'
-                            : uploadedFile
-                              ? uploadedFile.name
-                              : 'Drop a resume here'}
+                            ? `Uploading ${selectedUploadFiles.length || 1} resume${(selectedUploadFiles.length || 1) === 1 ? '' : 's'}…`
+                            : selectedUploadFiles.length > 1
+                              ? `${selectedUploadFiles.length} resumes selected`
+                              : uploadedFile
+                                ? uploadedFile.name
+                                : 'Drop resumes here'}
 
                         </div>
 
 
                         <div className="hl-upload-subtitle">
 
-                          {uploadedFile
-                            ? 'Saving this file to your private resume library.'
-                            : 'PDF or DOCX · maximum file size 5 MB'}
+                          {selectedUploadFiles.length > 1
+                            ? 'Multiple PDF or DOCX files · maximum 5 MB each'
+                            : 'PDF or DOCX · maximum file size 5 MB each · multiple files supported'}
 
                         </div>
 
@@ -3223,7 +3281,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               'pointer',
                           }}
                         >
-                          Remove selected file
+                          Clear current selection
                         </button>
                       )}
 
