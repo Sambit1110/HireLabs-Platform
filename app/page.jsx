@@ -33,13 +33,19 @@ export default function LandingPage() {
   const [password, setPassword] =
     useState('');
 
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [confirmPassword, setConfirmPassword] =
+    useState('');
+
   const [authMode, setAuthMode] =
     useState('signin');
 
   const [authMessage, setAuthMessage] =
     useState('');
 
-  const [isSendingLink, setIsSendingLink] =
+  const [isAuthLoading, setIsAuthLoading] =
     useState(false);
 
   const ctaRef = useRef(null);
@@ -118,41 +124,85 @@ export default function LandingPage() {
      ========================================================== */
 
   const openAuth = () => {
+    if (isAuthLoading) return;
+
+    setAuthMode('signin');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
     setAuthMessage('');
     setIsAuthModalOpen(true);
   };
 
 
   const closeAuth = () => {
-    if (isSendingLink) return;
+    if (isAuthLoading) return;
 
+    setAuthMode('signin');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
     setAuthMessage('');
     setIsAuthModalOpen(false);
   };
 
+  const signIn = async (event) => {
+    event.preventDefault();
 
-  const sendMagicLink = async (
+    setIsAuthLoading(true);
+    setAuthMessage('');
+
+    try {
+      const supabase = createClient();
+
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        window.location.href = '/dashboard/resumes';
+      } else {
+        setAuthMessage(
+          'Signed in, but no active session was returned. Please try again.'
+        );
+      }
+    } catch (error) {
+      setAuthMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to sign in. Please check your email and password.'
+      );
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+
+  const resetPassword = async (
     event
   ) => {
     event.preventDefault();
 
-    setIsSendingLink(true);
+    setIsAuthLoading(true);
     setAuthMessage('');
 
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
-      const {
-        error,
-      } =
-        await supabase.auth.signInWithOtp(
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(
+          email,
           {
-            email,
-            options: {
-              emailRedirectTo:
-                `${window.location.origin}/auth/callback`,
-            },
+            redirectTo:
+              `${window.location.origin}/auth/callback?next=/auth/update-password`,
           }
         );
 
@@ -161,16 +211,16 @@ export default function LandingPage() {
       }
 
       setAuthMessage(
-        'Check your inbox for the secure sign-in link.'
+        'If an account exists for this email, a password reset link has been sent. Check your inbox.'
       );
     } catch (error) {
       setAuthMessage(
         error instanceof Error
           ? error.message
-          : 'Unable to send the sign-in link.'
+          : 'Unable to send the password reset email. Please try again.'
       );
     } finally {
-      setIsSendingLink(false);
+      setIsAuthLoading(false);
     }
   };
 
@@ -180,8 +230,16 @@ export default function LandingPage() {
   ) => {
     event.preventDefault();
 
-    setIsSendingLink(true);
     setAuthMessage('');
+
+    if (password !== confirmPassword) {
+      setAuthMessage(
+        'Passwords do not match.'
+      );
+      return;
+    }
+
+    setIsAuthLoading(true);
 
     try {
       const supabase =
@@ -239,15 +297,17 @@ export default function LandingPage() {
           : 'Unable to create the account.'
       );
     } finally {
-      setIsSendingLink(false);
+      setIsAuthLoading(false);
     }
   };
 
 
   const handleAuthSubmit =
     authMode === 'signin'
-      ? sendMagicLink
-      : createAccount;
+      ? signIn
+      : authMode === 'forgot'
+        ? resetPassword
+        : createAccount;
 
 
   const toggleAuthMode = () => {
@@ -260,6 +320,26 @@ export default function LandingPage() {
 
     setAuthMessage('');
     setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+  };
+
+
+  const openForgotPassword = () => {
+    setAuthMode('forgot');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setAuthMessage('');
+  };
+
+
+  const backToSignIn = () => {
+    setAuthMode('signin');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setAuthMessage('');
   };
 
 
@@ -1881,10 +1961,11 @@ export default function LandingPage() {
           }
 
           title={
-            authMode ===
-            'signin'
+            authMode === 'signin'
               ? 'Sign in to HireLabs'
-              : 'Create your HireLabs account'
+              : authMode === 'forgot'
+                ? 'Reset your HireLabs password'
+                : 'Create your HireLabs account'
           }
         >
 
@@ -1923,20 +2004,22 @@ export default function LandingPage() {
 
               <h3 className="hl-auth-title">
 
-                {authMode ===
-                'signin'
+                {authMode === 'signin'
                   ? 'Welcome back.'
-                  : 'Build your hiring workspace.'}
+                  : authMode === 'forgot'
+                    ? 'Recover your account.'
+                    : 'Build your hiring workspace.'}
 
               </h3>
 
 
               <p className="hl-auth-subtitle">
 
-                {authMode ===
-                'signin'
+                {authMode === 'signin'
                   ? 'Sign in with your work email to access your private candidate library and semantic matching workspace.'
-                  : 'Create an account to store resumes securely and explore your private HireLabs workspace.'}
+                  : authMode === 'forgot'
+                    ? 'Enter your work email and we will send you a secure password reset link.'
+                    : 'Create an account to store resumes securely and explore your private HireLabs workspace.'}
 
               </p>
 
@@ -1944,150 +2027,204 @@ export default function LandingPage() {
 
 
             <form
-              onSubmit={
-                handleAuthSubmit
-              }
-
+              onSubmit={handleAuthSubmit}
               className="hl-auth-form"
             >
-
               <label className="hl-auth-field">
-
                 <span className="hl-auth-label">
                   Work email
                 </span>
 
-
                 <input
                   className="hl-auth-input"
-
                   type="email"
-
                   required
-
-                  value={
-                    email
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
                   }
-
-                  onChange={(
-                    event
-                  ) =>
-                    setEmail(
-                      event.target
-                        .value
-                    )
-                  }
-
                   placeholder="recruiter@company.com"
-
                   autoComplete="email"
                 />
-
               </label>
 
+              {authMode !== 'forgot' && (
+                <>
+                  <label className="hl-auth-field">
+                    <span className="hl-auth-label">
+                      Password
+                    </span>
 
-              {authMode ===
-                'signup' && (
-                <label className="hl-auth-field">
+                    <div
+                      style={{
+                        position: 'relative',
+                      }}
+                    >
+                      <input
+                        className="hl-auth-input"
+                        type={
+                          showPassword
+                            ? 'text'
+                            : 'password'
+                        }
+                        required
+                        minLength={
+                          authMode === 'signup'
+                            ? 8
+                            : undefined
+                        }
+                        value={password}
+                        onChange={(event) =>
+                          setPassword(
+                            event.target.value
+                          )
+                        }
+                        placeholder={
+                          authMode === 'signup'
+                            ? 'At least 8 characters'
+                            : 'Enter your password'
+                        }
+                        autoComplete={
+                          authMode === 'signin'
+                            ? 'current-password'
+                            : 'new-password'
+                        }
+                        style={{
+                          paddingRight: '60px',
+                        }}
+                      />
 
-                  <span className="hl-auth-label">
-                    Password
-                  </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPassword(
+                            (current) => !current
+                          )
+                        }
+                        aria-label={
+                          showPassword
+                            ? 'Hide password'
+                            : 'Show password'
+                        }
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          top: '50%',
+                          transform:
+                            'translateY(-50%)',
+                          border: 'none',
+                          background:
+                            'transparent',
+                          cursor: 'pointer',
+                          color: '#746B62',
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '5px',
+                        }}
+                      >
+                        {showPassword
+                          ? 'Hide'
+                          : 'Show'}
+                      </button>
+                    </div>
+                  </label>
 
+                  {authMode === 'signup' && (
+                    <label className="hl-auth-field">
+                      <span className="hl-auth-label">
+                        Confirm password
+                      </span>
 
-                  <input
-                    className="hl-auth-input"
+                      <input
+                        className="hl-auth-input"
+                        type={
+                          showPassword
+                            ? 'text'
+                            : 'password'
+                        }
+                        required
+                        minLength={8}
+                        value={confirmPassword}
+                        onChange={(event) =>
+                          setConfirmPassword(
+                            event.target.value
+                          )
+                        }
+                        placeholder="Re-enter your password"
+                        autoComplete="new-password"
+                      />
+                    </label>
+                  )}
 
-                    type="password"
-
-                    required
-
-                    minLength={8}
-
-                    value={
-                      password
-                    }
-
-                    onChange={(
-                      event
-                    ) =>
-                      setPassword(
-                        event.target
-                          .value
-                      )
-                    }
-
-                    placeholder="At least 8 characters"
-
-                    autoComplete="new-password"
-                  />
-
-                </label>
+                  {authMode === 'signin' && (
+                    <button
+                      type="button"
+                      className="hl-auth-mode"
+                      onClick={
+                        openForgotPassword
+                      }
+                      style={{
+                        textAlign: 'right',
+                        marginTop: '-7px',
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </>
               )}
-
 
               <Button
                 variant="primary"
-
                 type="submit"
-
                 size="lg"
-
-                isLoading={
-                  isSendingLink
-                }
-
+                isLoading={isAuthLoading}
                 style={{
-                  width:
-                    '100%',
-                  marginTop:
-                    '3px',
+                  width: '100%',
+                  marginTop: '3px',
                 }}
               >
-
                 <span>
-
-                  {isSendingLink
+                  {isAuthLoading
                     ? 'Please wait…'
-                    : authMode ===
-                        'signin'
-                      ? 'Send secure sign-in link'
-                      : 'Create account'}
-
+                    : authMode === 'signin'
+                      ? 'Sign in'
+                      : authMode === 'forgot'
+                        ? 'Send reset link'
+                        : 'Create account'}
                 </span>
-
               </Button>
-
 
               {authMessage && (
                 <p
                   className="hl-auth-message"
                   role="status"
+                  aria-live="polite"
                 >
                   {authMessage}
                 </p>
               )}
 
-
-              <button
-                type="button"
-
-                className="hl-auth-mode"
-
-                onClick={
-                  toggleAuthMode
-                }
-              >
-
-                {authMode ===
-                'signin'
-                  ? 'New to HireLabs? Create an account'
-                  : 'Already have an account? Sign in'}
-
-              </button>
-
+              {authMode === 'forgot' ? (
+                <button
+                  type="button"
+                  className="hl-auth-mode"
+                  onClick={backToSignIn}
+                >
+                  Back to sign in
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="hl-auth-mode"
+                  onClick={toggleAuthMode}
+                >
+                  {authMode === 'signin'
+                    ? 'New to HireLabs? Create an account'
+                    : 'Already have an account? Sign in'}
+                </button>
+              )}
             </form>
-
           </div>
 
         </Modal>
