@@ -72,3 +72,14 @@ Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-passwo
 - The match RPC filters by `auth.uid()` even when invoked directly, preventing cross-team vectors from appearing in results.
 - Explanations are instructed to rely on supplied evidence, flag gaps, and avoid protected characteristics. Treat AI scoring as decision support — retain human review and audit logs.
 - Gemini Embedding 2 is requested at 1536 dimensions, matching the database column. Changing the embedding model or dimension count requires a corresponding vector column and index migration.
+
+## AI copilot configuration
+
+HireLabs includes optional Gemini-powered recruiting features in the Candidate matching workspace:
+
+- AI role brief: turns a job description into must-have skills, nice-to-have skills, screening signals, and interview focus.
+- AI candidate deep dive: summarizes candidate fit, strengths, gaps, evidence signals, risk flags, and generates tailored interview questions.
+
+Keep the Gemini key server-side. Add `GEMINI_API_KEY` to your local `.env.local` and to the Vercel project Environment Variables. The client never receives the key.
+
+The app uses the Gemini Interactions API and defaults to `gemini-3.7-flash`; set `GEMINI_MODEL` to override it.

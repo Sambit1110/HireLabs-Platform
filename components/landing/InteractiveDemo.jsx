@@ -27,6 +27,10 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [aiInsight, setAiInsight] = useState(null);
+  const [aiRoleBrief, setAiRoleBrief] = useState(null);
+  const [aiError, setAiError] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const sectionRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -93,15 +97,18 @@ export function InteractiveDemo({ onAuthRequired }) {
     return {
       id: `uploaded-${resume.id}`,
       resumeId: resume.id,
-      name: displayName || resume.file_name,
-      title: 'Uploaded candidate resume',
-      skills: '',
+      name: resume.candidate_name || displayName || resume.file_name,
+      title: resume.candidate_title || 'Uploaded candidate resume',
+      skills: Array.isArray(resume.extracted_skills) ? resume.extracted_skills.join(' ') : '',
+      parsedText: resume.parsed_text || '',
       source: 'uploaded',
       fileName: resume.file_name,
       filePath: resume.file_path,
       processingStatus: resume.processing_status,
       createdAt: resume.created_at,
-      yearsExperience: null,
+      yearsExperience: resume.years_experience ?? null,
+      profileCompleteness: resume.profile_completeness ?? 0,
+      parserError: resume.parser_error || '',
     };
   });
 
@@ -137,7 +144,7 @@ export function InteractiveDemo({ onAuthRequired }) {
         const { data, error } = await supabase
           .from('resumes')
           .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at'
+            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
           )
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -145,7 +152,9 @@ export function InteractiveDemo({ onAuthRequired }) {
         if (error) throw error;
 
         if (!cancelled) {
-          setUploadedResumes(data || []);
+          const resumes = data || [];
+          setUploadedResumes(resumes);
+          void parsePendingResumes(resumes);
         }
       } catch (error) {
         console.error('Unable to load uploaded resumes:', error);
@@ -160,6 +169,123 @@ export function InteractiveDemo({ onAuthRequired }) {
       cancelled = true;
     };
   }, []);
+
+  const parseSavedResume = async (resume) => {
+    const supabase = createClient();
+
+    await supabase
+      .from('resumes')
+      .update({ processing_status: 'processing' })
+      .eq('id', resume.id);
+
+    setUploadedResumes((current) =>
+      current.map((item) =>
+        item.id === resume.id
+          ? { ...item, processing_status: 'processing' }
+          : item
+      )
+    );
+
+    try {
+      const { data: fileBlob, error: downloadError } =
+        await supabase.storage
+          .from('resumes')
+          .download(resume.file_path);
+
+      if (downloadError) throw downloadError;
+      if (!fileBlob) throw new Error('Unable to download resume for parsing.');
+
+      const formData = new FormData();
+      formData.append('file', fileBlob, resume.file_name);
+
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Resume parsing failed.');
+      }
+
+      const parsedUpdate = {
+        processing_status: 'completed',
+        parsed_text: result.parsedText,
+        extracted_skills: result.extractedSkills || [],
+        candidate_name: result.candidateName || null,
+        candidate_title: result.candidateTitle || null,
+        years_experience: result.yearsExperience ?? null,
+        profile_completeness: result.profileCompleteness || 0,
+        parser_error: null,
+      };
+
+      const { error: updateError } = await supabase
+        .from('resumes')
+        .update(parsedUpdate)
+        .eq('id', resume.id);
+
+      if (updateError) throw updateError;
+
+      return {
+        ...resume,
+        ...parsedUpdate,
+      };
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : 'Unable to parse resume.';
+
+      await supabase
+        .from('resumes')
+        .update({
+          processing_status: 'failed',
+          parser_error: message,
+        })
+        .eq('id', resume.id);
+
+      return {
+        ...resume,
+        processing_status: 'failed',
+        parser_error: message,
+      };
+    }
+  };
+
+  const parsePendingResumes = async (resumes) => {
+    const pending = resumes.filter(
+      (resume) => resume.processing_status !== 'completed'
+    );
+
+    for (const resume of pending) {
+      const parsed = await parseSavedResume(resume);
+
+      setUploadedResumes((current) =>
+        current.map((item) =>
+          item.id === parsed.id ? parsed : item
+        )
+      );
+    }
+  };
+
+  // Keep an existing matching result synchronized with parsing.
+  // Parsing changes the candidate profile asynchronously, so a result that
+  // was calculated before parsing must be recalculated automatically.
+  useEffect(() => {
+    if (!matchResult || activeTab !== 'matcher') return;
+
+    const timer = window.setTimeout(() => {
+      void runMatch();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    uploadedResumes,
+    role,
+    jobDescription,
+    matchMode,
+    selectedResume,
+    activeTab,
+  ]);
 
   const acceptResume = async (filesInput) => {
     const files = Array.from(filesInput || []).filter(Boolean);
@@ -271,7 +397,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             processing_status: 'uploaded',
           })
           .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at'
+            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
           )
           .single();
 
@@ -313,19 +439,41 @@ export function InteractiveDemo({ onAuthRequired }) {
       const lastSavedResume =
         savedResumes[savedResumes.length - 1];
 
+      const parsedResumes = [];
+      for (const savedResume of savedResumes) {
+        const parsed = await parseSavedResume(savedResume);
+        parsedResumes.push(parsed);
+      }
+
+      setUploadedResumes((current) =>
+        current.map((item) => {
+          const parsed = parsedResumes.find((resume) => resume.id === item.id);
+          return parsed || item;
+        })
+      );
+
+      const selectedParsed = parsedResumes.find(
+        (resume) => resume.id === lastSavedResume.id
+      ) || lastSavedResume;
+
       setSelectedResume(
         `uploaded-${lastSavedResume.id}`
       );
 
-      if (failedFiles.length) {
+      const parsedCount = parsedResumes.filter(
+        (resume) => resume.processing_status === 'completed'
+      ).length;
+      const parseFailedCount = parsedResumes.length - parsedCount;
+
+      if (failedFiles.length || parseFailedCount) {
         setUploadMessage(
-          `${savedResumes.length} of ${files.length} resumes were saved. ${failedFiles.length} failed.`
+          `${savedResumes.length} saved · ${parsedCount} parsed · ${parseFailedCount} could not be parsed${failedFiles.length ? ` · ${failedFiles.length} upload failed` : ''}.`
         );
       } else {
         setUploadMessage(
           savedResumes.length === 1
-            ? `${savedResumes[0].file_name} was saved and selected.`
-            : `${savedResumes.length} resumes were saved. ${lastSavedResume.file_name} is selected.`
+            ? `${savedResumes[0].file_name} was saved, parsed and selected.`
+            : `${savedResumes.length} resumes were saved and parsed. ${lastSavedResume.file_name} is selected.`
         );
       }
     } catch (error) {
@@ -397,7 +545,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
     const results = pool.map((candidate) => {
       const profileText = normalize(
-        `${candidate.title} ${candidate.skills}`
+        `${candidate.name} ${candidate.title} ${candidate.skills} ${candidate.parsedText || ''}`
       );
 
       const profileTerms = new Set(
@@ -427,6 +575,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
       const hasStructuredProfile =
         candidate.source === 'sample' ||
+        candidate.processingStatus === 'completed' ||
         Boolean(candidate.skills?.trim());
 
       if (!hasStructuredProfile) {
@@ -438,9 +587,11 @@ export function InteractiveDemo({ onAuthRequired }) {
           matchedRequirements: [],
           score: null,
           profilePending: true,
-          profileCompleteness: 20,
+          profileCompleteness: candidate.processingStatus === 'failed' ? 15 : 20,
           analysisText:
-            'Resume saved successfully, but its text profile has not been extracted yet. Compatibility scoring will appear after parsing.',
+            candidate.processingStatus === 'failed'
+              ? `This resume could not be parsed automatically.${candidate.parserError ? ` ${candidate.parserError}` : ' It may be scanned/image-only or use a PDF encoding that does not expose selectable text.'}`
+              : 'Resume is being parsed. Compatibility scoring will appear as soon as readable text and skills are extracted.',
         };
       }
 
@@ -485,6 +636,126 @@ export function InteractiveDemo({ onAuthRequired }) {
     });
 
     setMatchResult(results);
+  };
+
+  const retryParseResume = async (resume) => {
+    if (!resume || resume.processing_status === 'processing') return;
+
+    setIsParsing(true);
+    setUploadMessage(`Re-parsing ${resume.file_name}…`);
+
+    try {
+      const parsed = await parseSavedResume(resume);
+
+      setUploadedResumes((current) =>
+        current.map((item) =>
+          item.id === parsed.id ? parsed : item
+        )
+      );
+
+      setSelectedResume(`uploaded-${parsed.id}`);
+
+      setUploadMessage(
+        parsed.processing_status === 'completed'
+          ? `${parsed.file_name} was parsed successfully.`
+          : `${parsed.file_name} could not be parsed. ${parsed.parser_error || ''}`
+      );
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const runAiCandidateAnalysis = async (candidateOverride = null) => {
+    const candidate = candidateOverride || activeCandidate;
+
+    if (!candidate) return;
+
+    if (candidate.source === 'uploaded' && candidate.processingStatus !== 'completed') {
+      setAiError('This resume must finish parsing before AI analysis can run.');
+      return;
+    }
+
+    setIsAiLoading(true);
+    setAiError('');
+    setAiInsight(null);
+
+    try {
+      const response = await fetch('/api/ai-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode: 'candidate',
+          role,
+          jobDescription,
+          candidate: {
+            name: candidate.name,
+            title: candidate.title,
+            skills: candidate.skills,
+            yearsExperience: candidate.yearsExperience,
+            parsedText: candidate.parsedText,
+          },
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'AI analysis failed.');
+      }
+
+      setAiInsight({
+        candidateId: candidate.id,
+        ...payload.result,
+      });
+    } catch (error) {
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate AI analysis.'
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const runAiRoleBrief = async () => {
+    if (!role.trim() || !jobDescription.trim()) return;
+
+    setIsAiLoading(true);
+    setAiError('');
+    setAiRoleBrief(null);
+
+    try {
+      const response = await fetch('/api/ai-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode: 'role',
+          role,
+          jobDescription,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'AI role analysis failed.');
+      }
+
+      setAiRoleBrief(payload.result);
+    } catch (error) {
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate the AI role brief.'
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const handleDrop = (event) => {
@@ -2736,6 +3007,241 @@ export function InteractiveDemo({ onAuthRequired }) {
         }
 
 
+        .hl-ai-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 9px;
+        }
+
+        .hl-ai-secondary,
+        .hl-ai-card-button {
+          min-height: 40px;
+          padding: 0 12px;
+          border: 1px solid var(--border);
+          border-radius: 11px;
+          background: #FAF8F3;
+          color: var(--olive-dark);
+          font-size: 8px;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        .hl-ai-secondary:hover,
+        .hl-ai-card-button:hover {
+          transform: translateY(-1px);
+          background: var(--white);
+          border-color: var(--taupe);
+        }
+
+        .hl-ai-secondary:disabled,
+        .hl-ai-card-button:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+          transform: none;
+        }
+
+        .hl-result-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 10px;
+        }
+
+        .hl-ai-card-button {
+          min-height: 34px;
+          font-size: 7px;
+        }
+
+        .hl-ai-panel {
+          margin-top: 20px;
+          padding: 18px;
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.6);
+        }
+
+        .hl-ai-panel-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .hl-ai-badge {
+          padding: 7px 10px;
+          border: 1px solid #D9DDC8;
+          border-radius: 999px;
+          background: #F0F2E8;
+          color: var(--olive-dark);
+          font-size: 7px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .hl-ai-error {
+          margin-top: 12px;
+          padding: 10px 11px;
+          border-radius: 11px;
+          background: #F3E9E1;
+          color: #805B4D;
+          font-size: 9px;
+          line-height: 1.55;
+        }
+
+        .hl-ai-role-grid,
+        .hl-ai-candidate-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .hl-ai-summary,
+        .hl-ai-column {
+          padding: 12px;
+          border-radius: 13px;
+          background: #F7F4ED;
+        }
+
+        .hl-ai-column.full {
+          grid-column: 1 / -1;
+        }
+
+        .hl-ai-section-label {
+          margin-bottom: 7px;
+          color: #8A8177;
+          font-size: 7px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .hl-ai-summary p {
+          margin: 0;
+          color: #655E56;
+          font-size: 10px;
+          line-height: 1.6;
+        }
+
+        .hl-ai-seniority {
+          display: inline-flex;
+          margin-top: 10px;
+          padding: 6px 8px;
+          border-radius: 999px;
+          background: #EBEEE2;
+          color: var(--olive-dark);
+          font-size: 7px;
+          font-weight: 900;
+        }
+
+        .hl-ai-chip-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .hl-ai-chip {
+          padding: 6px 8px;
+          border-radius: 999px;
+          background: #EDEFE5;
+          color: var(--olive-dark);
+          font-size: 7px;
+          font-weight: 800;
+        }
+
+        .hl-ai-chip.muted {
+          background: #F0ECE4;
+          color: #746B62;
+        }
+
+        .hl-ai-list {
+          margin: 0;
+          padding-left: 16px;
+          color: #625B53;
+          font-size: 9px;
+          line-height: 1.65;
+        }
+
+        .hl-ai-verdict-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 10px;
+        }
+
+        .hl-ai-verdict {
+          display: inline-flex;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: #ECE8DE;
+          color: #746B62;
+          font-size: 8px;
+          font-weight: 900;
+          text-transform: capitalize;
+        }
+
+        .hl-ai-verdict.strong {
+          background: #E8EEDF;
+          color: #596544;
+        }
+
+        .hl-ai-verdict.moderate {
+          background: #EEF0E8;
+          color: #677154;
+        }
+
+        .hl-ai-verdict.weak,
+        .hl-ai-verdict.insufficient_evidence {
+          background: #F1EAE2;
+          color: #7A685A;
+        }
+
+        .hl-ai-confidence {
+          color: #8A8177;
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .hl-ai-recommendation {
+          margin-top: 10px !important;
+          font-weight: 800;
+          color: var(--espresso) !important;
+        }
+
+        .hl-ai-questions {
+          display: grid;
+          gap: 8px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .hl-ai-questions li {
+          display: grid;
+          grid-template-columns: 22px 1fr;
+          gap: 8px;
+          align-items: start;
+          color: #625B53;
+          font-size: 9px;
+          line-height: 1.6;
+        }
+
+        .hl-ai-questions li > span {
+          display: grid;
+          place-items: center;
+          width: 22px;
+          height: 22px;
+          border-radius: 8px;
+          background: #ECEFE5;
+          color: var(--olive-dark);
+          font-size: 7px;
+          font-weight: 900;
+        }
+
         /* =====================================================
            TRUST STRIP
            ===================================================== */
@@ -3213,21 +3719,47 @@ export function InteractiveDemo({ onAuthRequired }) {
                           </div>
 
                           {uploadedCandidates.map((candidate) => (
-                            <button
+                            <div
                               key={candidate.id}
-                              type="button"
-                              title={candidate.fileName}
-                              className={`hl-sample-button hl-uploaded-sample ${
-                                selectedResume === candidate.id ? 'active' : ''
-                              }`}
-                              onClick={() => {
-                                setSelectedResume(candidate.id);
-                                setUploadMessage('');
-                                setUploadedFile(null);
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                width: '100%',
                               }}
                             >
-                              {candidate.fileName}
-                            </button>
+                              <button
+                                type="button"
+                                title={candidate.fileName}
+                                className={`hl-sample-button hl-uploaded-sample ${
+                                  selectedResume === candidate.id ? 'active' : ''
+                                }`}
+                                style={{ flex: 1, minWidth: 0 }}
+                                onClick={() => {
+                                  setSelectedResume(candidate.id);
+                                  setUploadMessage('');
+                                  setUploadedFile(null);
+                                }}
+                              >
+                                {candidate.fileName}
+                              </button>
+
+                              {candidate.processingStatus !== 'completed' && (
+                                <button
+                                  type="button"
+                                  className="hl-clear-resumes-button"
+                                  disabled={isParsing || isLoadingResumes}
+                                  onClick={() => retryParseResume(
+                                    uploadedResumes.find(
+                                      (resume) => resume.id === candidate.resumeId
+                                    )
+                                  )}
+                                  title="Retry parsing this resume"
+                                >
+                                  Retry
+                                </button>
+                              )}
+                            </div>
                           ))}
                         </>
                       )}
@@ -3995,6 +4527,30 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                       </Button>
 
+                      <div className="hl-ai-actions">
+                        <button
+                          type="button"
+                          className="hl-ai-secondary"
+                          onClick={runAiRoleBrief}
+                          disabled={isAiLoading || !role.trim() || !jobDescription.trim()}
+                        >
+                          {isAiLoading ? 'Thinking…' : '✦ AI role brief'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="hl-ai-secondary"
+                          onClick={() => runAiCandidateAnalysis(activeCandidate)}
+                          disabled={
+                            isAiLoading ||
+                            !activeCandidate ||
+                            (activeCandidate.source === 'uploaded' && activeCandidate.processingStatus !== 'completed')
+                          }
+                        >
+                          {isAiLoading ? 'Thinking…' : '✦ AI deep dive'}
+                        </button>
+                      </div>
+
                     </div>
 
                   </div>
@@ -4141,6 +4697,22 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                               </div>
 
+                              <div className="hl-result-actions">
+                                <button
+                                  type="button"
+                                  className="hl-ai-card-button"
+                                  onClick={() => {
+                                    setSelectedResume(candidate.id);
+                                    void runAiCandidateAnalysis(candidate);
+                                  }}
+                                  disabled={
+                                    isAiLoading ||
+                                    (candidate.source === 'uploaded' && candidate.processingStatus !== 'completed')
+                                  }
+                                >
+                                  ✦ Analyze with AI
+                                </button>
+                              </div>
 
                               <div className="hl-reasoning">
 
@@ -4233,6 +4805,108 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                 </div>
 
+                {(aiRoleBrief || aiInsight || aiError) && (
+                  <div className="hl-ai-panel">
+                    <div className="hl-ai-panel-head">
+                      <div>
+                        <div className="hl-panel-label">03 · AI copilot</div>
+                        <h3 className="hl-panel-title">Decision support, not just a score.</h3>
+                      </div>
+                      <span className="hl-ai-badge">Gemini</span>
+                    </div>
+
+                    {aiError && (
+                      <div className="hl-ai-error">
+                        {aiError}
+                      </div>
+                    )}
+
+                    {aiRoleBrief && (
+                      <div className="hl-ai-role-grid">
+                        <div className="hl-ai-summary">
+                          <div className="hl-ai-section-label">Role brief</div>
+                          <p>{aiRoleBrief.role_summary}</p>
+                          <div className="hl-ai-seniority">{aiRoleBrief.seniority}</div>
+                        </div>
+
+                        <div className="hl-ai-column">
+                          <div className="hl-ai-section-label">Must-have</div>
+                          <div className="hl-ai-chip-list">
+                            {(aiRoleBrief.must_have_skills || []).map((item) => (
+                              <span className="hl-ai-chip" key={item}>✓ {item}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="hl-ai-column">
+                          <div className="hl-ai-section-label">Nice-to-have</div>
+                          <div className="hl-ai-chip-list">
+                            {(aiRoleBrief.nice_to_have_skills || []).map((item) => (
+                              <span className="hl-ai-chip muted" key={item}>+ {item}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="hl-ai-column">
+                          <div className="hl-ai-section-label">Interview focus</div>
+                          <ul className="hl-ai-list">
+                            {(aiRoleBrief.interview_focus || []).map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiInsight && (
+                      <div className="hl-ai-candidate-grid">
+                        <div className="hl-ai-summary">
+                          <div className="hl-ai-section-label">AI candidate read</div>
+                          <div className="hl-ai-verdict-row">
+                            <span className={`hl-ai-verdict ${aiInsight.fit_verdict || ''}`}>
+                              {(aiInsight.fit_verdict || 'unknown').replace('_', ' ')}
+                            </span>
+                            <span className="hl-ai-confidence">
+                              {Math.max(0, Math.min(100, Number(aiInsight.confidence) || 0))}% confidence
+                            </span>
+                          </div>
+                          <p>{aiInsight.candidate_summary}</p>
+                          <p className="hl-ai-recommendation">{aiInsight.recommendation}</p>
+                        </div>
+
+                        <div className="hl-ai-column">
+                          <div className="hl-ai-section-label">Strengths</div>
+                          <ul className="hl-ai-list">
+                            {(aiInsight.strengths || []).map((item) => (
+                              <li key={item}>✓ {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="hl-ai-column">
+                          <div className="hl-ai-section-label">Gaps / risks</div>
+                          <ul className="hl-ai-list">
+                            {(aiInsight.gaps || []).concat(aiInsight.risk_flags || []).slice(0, 8).map((item) => (
+                              <li key={item}>− {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="hl-ai-column full">
+                          <div className="hl-ai-section-label">Tailored interview questions</div>
+                          <ol className="hl-ai-questions">
+                            {(aiInsight.interview_questions || []).map((item, index) => (
+                              <li key={item}>
+                                <span>{index + 1}</span>
+                                {item}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* TRUST STRIP */}
 
