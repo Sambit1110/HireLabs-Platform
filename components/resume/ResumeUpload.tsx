@@ -47,17 +47,22 @@ export default function ResumeUpload({ onUploaded }: { onUploaded?: () => void }
 
       if (uploadError) throw uploadError;
 
-      // Save file information
-      const { error: dbError } = await supabase
-        .from("resumes")
-        .insert({
-          user_id: user.id,
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          processing_status: "uploaded",
-        });
+      // Save file information.
+      // The project does not ship generated Supabase database types,
+      // so the table insert is intentionally cast to avoid TypeScript
+      // rejecting the valid public.resumes columns during Vercel builds.
+      const resumeRecord = {
+        user_id: user.id,
+        file_name: file.name,
+        file_path: filePath,
+        file_type: file.type,
+        file_size: file.size,
+        processing_status: "uploaded",
+      };
+
+      const { error: dbError } = await (supabase
+        .from("resumes") as any)
+        .insert(resumeRecord);
 
       if (dbError) {
         // Remove storage file if database insert fails
