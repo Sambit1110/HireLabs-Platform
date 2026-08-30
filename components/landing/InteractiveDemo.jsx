@@ -503,6 +503,77 @@ export function InteractiveDemo({ onAuthRequired }) {
     }
   };
 
+  const clearUploadedResumes = async () => {
+    if (isLoadingResumes || isParsing) return;
+
+    if (!uploadedResumes.length) {
+      setUploadMessage('There are no uploaded resumes to clear.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Clear all ${uploadedResumes.length} uploaded resume${uploadedResumes.length === 1 ? '' : 's'}? This will permanently remove them from your private resume library.`
+    );
+
+    if (!confirmed) return;
+
+    setIsLoadingResumes(true);
+    setUploadMessage('Clearing your uploaded resumes…');
+
+    try {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        onAuthRequired?.();
+        throw new Error('Sign in to clear your uploaded resumes.');
+      }
+
+      const filePaths = uploadedResumes
+        .map((resume) => resume.file_path)
+        .filter(Boolean);
+
+      if (filePaths.length) {
+        const { error: storageError } = await supabase.storage
+          .from('resumes')
+          .remove(filePaths);
+
+        if (storageError) {
+          throw storageError;
+        }
+      }
+
+      const { error: dbError } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      setUploadedResumes([]);
+      setSelectedResume('alex');
+      setMatchResult(null);
+      resetUpload();
+      setUploadMessage(
+        `Cleared ${uploadedResumes.length} uploaded resume${uploadedResumes.length === 1 ? '' : 's'}.`
+      );
+    } catch (error) {
+      console.error('Unable to clear uploaded resumes:', error);
+      setUploadMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to clear uploaded resumes.'
+      );
+    } finally {
+      setIsLoadingResumes(false);
+    }
+  };
+
   const tabs = [
     {
       id: 'parser',
@@ -1440,6 +1511,33 @@ export function InteractiveDemo({ onAuthRequired }) {
           font-weight: 900;
           letter-spacing: 0.12em;
           text-transform: uppercase;
+        }
+
+        .hl-clear-resumes-button {
+          border: 1px solid #D8D0C2;
+          border-radius: 999px;
+          background: #F8F5EE;
+          color: #756C63;
+          padding: 6px 9px;
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+        }
+
+        .hl-clear-resumes-button:hover:not(:disabled) {
+          transform: translateY(-1px);
+          border-color: #BCAFA0;
+          background: #F0EBE1;
+          color: #211C18;
+        }
+
+        .hl-clear-resumes-button:disabled {
+          cursor: not-allowed;
+          opacity: 0.5;
         }
 
         .hl-uploaded-sample {
@@ -3091,8 +3189,27 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                       {uploadedCandidates.length > 0 && (
                         <>
-                          <div className="hl-sample-divider">
-                            Your resumes
+                          <div
+                            className="hl-sample-divider"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '10px',
+                              width: '100%',
+                            }}
+                          >
+                            <span>Your resumes</span>
+
+                            <button
+                              type="button"
+                              className="hl-clear-resumes-button"
+                              onClick={clearUploadedResumes}
+                              disabled={isLoadingResumes || isParsing}
+                              title="Permanently remove all uploaded resumes"
+                            >
+                              Clear all
+                            </button>
                           </div>
 
                           {uploadedCandidates.map((candidate) => (
