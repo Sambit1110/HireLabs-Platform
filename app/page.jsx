@@ -148,6 +148,15 @@ export default function LandingPage() {
     setIsAuthModalOpen(false);
   };
 
+  const finishAuth = () => {
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setAuthMessage('');
+    setAuthMode('signin');
+    setIsAuthModalOpen(false);
+  };
+
   const signIn = async (event) => {
     event.preventDefault();
 
@@ -168,7 +177,8 @@ export default function LandingPage() {
       }
 
       if (data.session) {
-        window.location.href = '/';
+        // Session hooks pick up SIGNED_IN; just close the dialog.
+        finishAuth();
       } else {
         setAuthMessage(
           'Signed in, but no active session was returned. Please try again.'
@@ -278,13 +288,7 @@ export default function LandingPage() {
           'Account created and signed in. Opening your resume library…'
         );
 
-        window.setTimeout(
-          () => {
-            window.location.href =
-              '/';
-          },
-          700
-        );
+        window.setTimeout(finishAuth, 700);
       } else {
         setAuthMessage(
           'Account created. A confirmation email was requested; if it does not arrive, configure Supabase email delivery before trying again.'
@@ -1865,8 +1869,8 @@ export default function LandingPage() {
                 <p className="hl-final-description">
                   Move beyond keyword filters. Give your team
                   a clearer way to discover, compare, and
-                  understand candidates using semantic matching
-                  and evidence-backed signals.
+                  understand candidates using transparent skill
+                  matching and evidence-backed signals.
                 </p>
 
 
@@ -1914,13 +1918,13 @@ export default function LandingPage() {
 
                   <span className="hl-final-meta-item">
                     <span className="hl-final-meta-dot" />
-                    Semantic matching
+                    Transparent skill matching
                   </span>
 
 
                   <span className="hl-final-meta-item">
                     <span className="hl-final-meta-dot" />
-                    PostgreSQL + pgvector
+                    Server-verified API access
                   </span>
 
 
@@ -2016,7 +2020,7 @@ export default function LandingPage() {
               <p className="hl-auth-subtitle">
 
                 {authMode === 'signin'
-                  ? 'Sign in with your work email to access your private candidate library and semantic matching workspace.'
+                  ? 'Sign in with your work email to access your private candidate library and skill-matching workspace.'
                   : authMode === 'forgot'
                     ? 'Enter your work email and we will send you a secure password reset link.'
                     : 'Create an account to store resumes securely and explore your private HireLabs workspace.'}

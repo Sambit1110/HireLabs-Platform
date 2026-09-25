@@ -18,35 +18,35 @@ export function ArchitectureFlow() {
       title: 'Secure Upload',
       short: 'Start with the source',
       desc:
-        'PDF/DOCX uploaded to user-scoped private Supabase Storage bucket.',
+        'PDF/DOCX uploaded straight from the browser to a private, user-scoped Supabase Storage bucket.',
       label: 'PRIVATE INPUT',
       visual: 'upload',
     },
     {
       num: '02',
-      title: 'LLM Normalize',
+      title: 'Server Parse',
       short: 'Turn a resume into structure',
       desc:
-        'Gemini extracts candidate profile, skills ontology, and work history.',
+        'The server fetches the file from storage, extracts the text, and pulls out name, title, experience, and skills.',
       label: 'STRUCTURED DATA',
       visual: 'normalize',
     },
     {
       num: '03',
-      title: '1536-dim Embed',
-      short: 'Create a searchable signal',
+      title: 'Skill Extraction',
+      short: 'Create a comparable signal',
       desc:
-        'Vector representation generated via Gemini Embedding-002 model.',
-      label: 'VECTOR SIGNAL',
+        'Skills are normalized against a curated catalog with exact aliases (JS → JavaScript, Node → Node.js).',
+      label: 'SKILL SIGNAL',
       visual: 'embed',
     },
     {
       num: '04',
-      title: 'pgvector RPC',
-      short: 'Find the closest candidates',
+      title: 'Transparent Match',
+      short: 'Rank the candidates',
       desc:
-        'Cosine distance calculated in Postgres filtered by signed-in auth.uid().',
-      label: 'SEMANTIC SEARCH',
+        'Score = required skills found ÷ required skills, computed over the signed-in user’s own resumes.',
+      label: 'SKILL MATCHING',
       visual: 'search',
     },
     {
@@ -54,7 +54,7 @@ export function ArchitectureFlow() {
       title: 'Explain & Rank',
       short: 'Make the result useful',
       desc:
-        'AI generates evidence quotes and flags gap analysis for HR decision support.',
+        'Every result lists matched and missing skills; optional Gemini deep dives add strengths, gaps, and interview questions.',
       label: 'DECISION SUPPORT',
       visual: 'explain',
     },
@@ -3147,7 +3147,7 @@ export function ArchitectureFlow() {
                       <div className="hl-profile-mini">
 
                         <div className="hl-mini-heading">
-                          Gemini profile
+                          Parsed profile
                         </div>
 
 
@@ -3194,7 +3194,7 @@ export function ArchitectureFlow() {
                     >
 
                       <div className="hl-embedding-label">
-                        Gemini Embedding-002
+                        Skill catalog
                       </div>
 
 
@@ -3225,11 +3225,11 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            1536
+                            Whole-token
                           </strong>
 
                           <span>
-                            dimensions
+                            matching
                           </span>
 
                         </div>
@@ -3238,11 +3238,11 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            Vector
+                            Aliases
                           </strong>
 
                           <span>
-                            representation
+                            normalized
                           </span>
 
                         </div>
@@ -3251,7 +3251,7 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            Searchable
+                            Explainable
                           </strong>
 
                           <span>
@@ -3281,7 +3281,7 @@ export function ArchitectureFlow() {
                       <div className="hl-query-box">
 
                         <div className="hl-query-label">
-                          Semantic query
+                          Role requirements
                         </div>
 
 
@@ -3316,7 +3316,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            97.4%
+                            88%
                           </div>
 
                         </div>
@@ -3344,7 +3344,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            84.7%
+                            63%
                           </div>
 
                         </div>
@@ -3372,7 +3372,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            71.2%
+                            25%
                           </div>
 
                         </div>
@@ -3402,7 +3402,7 @@ export function ArchitectureFlow() {
                           <div className="hl-score-circle">
 
                             <span>
-                              97%
+                              88%
                             </span>
 
                           </div>

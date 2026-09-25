@@ -1,14 +1,29 @@
 'use client';
 
 import React, {
+  useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
-import { Tabs } from '../ui/Tabs';
 import { Button } from '../ui/Button';
-import { createClient } from '@/lib/supabase/client';
+import { ProfileJson } from './ProfileJson';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import { useResumeProcessing, RESUME_CONCURRENCY } from '@/hooks/useResumeProcessing';
+import { useResumeMatching } from '@/hooks/useResumeMatching';
+import { useAiAnalysis } from '@/hooks/useAiAnalysis';
+import { SAMPLE_CANDIDATES, toCandidate } from '@/lib/resume/candidates';
+import { MAX_BATCH_FILES } from '@/lib/resume/validation';
+
+const JOB_STATUS_LABELS = {
+  queued: 'Queued',
+  uploading: 'Uploading',
+  processing: 'Parsing',
+  completed: 'Done',
+  failed: 'Failed',
+};
 
 export function InteractiveDemo({ onAuthRequired }) {
   const [activeTab, setActiveTab] = useState('parser');
@@ -18,26 +33,28 @@ export function InteractiveDemo({ onAuthRequired }) {
     'Looking for an engineer experienced in Next.js, React, Supabase, PostgreSQL, pgvector and Gemini embeddings.'
   );
   const [matchMode, setMatchMode] = useState('best');
-  const [matchResult, setMatchResult] = useState(null);
-  const [isParsing, setIsParsing] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
-  const [uploadMessage, setUploadMessage] = useState('');
-  const [uploadedResumes, setUploadedResumes] = useState([]);
-  const [isLoadingResumes, setIsLoadingResumes] = useState(false);
+  const [matchEnabled, setMatchEnabled] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-<<<<<<< HEAD
-  const [aiInsight, setAiInsight] = useState(null);
-  const [aiRoleBrief, setAiRoleBrief] = useState(null);
-  const [aiError, setAiError] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-=======
   const [viewMode, setViewMode] = useState('grid');
->>>>>>> 6efdc7160947e227cbf034dcc0ed1a73bf8427c9
+  const [now, setNow] = useState(() => Date.now());
 
   const sectionRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const { user } = useAuthSession();
+
+  const handleResumeReady = useCallback((resume) => {
+    setSelectedResume(`uploaded-${resume.id}`);
+  }, []);
+
+  const library = useResumeProcessing({
+    user,
+    onAuthRequired,
+    onResumeReady: handleResumeReady,
+  });
+
+  const ai = useAiAnalysis({ user, onAuthRequired });
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -61,792 +78,91 @@ export function InteractiveDemo({ onAuthRequired }) {
     return () => observer.disconnect();
   }, []);
 
-  const defaultCandidates = [
-    {
-      id: 'alex',
-      name: 'Alex Mercer',
-      title: 'Lead Full-Stack AI Engineer',
-      skills:
-        'next.js react typescript supabase postgresql pgvector gemini embeddings',
-      source: 'sample',
-      yearsExperience: 8,
-    },
-    {
-      id: 'sarah',
-      name: 'Dr. Sarah Lin',
-      title: 'Staff ML & Vector Systems Engineer',
-      skills:
-        'python machine learning vector search pgvector hnsw gemini embeddings',
-      source: 'sample',
-      yearsExperience: 10,
-    },
-    {
-      id: 'elena',
-      name: 'Elena Rostova',
-      title: 'Principal Cloud Architect',
-      skills:
-        'aws cloud architecture kubernetes postgres security terraform',
-      source: 'sample',
-      yearsExperience: 12,
-    },
-  ];
-
-  const uploadedCandidates = uploadedResumes.map((resume) => {
-    const displayName = resume.file_name
-      .replace(/\.[^/.]+$/, '')
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    return {
-      id: `uploaded-${resume.id}`,
-      resumeId: resume.id,
-      name: resume.candidate_name || displayName || resume.file_name,
-      title: resume.candidate_title || 'Uploaded candidate resume',
-      skills: Array.isArray(resume.extracted_skills) ? resume.extracted_skills.join(' ') : '',
-      parsedText: resume.parsed_text || '',
-      source: 'uploaded',
-      fileName: resume.file_name,
-      filePath: resume.file_path,
-      processingStatus: resume.processing_status,
-      createdAt: resume.created_at,
-      yearsExperience: resume.years_experience ?? null,
-      profileCompleteness: resume.profile_completeness ?? 0,
-      parserError: resume.parser_error || '',
-    };
-  });
-
-  const candidates = [
-    ...defaultCandidates,
-    ...uploadedCandidates,
-  ];
-
-
-  const activeCandidate =
-    candidates.find(
-      (candidate) =>
-        candidate.id === selectedResume
-    ) || candidates[0];
-
+  // Re-evaluate "stalled" processing rows periodically so Retry can appear.
   useEffect(() => {
-    let cancelled = false;
-
-    const loadUploadedResumes = async () => {
-      setIsLoadingResumes(true);
-
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          if (!cancelled) setUploadedResumes([]);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('resumes')
-          .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
-          )
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (!cancelled) {
-          const resumes = data || [];
-          setUploadedResumes(resumes);
-          void parsePendingResumes(resumes);
-        }
-      } catch (error) {
-        console.error('Unable to load uploaded resumes:', error);
-      } finally {
-        if (!cancelled) setIsLoadingResumes(false);
-      }
-    };
-
-    void loadUploadedResumes();
-
-    return () => {
-      cancelled = true;
-    };
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const parseSavedResume = async (resume) => {
-    const supabase = createClient();
+  const defaultCandidates = SAMPLE_CANDIDATES;
 
-    await supabase
-      .from('resumes')
-      .update({ processing_status: 'processing' })
-      .eq('id', resume.id);
+  const uploadedCandidates = useMemo(
+    () => library.resumes.map((row) => toCandidate(row, now)),
+    [library.resumes, now]
+  );
 
-    setUploadedResumes((current) =>
-      current.map((item) =>
-        item.id === resume.id
-          ? { ...item, processing_status: 'processing' }
-          : item
-      )
-    );
+  const candidates = useMemo(
+    () => [...SAMPLE_CANDIDATES, ...uploadedCandidates],
+    [uploadedCandidates]
+  );
 
-    try {
-      const { data: fileBlob, error: downloadError } =
-        await supabase.storage
-          .from('resumes')
-          .download(resume.file_path);
+  const activeCandidate =
+    candidates.find((candidate) => candidate.id === selectedResume) ||
+    candidates[0];
 
-      if (downloadError) throw downloadError;
-      if (!fileBlob) throw new Error('Unable to download resume for parsing.');
-
-      const formData = new FormData();
-      formData.append('file', fileBlob, resume.file_name);
-
-      const response = await fetch('/api/parse-resume', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Resume parsing failed.');
-      }
-
-      const parsedUpdate = {
-        processing_status: 'completed',
-        parsed_text: result.parsedText,
-        extracted_skills: result.extractedSkills || [],
-        candidate_name: result.candidateName || null,
-        candidate_title: result.candidateTitle || null,
-        years_experience: result.yearsExperience ?? null,
-        profile_completeness: result.profileCompleteness || 0,
-        parser_error: null,
-      };
-
-      const { error: updateError } = await supabase
-        .from('resumes')
-        .update(parsedUpdate)
-        .eq('id', resume.id);
-
-      if (updateError) throw updateError;
-
-      return {
-        ...resume,
-        ...parsedUpdate,
-      };
-    } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : 'Unable to parse resume.';
-
-      await supabase
-        .from('resumes')
-        .update({
-          processing_status: 'failed',
-          parser_error: message,
-        })
-        .eq('id', resume.id);
-
-      return {
-        ...resume,
-        processing_status: 'failed',
-        parser_error: message,
-      };
-    }
-  };
-
-  const parsePendingResumes = async (resumes) => {
-    const pending = resumes.filter(
-      (resume) => resume.processing_status !== 'completed'
-    );
-
-    for (const resume of pending) {
-      const parsed = await parseSavedResume(resume);
-
-      setUploadedResumes((current) =>
-        current.map((item) =>
-          item.id === parsed.id ? parsed : item
-        )
-      );
-    }
-  };
-
-  // Keep an existing matching result synchronized with parsing.
-  // Parsing changes the candidate profile asynchronously, so a result that
-  // was calculated before parsing must be recalculated automatically.
-  useEffect(() => {
-    if (!matchResult || activeTab !== 'matcher') return;
-
-    const timer = window.setTimeout(() => {
-      void runMatch();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    uploadedResumes,
+  // Local scoring only: no auth or network calls while typing.
+  const match = useResumeMatching({
+    enabled: matchEnabled && Boolean(user),
+    candidates,
     role,
     jobDescription,
-    matchMode,
-    selectedResume,
-    activeTab,
-  ]);
+    mode: matchMode,
+    selectedId: selectedResume,
+  });
+  const matchResult = match?.results ?? null;
 
-  const acceptResume = async (filesInput) => {
-    const files = Array.from(filesInput || []).filter(Boolean);
-
-    if (!files.length) return;
-
-    const invalidFile = files.find((file) => {
-      const isSupported =
-        [
-          'application/pdf',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ].includes(file.type) ||
-        /\.(pdf|docx)$/i.test(file.name);
-
-      return !isSupported || file.size > 5 * 1024 * 1024;
-    });
-
-    if (invalidFile) {
-      const isSupported =
-        [
-          'application/pdf',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ].includes(invalidFile.type) ||
-        /\.(pdf|docx)$/i.test(invalidFile.name);
-
-      setUploadMessage(
-        !isSupported
-          ? `${invalidFile.name}: please choose a PDF or DOCX file.`
-          : `${invalidFile.name}: files must be 5 MB or smaller.`
-      );
-      return;
-    }
-
-    setSelectedUploadFiles(files);
-    setUploadedFile(files[0] || null);
-    setUploadMessage(
-      files.length === 1
-        ? 'Uploading your resume securely…'
-        : `Uploading ${files.length} resumes securely…`
-    );
-    setIsParsing(true);
-
-    try {
-      const supabase = createClient();
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        onAuthRequired?.();
-        throw new Error(
-          'Sign in to upload and save resumes.'
-        );
-      }
-
-      const savedResumes = [];
-      const failedFiles = [];
-
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
-
-        setUploadMessage(
-          files.length === 1
-            ? `Uploading ${file.name}…`
-            : `Uploading ${index + 1} of ${files.length}: ${file.name}…`
-        );
-
-        const extension = file.name
-          .split('.')
-          .pop()
-          ?.toLowerCase() || 'bin';
-
-        const filePath =
-          `${user.id}/${crypto.randomUUID()}.${extension}`;
-
-        const {
-          error: storageError,
-        } = await supabase.storage
-          .from('resumes')
-          .upload(
-            filePath,
-            file,
-            {
-              contentType: file.type || 'application/octet-stream',
-              upsert: false,
-            }
-          );
-
-        if (storageError) {
-          failedFiles.push({
-            file,
-            error: storageError,
-          });
-          continue;
-        }
-
-        const {
-          data: savedResume,
-          error: dbError,
-        } = await supabase
-          .from('resumes')
-          .insert({
-            user_id: user.id,
-            file_name: file.name,
-            file_path: filePath,
-            file_type: file.type || 'application/octet-stream',
-            file_size: file.size,
-            processing_status: 'uploaded',
-          })
-          .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
-          )
-          .single();
-
-        if (dbError) {
-          await supabase.storage
-            .from('resumes')
-            .remove([filePath]);
-
-          failedFiles.push({
-            file,
-            error: dbError,
-          });
-          continue;
-        }
-
-        savedResumes.push(savedResume);
-      }
-
-      if (!savedResumes.length) {
-        throw new Error(
-          'None of the selected resumes could be uploaded.'
-        );
-      }
-
-      setUploadedResumes((current) => {
-        const merged = [
-          ...savedResumes,
-          ...current,
-        ];
-
-        const unique = new Map(
-          merged.map((resume) => [resume.id, resume])
-        );
-
-        return Array.from(unique.values());
-      });
-
-      // Select the most recently uploaded resume.
-      const lastSavedResume =
-        savedResumes[savedResumes.length - 1];
-
-      const parsedResumes = [];
-      for (const savedResume of savedResumes) {
-        const parsed = await parseSavedResume(savedResume);
-        parsedResumes.push(parsed);
-      }
-
-      setUploadedResumes((current) =>
-        current.map((item) => {
-          const parsed = parsedResumes.find((resume) => resume.id === item.id);
-          return parsed || item;
-        })
-      );
-
-      const selectedParsed = parsedResumes.find(
-        (resume) => resume.id === lastSavedResume.id
-      ) || lastSavedResume;
-
-      setSelectedResume(
-        `uploaded-${lastSavedResume.id}`
-      );
-
-      const parsedCount = parsedResumes.filter(
-        (resume) => resume.processing_status === 'completed'
-      ).length;
-      const parseFailedCount = parsedResumes.length - parsedCount;
-
-      if (failedFiles.length || parseFailedCount) {
-        setUploadMessage(
-          `${savedResumes.length} saved · ${parsedCount} parsed · ${parseFailedCount} could not be parsed${failedFiles.length ? ` · ${failedFiles.length} upload failed` : ''}.`
-        );
-      } else {
-        setUploadMessage(
-          savedResumes.length === 1
-            ? `${savedResumes[0].file_name} was saved, parsed and selected.`
-            : `${savedResumes.length} resumes were saved and parsed. ${lastSavedResume.file_name} is selected.`
-        );
-      }
-    } catch (error) {
-      setUploadMessage(
-        error instanceof Error
-          ? error.message
-          : 'Upload failed.'
-      );
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
-  const runMatch = async () => {
-    try {
-      const {
-        data: { user },
-      } = await createClient().auth.getUser();
-
-      if (!user) {
-        onAuthRequired?.();
-        return;
-      }
-    } catch {
+  const runMatch = () => {
+    if (!user) {
       onAuthRequired?.();
       return;
     }
-
-    const STOP_WORDS = new Set([
-      'the', 'and', 'for', 'with', 'from', 'this', 'that',
-      'into', 'your', 'you', 'our', 'are', 'was', 'were',
-      'will', 'have', 'has', 'had', 'who', 'what', 'where',
-      'when', 'how', 'not', 'but', 'all', 'any', 'can', 'its',
-      'their', 'they', 'them', 'job', 'role', 'looking',
-      'engineer', 'engineer', 'candidate', 'experience',
-      'experienced', 'years', 'year', 'need', 'needed',
-      'strong', 'good', 'work', 'working', 'team',
-    ]);
-
-    const normalize = (value = '') =>
-      value
-        .toLowerCase()
-        .replace(/[’']/g, '')
-        .replace(/[^a-z0-9.+#/-]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    const targetText = normalize(`${role} ${jobDescription}`);
-
-    const rawTerms = targetText.match(/[a-z0-9.+#/-]{3,}/g) || [];
-
-    const uniqueTerms = [...new Set(
-      rawTerms.filter((term) => !STOP_WORDS.has(term))
-    )];
-
-    const roleTerms = [...new Set(
-      normalize(role)
-        .match(/[a-z0-9.+#/-]{3,}/g)
-        ?.filter((term) => !STOP_WORDS.has(term)) || []
-    )];
-
-    const pool =
-      matchMode === 'specific'
-        ? candidates.filter(
-            (candidate) =>
-              candidate.id === selectedResume
-          )
-        : candidates;
-
-    const results = pool.map((candidate) => {
-      const profileText = normalize(
-        `${candidate.name} ${candidate.title} ${candidate.skills} ${candidate.parsedText || ''}`
-      );
-
-      const profileTerms = new Set(
-        profileText.match(/[a-z0-9.+#/-]{2,}/g) || []
-      );
-
-      const matchedRequirements = uniqueTerms.filter((term) => {
-        if (term.length < 3) return false;
-
-        if (profileText.includes(term)) return true;
-
-        for (const skill of profileTerms) {
-          if (skill === term) return true;
-          if (skill.includes(term) || term.includes(skill)) return true;
-        }
-
-        return false;
-      });
-
-      const missingRequirements = uniqueTerms.filter(
-        (term) => !matchedRequirements.includes(term)
-      );
-
-      const roleMatches = roleTerms.filter((term) =>
-        profileText.includes(term)
-      );
-
-      const hasStructuredProfile =
-        candidate.source === 'sample' ||
-        candidate.processingStatus === 'completed' ||
-        Boolean(candidate.skills?.trim());
-
-      if (!hasStructuredProfile) {
-        return {
-          ...candidate,
-          evidence: [],
-          missingRequirements,
-          roleMatches,
-          matchedRequirements: [],
-          score: null,
-          profilePending: true,
-          profileCompleteness: candidate.processingStatus === 'failed' ? 15 : 20,
-          analysisText:
-            candidate.processingStatus === 'failed'
-              ? `This resume could not be parsed automatically.${candidate.parserError ? ` ${candidate.parserError}` : ' It may be scanned/image-only or use a PDF encoding that does not expose selectable text.'}`
-              : 'Resume is being parsed. Compatibility scoring will appear as soon as readable text and skills are extracted.',
-        };
-      }
-
-      const skillCoverage = uniqueTerms.length
-        ? matchedRequirements.length / uniqueTerms.length
-        : 0;
-
-      const roleCoverage = roleTerms.length
-        ? roleMatches.length / roleTerms.length
-        : 0;
-
-      const score = Math.min(99, Math.max(18, Math.round(
-        30 +
-        skillCoverage * 54 +
-        roleCoverage * 16
-      )));
-
-      const analysisText =
-        matchedRequirements.length && missingRequirements.length
-          ? `${matchedRequirements.length} of ${uniqueTerms.length} key requirements are supported by this profile. The strongest overlap is ${matchedRequirements.slice(0, 4).join(', ')}. ${missingRequirements.length} requirement${missingRequirements.length === 1 ? '' : 's'} still need evidence.`
-          : matchedRequirements.length
-            ? `${matchedRequirements.length} of ${uniqueTerms.length} key requirements are supported by this profile. Strong alignment across ${matchedRequirements.slice(0, 5).join(', ')}.`
-            : `No meaningful requirement overlap was found in the current profile. Review the resume against the role before shortlisting.`;
-
-      return {
-        ...candidate,
-        evidence: matchedRequirements.slice(0, 8),
-        matchedRequirements,
-        missingRequirements: missingRequirements.slice(0, 8),
-        roleMatches,
-        score,
-        profilePending: false,
-        profileCompleteness: 100,
-        analysisText,
-      };
-    });
-
-    results.sort((a, b) => {
-      if (a.score === null) return 1;
-      if (b.score === null) return -1;
-      return b.score - a.score;
-    });
-
-    setMatchResult(results);
+    setMatchEnabled(true);
   };
 
-  const retryParseResume = async (resume) => {
-    if (!resume || resume.processing_status === 'processing') return;
+  const aiContext = { role, jobDescription };
+  const runAiRoleBrief = () => ai.analyzeRole(aiContext);
+  const runAiCandidateAnalysis = (candidate) => ai.analyzeCandidates([candidate], aiContext);
+  const topCandidates = (matchResult || []).filter((candidate) => !candidate.profilePending).slice(0, 3);
+  const runAiTopCandidates = () => ai.analyzeCandidates(topCandidates, aiContext);
 
-    setIsParsing(true);
-    setUploadMessage(`Re-parsing ${resume.file_name}…`);
+  const analyzedIds = Object.keys(ai.insights);
+  const focusedInsight = ai.focusedId ? ai.insights[ai.focusedId] : null;
+  const aiInsight = focusedInsight?.status === 'completed' ? focusedInsight.result : null;
+  const isRoleBriefLoading = ai.roleBrief.status === 'loading';
+  const aiRoleBrief = ai.roleBrief.result;
+  const aiPanelVisible = ai.roleBrief.status !== 'idle' || analyzedIds.length > 0;
 
-    try {
-      const parsed = await parseSavedResume(resume);
-
-      setUploadedResumes((current) =>
-        current.map((item) =>
-          item.id === parsed.id ? parsed : item
-        )
-      );
-
-      setSelectedResume(`uploaded-${parsed.id}`);
-
-      setUploadMessage(
-        parsed.processing_status === 'completed'
-          ? `${parsed.file_name} was parsed successfully.`
-          : `${parsed.file_name} could not be parsed. ${parsed.parser_error || ''}`
-      );
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
-  const runAiCandidateAnalysis = async (candidateOverride = null) => {
-    const candidate = candidateOverride || activeCandidate;
-
-    if (!candidate) return;
-
-    if (candidate.source === 'uploaded' && candidate.processingStatus !== 'completed') {
-      setAiError('This resume must finish parsing before AI analysis can run.');
-      return;
-    }
-
-    setIsAiLoading(true);
-    setAiError('');
-    setAiInsight(null);
-
-    try {
-      const response = await fetch('/api/ai-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          mode: 'candidate',
-          role,
-          jobDescription,
-          candidate: {
-            name: candidate.name,
-            title: candidate.title,
-            skills: candidate.skills,
-            yearsExperience: candidate.yearsExperience,
-            parsedText: candidate.parsedText,
-          },
-        }),
-      });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error || 'AI analysis failed.');
-      }
-
-      setAiInsight({
-        candidateId: candidate.id,
-        ...payload.result,
-      });
-    } catch (error) {
-      setAiError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to generate AI analysis.'
-      );
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  const runAiRoleBrief = async () => {
-    if (!role.trim() || !jobDescription.trim()) return;
-
-    setIsAiLoading(true);
-    setAiError('');
-    setAiRoleBrief(null);
-
-    try {
-      const response = await fetch('/api/ai-analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          mode: 'role',
-          role,
-          jobDescription,
-        }),
-      });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error || 'AI role analysis failed.');
-      }
-
-      setAiRoleBrief(payload.result);
-    } catch (error) {
-      setAiError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to generate the AI role brief.'
-      );
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
+  const uploadNotice = library.notice;
+  const isBusy = library.isLoading || library.isClearing;
+  const { jobs, jobSummary } = library;
+  const stageReached = (statuses) => jobs.some((job) => statuses.includes(job.status));
 
   const handleDrop = (event) => {
     event.preventDefault();
-
-    acceptResume(event.dataTransfer.files);
-  };
-
-  const resetUpload = () => {
-    setUploadedFile(null);
-    setSelectedUploadFiles([]);
-    setUploadMessage('');
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    void library.uploadFiles(event.dataTransfer.files);
   };
 
   const clearUploadedResumes = async () => {
-    if (isLoadingResumes || isParsing) return;
+    if (library.isClearing) return;
 
-    if (!uploadedResumes.length) {
-      setUploadMessage('There are no uploaded resumes to clear.');
+    if (library.isProcessing) {
+      library.setNotice({ tone: 'error', text: 'Wait for the current batch to finish before clearing.' });
       return;
     }
 
+    if (!library.resumes.length) {
+      library.setNotice({ tone: 'neutral', text: 'There are no uploaded resumes to clear.' });
+      return;
+    }
+
+    const count = library.resumes.length;
     const confirmed = window.confirm(
-      `Clear all ${uploadedResumes.length} uploaded resume${uploadedResumes.length === 1 ? '' : 's'}? This will permanently remove them from your private resume library.`
+      `Clear all ${count} uploaded resume${count === 1 ? '' : 's'}? This will permanently remove them from your private resume library.`
     );
 
     if (!confirmed) return;
 
-    setIsLoadingResumes(true);
-    setUploadMessage('Clearing your uploaded resumes…');
-
-    try {
-      const supabase = createClient();
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        onAuthRequired?.();
-        throw new Error('Sign in to clear your uploaded resumes.');
-      }
-
-      const filePaths = uploadedResumes
-        .map((resume) => resume.file_path)
-        .filter(Boolean);
-
-      if (filePaths.length) {
-        const { error: storageError } = await supabase.storage
-          .from('resumes')
-          .remove(filePaths);
-
-        if (storageError) {
-          throw storageError;
-        }
-      }
-
-      const { error: dbError } = await supabase
-        .from('resumes')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (dbError) {
-        throw dbError;
-      }
-
-      setUploadedResumes([]);
-      setSelectedResume('alex');
-      setMatchResult(null);
-      resetUpload();
-      setUploadMessage(
-        `Cleared ${uploadedResumes.length} uploaded resume${uploadedResumes.length === 1 ? '' : 's'}.`
-      );
-    } catch (error) {
-      console.error('Unable to clear uploaded resumes:', error);
-      setUploadMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to clear uploaded resumes.'
-      );
-    } finally {
-      setIsLoadingResumes(false);
-    }
+    await library.clearAll();
   };
 
   const tabs = [
@@ -3541,6 +2857,180 @@ export function InteractiveDemo({ onAuthRequired }) {
             transition: none !important;
           }
         }
+
+        /* =====================================================
+           BATCH JOBS, RESUME STATUS, REQUIREMENTS, AI TABS
+           ===================================================== */
+
+        .hl-resume-status {
+          flex-shrink: 0;
+          padding: 5px 7px;
+          border-radius: 999px;
+          background: #ECE8DE;
+          color: #756D63;
+          font-size: 7px;
+          font-weight: 900;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .hl-resume-status.failed {
+          background: #F4E6E1;
+          color: #9A5948;
+        }
+
+        .hl-resume-status.processing {
+          background: #EDEFE5;
+          color: var(--olive-dark);
+        }
+
+        .hl-job-list {
+          display: grid;
+          gap: 7px;
+          margin-top: 11px;
+        }
+
+        .hl-job {
+          padding: 8px 10px;
+          border: 1px solid var(--border);
+          border-radius: 11px;
+          background: rgba(255, 255, 255, 0.55);
+        }
+
+        .hl-job-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 9px;
+          font-weight: 800;
+          color: #3A332D;
+        }
+
+        .hl-job-name {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .hl-job-status {
+          flex-shrink: 0;
+          color: #7E756C;
+          font-size: 8px;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .hl-job.completed .hl-job-status {
+          color: var(--olive-dark);
+        }
+
+        .hl-job.failed .hl-job-status,
+        .hl-job-error {
+          color: #9A5948;
+        }
+
+        .hl-job-bar {
+          height: 4px;
+          margin-top: 6px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: #E7E1D7;
+        }
+
+        .hl-job-fill {
+          height: 100%;
+          border-radius: inherit;
+          background: var(--olive);
+          transition: width 400ms ease;
+        }
+
+        .hl-job.failed .hl-job-fill {
+          background: #C99A8C;
+        }
+
+        .hl-job-error {
+          margin-top: 5px;
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        .hl-job-dismiss {
+          justify-self: start;
+          border: 0;
+          background: transparent;
+          color: #7C736A;
+          padding: 0;
+          font-size: 9px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .hl-requirements {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 12px;
+        }
+
+        .hl-requirements-label {
+          margin-right: 4px;
+          color: #7E756C;
+          font-size: 9px;
+          font-weight: 800;
+        }
+
+        .hl-ai-privacy {
+          margin: 10px 0 0;
+          color: #857C72;
+          font-size: 9px;
+          line-height: 1.5;
+        }
+
+        .hl-ai-loading {
+          margin-bottom: 12px;
+          color: #7E756C;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .hl-ai-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin: 4px 0 14px;
+        }
+
+        .hl-ai-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 7px 10px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: #FAF8F3;
+          color: #3A332D;
+          font-size: 9px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .hl-ai-tab.active {
+          border-color: var(--olive);
+          background: var(--white);
+        }
+
+        .hl-ai-tab-state {
+          color: #7E756C;
+          font-size: 8px;
+          text-transform: capitalize;
+        }
+
+        .hl-ai-tab.failed .hl-ai-tab-state {
+          color: #9A5948;
+        }
       `}</style>
 
       {/* =====================================================
@@ -3569,7 +3059,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
           <p className="hl-demo-description">
             Upload a resume, inspect the structured profile
-            HireLabs creates, then test how semantic matching
+            HireLabs creates, then see how skill-based matching
             ranks candidates against a real role.
           </p>
 
@@ -3677,7 +3167,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                   {activeTab ===
                   'parser'
                     ? 'Resume intelligence'
-                    : 'Semantic candidate matching'}
+                    : 'Skill-based candidate matching'}
 
                 </span>
 
@@ -3738,11 +3228,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                           className={`hl-sample-button ${
                             selectedResume === candidate.id ? 'active' : ''
                           }`}
-                          onClick={() => {
-                            setSelectedResume(candidate.id);
-                            setUploadMessage('');
-                            setUploadedFile(null);
-                          }}
+                          onClick={() => setSelectedResume(candidate.id)}
                         >
                           {candidate.name}
                         </button>
@@ -3766,7 +3252,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                               type="button"
                               className="hl-clear-resumes-button"
                               onClick={clearUploadedResumes}
-                              disabled={isLoadingResumes || isParsing}
+                              disabled={isBusy || library.isProcessing}
                               title="Permanently remove all uploaded resumes"
                             >
                               Clear all
@@ -3790,25 +3276,32 @@ export function InteractiveDemo({ onAuthRequired }) {
                                   selectedResume === candidate.id ? 'active' : ''
                                 }`}
                                 style={{ flex: 1, minWidth: 0 }}
-                                onClick={() => {
-                                  setSelectedResume(candidate.id);
-                                  setUploadMessage('');
-                                  setUploadedFile(null);
-                                }}
+                                onClick={() => setSelectedResume(candidate.id)}
                               >
                                 {candidate.fileName}
                               </button>
 
                               {candidate.processingStatus !== 'completed' && (
+                                <span
+                                  className={`hl-resume-status ${candidate.processingStatus}`}
+                                  title={candidate.parserError || undefined}
+                                >
+                                  {candidate.processingStatus === 'failed'
+                                    ? 'Failed'
+                                    : candidate.processingStatus === 'processing' && !candidate.stalled
+                                      ? 'Parsing'
+                                      : candidate.stalled
+                                        ? 'Stalled'
+                                        : 'Queued'}
+                                </span>
+                              )}
+
+                              {(candidate.processingStatus === 'failed' || candidate.stalled) && (
                                 <button
                                   type="button"
                                   className="hl-clear-resumes-button"
-                                  disabled={isParsing || isLoadingResumes}
-                                  onClick={() => retryParseResume(
-                                    uploadedResumes.find(
-                                      (resume) => resume.id === candidate.resumeId
-                                    )
-                                  )}
+                                  disabled={isBusy}
+                                  onClick={() => void library.retryResume(candidate.resumeId)}
                                   title="Retry parsing this resume"
                                 >
                                   Retry
@@ -3819,7 +3312,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                         </>
                       )}
 
-                      {isLoadingResumes && (
+                      {library.isLoading && (
                         <div className="hl-sample-loading">
                           Loading your saved resumes…
                         </div>
@@ -3839,7 +3332,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                         display: 'none',
                       }}
                       onChange={(event) => {
-                        acceptResume(event.target.files);
+                        void library.uploadFiles(event.target.files);
                         event.target.value = '';
                       }}
                     />
@@ -3900,22 +3393,16 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         <div className="hl-upload-title">
 
-                          {isParsing
-                            ? `Uploading ${selectedUploadFiles.length || 1} resume${(selectedUploadFiles.length || 1) === 1 ? '' : 's'}…`
-                            : selectedUploadFiles.length > 1
-                              ? `${selectedUploadFiles.length} resumes selected`
-                              : uploadedFile
-                                ? uploadedFile.name
-                                : 'Drop resumes here'}
+                          {jobSummary.active
+                            ? `Processing ${jobSummary.active} of ${jobSummary.total} resume${jobSummary.total === 1 ? '' : 's'}…`
+                            : 'Drop resumes here'}
 
                         </div>
 
 
                         <div className="hl-upload-subtitle">
 
-                          {selectedUploadFiles.length > 1
-                            ? 'Multiple PDF or DOCX files · maximum 5 MB each'
-                            : 'PDF or DOCX · maximum file size 5 MB each · multiple files supported'}
+                          {`PDF or DOCX · max 5 MB each · up to ${MAX_BATCH_FILES} files, ${RESUME_CONCURRENCY} processed in parallel`}
 
                         </div>
 
@@ -3926,68 +3413,61 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                     {/* UPLOAD STATUS */}
 
-                    {uploadMessage && (
+                    {uploadNotice && (
                       <p
                         className={`hl-upload-status ${
-                          uploadMessage.includes(
-                            'failed'
-                          ) ||
-                          uploadMessage.includes(
-                            'Please'
-                          ) ||
-                          uploadMessage.includes(
-                            'Sign in'
-                          )
+                          uploadNotice.tone === 'error'
                             ? 'error'
-                            : uploadMessage.includes(
-                                'Uploading'
-                              )
+                            : uploadNotice.tone === 'neutral'
                               ? 'neutral'
                               : ''
                         }`}
                         role="status"
                       >
-                        {uploadMessage}
+                        {uploadNotice.text}
                       </p>
                     )}
 
 
-                    {/* REMOVE FILE */}
+                    {/* PER-FILE BATCH STATUS */}
 
-                    {uploadedFile &&
-                      !isParsing && (
-                        <button
-                          type="button"
-                          onClick={
-                            resetUpload
-                          }
-                          style={{
-                            marginTop:
-                              '10px',
+                    {jobs.length > 0 && (
+                      <div className="hl-job-list" aria-live="polite">
+                        {jobs.map((job) => (
+                          <div className={`hl-job ${job.status}`} key={job.id}>
+                            <div className="hl-job-row">
+                              <span className="hl-job-name" title={job.fileName}>
+                                {job.fileName}
+                              </span>
+                              <span className="hl-job-status">
+                                {JOB_STATUS_LABELS[job.status]}
+                              </span>
+                            </div>
 
-                            border: 0,
+                            <div className="hl-job-bar">
+                              <div
+                                className="hl-job-fill"
+                                style={{ width: `${job.progress}%` }}
+                              />
+                            </div>
 
-                            background:
-                              'transparent',
+                            {job.error && (
+                              <div className="hl-job-error">{job.error}</div>
+                            )}
+                          </div>
+                        ))}
 
-                            color:
-                              '#7C736A',
-
-                            padding: 0,
-
-                            fontSize:
-                              '9px',
-
-                            fontWeight:
-                              800,
-
-                            cursor:
-                              'pointer',
-                          }}
-                        >
-                          Clear current selection
-                        </button>
-                      )}
+                        {!jobSummary.active && (
+                          <button
+                            type="button"
+                            className="hl-job-dismiss"
+                            onClick={library.dismissJobs}
+                          >
+                            Clear finished
+                          </button>
+                        )}
+                      </div>
+                    )}
 
 
                     {/* PROCESSING PIPELINE */}
@@ -4009,10 +3489,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         <div
                           className={`hl-pipeline-stage ${
-                            isParsing ||
-                            uploadMessage.includes(
-                              'saved'
-                            )
+                            stageReached(['uploading', 'processing', 'completed'])
                               ? 'active'
                               : ''
                           }`}
@@ -4033,9 +3510,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         <div
                           className={`hl-pipeline-stage ${
-                            uploadMessage.includes(
-                              'saved'
-                            )
+                            stageReached(['processing', 'completed'])
                               ? 'active'
                               : ''
                           }`}
@@ -4056,9 +3531,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         <div
                           className={`hl-pipeline-stage ${
-                            uploadMessage.includes(
-                              'saved'
-                            )
+                            stageReached(['completed'])
                               ? 'active'
                               : ''
                           }`}
@@ -4069,7 +3542,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                           </span>
 
                           <span>
-                            AI normalization
+                            Profile extraction
                           </span>
 
                         </div>
@@ -4079,9 +3552,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         <div
                           className={`hl-pipeline-stage ${
-                            uploadMessage.includes(
-                              'saved'
-                            )
+                            stageReached(['completed'])
                               ? 'active'
                               : ''
                           }`}
@@ -4092,7 +3563,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                           </span>
 
                           <span>
-                            Vector embedding
+                            Skill matching
                           </span>
 
                         </div>
@@ -4124,7 +3595,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
 
                         <div className="hl-code-model">
-                          Gemini embedding 002
+                          Rule-based parser
                         </div>
 
                       </div>
@@ -4132,169 +3603,35 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                       <div className="hl-code-content">
 
-                        <pre>
-{`{
-  `}
-<span className="hl-code-key">
-  "candidate_profile"
-</span>{`: {
-    `}
-<span className="hl-code-key">
-  "full_name"
-</span>{`: `}
-<span className="hl-code-string">
-  "${activeCandidate.name}"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "title"
-</span>{`: `}
-<span className="hl-code-string">
-  "${activeCandidate.title}"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "years_experience"
-</span>{`: `}
-<span className="hl-code-number">
-  {activeCandidate.source === 'sample'
-    ? activeCandidate.yearsExperience
-    : 'pending'}
-</span>{`
-  },
-  `}
-{activeCandidate.source === 'uploaded' ? (
-  <>
-    <span className="hl-code-key">
-      "source_file"
-    </span>{`: `}
-    <span className="hl-code-string">
-      "${activeCandidate.fileName}"
-    </span>{`,
-    `}
-    <span className="hl-code-key">
-      "processing_status"
-    </span>{`: `}
-    <span className="hl-code-string">
-      "${activeCandidate.processingStatus}"
-    </span>{`
-  },
-  `}
-  </>
-) : (
-  <>
-    <span className="hl-code-key">
-      "skills_normalized"
-    </span>{`: {
-      `}
-    <span className="hl-code-key">
-      "frontend"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Next.js 15"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "React"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "TypeScript"
-    </span>{`
-      ],
-      `}
-    <span className="hl-code-key">
-      "backend_database"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Supabase"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "PostgreSQL"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "pgvector"
-    </span>{`
-      ],
-      `}
-    <span className="hl-code-key">
-      "ai_ml"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Gemini Embeddings"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "RAG Pipelines"
-    </span>{`
-      ]
-    },
-    `}
-  </>
-)}
-<span className="hl-code-key">
-  "vector_embedding"
-</span>{`: {
-    `}
-<span className="hl-code-key">
-  "model"
-</span>{`: `}
-<span className="hl-code-string">
-  "models/gemini-embedding-002"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "dimensions"
-</span>{`: `}
-<span className="hl-code-number">
-  1536
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "sample_vector"
-</span>{`: [
-      `}
-<span className="hl-code-number">
-  -0.02341
-</span>{`, `}
-<span className="hl-code-number">
-  0.08412
-</span>{`, `}
-<span className="hl-code-number">
-  -0.05193
-</span>{`,
-      ...
-    ]
-  }
-}`}
-                        </pre>
+                        <ProfileJson candidate={activeCandidate} />
 
 
                         <div className="hl-vector-box">
 
                           <div className="hl-vector-label">
-                            Searchable representation
+                            Matchable skills
                           </div>
 
 
                           <div className="hl-vector-value">
-                            [-0.02341, 0.08412, -0.05193, 0.01248, ...]
+                            {activeCandidate.skills.length
+                              ? activeCandidate.skills.join(' · ')
+                              : activeCandidate.profileReady
+                                ? 'No catalog skills found in this resume'
+                                : 'Available once parsing completes'}
                           </div>
 
 
                           <div className="hl-vector-meta">
 
                             <span className="hl-mini-pill">
-                              1536 dimensions
+                              {activeCandidate.skills.length} skill{activeCandidate.skills.length === 1 ? '' : 's'}
                             </span>
 
                             <span className="hl-mini-pill">
-                              pgvector ready
+                              {activeCandidate.source === 'sample'
+                                ? 'Sample profile'
+                                : `${activeCandidate.profileCompleteness}% complete`}
                             </span>
 
                             <span className="hl-mini-pill">
@@ -4334,11 +3671,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                   <div className="hl-trust-item">
 
                     <span className="hl-trust-number">
-                      1536
+                      {RESUME_CONCURRENCY}× parallel
                     </span>
 
                     <span className="hl-trust-label">
-                      Embedding dimensions
+                      Resumes processed concurrently
                     </span>
 
                   </div>
@@ -4387,9 +3724,9 @@ export function InteractiveDemo({ onAuthRequired }) {
                     </h3>
 
                     <p className="hl-panel-copy">
-                      Give HireLabs the role context, then let
-                      semantic similarity rank the candidates
-                      against it.
+                      Give HireLabs the role context, then rank
+                      candidates by the required skills their
+                      resumes actually show.
                     </p>
 
 
@@ -4587,24 +3924,50 @@ export function InteractiveDemo({ onAuthRequired }) {
                           type="button"
                           className="hl-ai-secondary"
                           onClick={runAiRoleBrief}
-                          disabled={isAiLoading || !role.trim() || !jobDescription.trim()}
+                          disabled={isRoleBriefLoading || !role.trim() || !jobDescription.trim()}
                         >
-                          {isAiLoading ? 'Thinking…' : '✦ AI role brief'}
+                          {isRoleBriefLoading ? 'Thinking…' : '✦ AI role brief'}
                         </button>
 
-                        <button
-                          type="button"
-                          className="hl-ai-secondary"
-                          onClick={() => runAiCandidateAnalysis(activeCandidate)}
-                          disabled={
-                            isAiLoading ||
-                            !activeCandidate ||
-                            (activeCandidate.source === 'uploaded' && activeCandidate.processingStatus !== 'completed')
-                          }
-                        >
-                          {isAiLoading ? 'Thinking…' : '✦ AI deep dive'}
-                        </button>
+                        {topCandidates.length > 1 ? (
+                          <button
+                            type="button"
+                            className="hl-ai-secondary"
+                            onClick={runAiTopCandidates}
+                            disabled={
+                              !role.trim() ||
+                              !jobDescription.trim() ||
+                              topCandidates.every((candidate) => ai.insights[candidate.id]?.status === 'loading')
+                            }
+                          >
+                            {`✦ AI deep dive: top ${topCandidates.length}`}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="hl-ai-secondary"
+                            onClick={() => runAiCandidateAnalysis(activeCandidate)}
+                            disabled={
+                              !activeCandidate ||
+                              !role.trim() ||
+                              !jobDescription.trim() ||
+                              activeCandidate.profileReady === false ||
+                              ai.insights[activeCandidate.id]?.status === 'loading'
+                            }
+                          >
+                            {ai.insights[activeCandidate?.id]?.status === 'loading' ? 'Thinking…' : '✦ AI deep dive'}
+                          </button>
+                        )}
                       </div>
+
+                      <p className="hl-ai-privacy">
+                        AI features send the role, job description and the
+                        selected candidate profile, including parsed resume
+                        text for uploaded resumes, to the configured AI
+                        provider (Google Gemini) for analysis. HireLabs does
+                        not store AI results. Skill matching runs entirely in
+                        your browser.
+                      </p>
 
                     </div>
 
@@ -4637,7 +4000,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                           <div className="hl-result-count">
                             {
                               matchResult.length
-                            } candidates
+                            } candidate{matchResult.length === 1 ? '' : 's'}
                           </div>
                         )}
 
@@ -4707,6 +4070,24 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                         </div>
 
+                      </div>
+                    )}
+
+
+                    {/* REQUIREMENTS CONSIDERED */}
+
+                    {match && (
+                      <div className="hl-requirements">
+                        <span className="hl-requirements-label">
+                          {match.requirements.type === 'keywords'
+                            ? `${match.requirements.items.length} keywords considered (no catalog skills found)`
+                            : `${match.requirements.items.length} required skill${match.requirements.items.length === 1 ? '' : 's'} considered`}
+                        </span>
+                        {match.requirements.items.map((item) => (
+                          <span className="hl-evidence-tag pending" key={`req-${item}`}>
+                            {item}
+                          </span>
+                        ))}
                       </div>
                     )}
 
@@ -4785,14 +4166,22 @@ export function InteractiveDemo({ onAuthRequired }) {
                                   className="hl-ai-card-button"
                                   onClick={() => {
                                     setSelectedResume(candidate.id);
-                                    void runAiCandidateAnalysis(candidate);
+                                    if (ai.insights[candidate.id]?.status === 'completed') {
+                                      ai.setFocusedId(candidate.id);
+                                    } else {
+                                      void runAiCandidateAnalysis(candidate);
+                                    }
                                   }}
                                   disabled={
-                                    isAiLoading ||
-                                    (candidate.source === 'uploaded' && candidate.processingStatus !== 'completed')
+                                    candidate.profilePending ||
+                                    ai.insights[candidate.id]?.status === 'loading'
                                   }
                                 >
-                                  ✦ Analyze with AI
+                                  {ai.insights[candidate.id]?.status === 'loading'
+                                    ? 'Analyzing…'
+                                    : ai.insights[candidate.id]?.status === 'completed'
+                                      ? '✦ View AI analysis'
+                                      : '✦ Analyze with AI'}
                                 </button>
                               </div>
 
@@ -4805,7 +4194,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                                   <span className="hl-analysis-meta">
                                     {candidate.score === null
                                       ? 'Parsing required'
-                                      : `${candidate.matchedRequirements.length} matched · ${candidate.missingRequirements.length} missing`}
+                                      : `${candidate.matched.length} of ${candidate.total} matched`}
                                   </span>
                                 </div>
 
@@ -4832,8 +4221,8 @@ export function InteractiveDemo({ onAuthRequired }) {
                                     </div>
 
                                     <div className="hl-evidence">
-                                      {candidate.evidence.length ? (
-                                        candidate.evidence.map((term) => (
+                                      {candidate.matched.length ? (
+                                        candidate.matched.map((term) => (
                                           <span
                                             className="hl-evidence-tag"
                                             key={`matched-${term}`}
@@ -4843,7 +4232,7 @@ export function InteractiveDemo({ onAuthRequired }) {
                                         ))
                                       ) : (
                                         <span className="hl-evidence-tag pending">
-                                          No extracted evidence yet
+                                          {candidate.profilePending ? 'No extracted evidence yet' : 'None found'}
                                         </span>
                                       )}
                                     </div>
@@ -4855,8 +4244,8 @@ export function InteractiveDemo({ onAuthRequired }) {
                                     </div>
 
                                     <div className="hl-evidence">
-                                      {candidate.missingRequirements.length ? (
-                                        candidate.missingRequirements.map((term) => (
+                                      {candidate.missing.length ? (
+                                        candidate.missing.map((term) => (
                                           <span
                                             className="hl-evidence-tag missing"
                                             key={`missing-${term}`}
@@ -4887,7 +4276,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                 </div>
 
-                {(aiRoleBrief || aiInsight || aiError) && (
+                {aiPanelVisible && (
                   <div className="hl-ai-panel">
                     <div className="hl-ai-panel-head">
                       <div>
@@ -4897,9 +4286,13 @@ export function InteractiveDemo({ onAuthRequired }) {
                       <span className="hl-ai-badge">Gemini</span>
                     </div>
 
-                    {aiError && (
+                    {isRoleBriefLoading && (
+                      <div className="hl-ai-loading">Generating the role brief…</div>
+                    )}
+
+                    {ai.roleBrief.error && (
                       <div className="hl-ai-error">
-                        {aiError}
+                        Role brief: {ai.roleBrief.error}
                       </div>
                     )}
 
@@ -4937,6 +4330,45 @@ export function InteractiveDemo({ onAuthRequired }) {
                             ))}
                           </ul>
                         </div>
+                      </div>
+                    )}
+
+                    {analyzedIds.length > 0 && (
+                      <div className="hl-ai-tabs" role="tablist" aria-label="Analyzed candidates">
+                        {analyzedIds.map((candidateId) => {
+                          const insight = ai.insights[candidateId];
+                          return (
+                            <button
+                              key={candidateId}
+                              type="button"
+                              role="tab"
+                              aria-selected={ai.focusedId === candidateId}
+                              className={`hl-ai-tab ${insight.status} ${ai.focusedId === candidateId ? 'active' : ''}`}
+                              onClick={() => ai.setFocusedId(candidateId)}
+                            >
+                              {insight.candidateName}
+                              <span className="hl-ai-tab-state">
+                                {insight.status === 'loading'
+                                  ? 'Analyzing…'
+                                  : insight.status === 'failed'
+                                    ? 'Failed'
+                                    : insight.result?.fit_verdict?.replace('_', ' ') || 'Ready'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {focusedInsight?.status === 'loading' && (
+                      <div className="hl-ai-loading">
+                        Analyzing {focusedInsight.candidateName}…
+                      </div>
+                    )}
+
+                    {focusedInsight?.status === 'failed' && (
+                      <div className="hl-ai-error">
+                        {focusedInsight.candidateName}: {focusedInsight.error}
                       </div>
                     )}
 
@@ -4997,11 +4429,11 @@ export function InteractiveDemo({ onAuthRequired }) {
                   <div className="hl-trust-item">
 
                     <span className="hl-trust-number">
-                      Semantic
+                      Transparent
                     </span>
 
                     <span className="hl-trust-label">
-                      Meaning over keywords
+                      Score = matched ÷ required skills
                     </span>
 
                   </div>

@@ -2230,7 +2230,7 @@ export function SecuritySection() {
 
               <div className="hl-security-item-text">
                 Application tables enforce RLS at the
-                database layer. Candidate vectors are
+                database layer. Resume records and files are
                 filtered by the authenticated user instead
                 of relying only on application-side checks.
               </div>
@@ -2293,7 +2293,7 @@ export function SecuritySection() {
                   &lt;auth-user-id&gt;/*
                 </code>{' '}
                 paths so files stay inside the owning
-                recruiter's storage boundary.
+                recruiter’s storage boundary.
               </div>
 
             </article>
@@ -2396,7 +2396,7 @@ export function SecuritySection() {
               <div className="hl-security-code-header">
 
                 <span className="hl-security-code-file">
-                  candidate_embeddings.sql
+                  001_create_resumes.sql
                 </span>
 
 
@@ -2412,7 +2412,7 @@ export function SecuritySection() {
 CREATE POLICY
 </span>{' '}
 <span className="hl-code-value">
-"Users can only view their own candidate vectors"
+{'"Users can view their own resumes"'}
 </span>
 
 {'\n\n'}
@@ -2421,7 +2421,7 @@ CREATE POLICY
 ON
 </span>{' '}
 <span className="hl-code-function">
-public.candidate_embeddings
+public.resumes
 </span>
 
 {'\n\n'}
@@ -2436,13 +2436,6 @@ FOR SELECT
 USING
 </span>{' '}
 (auth.uid() = user_id);
-
-{'\n\n'}
-
-<span className="hl-code-keyword">
-WHERE
-</span>{' '}
-user_id = auth.uid();
               </pre>
 
             </div>
@@ -2518,7 +2511,7 @@ user_id = auth.uid();
                     ✓
                   </span>
 
-                  Own candidate vectors
+                  Own resume records
 
                 </div>
 
@@ -2540,7 +2533,7 @@ user_id = auth.uid();
                     ×
                   </span>
 
-                  Another user's vectors
+                  Another user’s resumes
 
                 </div>
 
@@ -2551,7 +2544,7 @@ user_id = auth.uid();
                     ×
                   </span>
 
-                  Another user's files
+                  Another user’s files
 
                 </div>
 

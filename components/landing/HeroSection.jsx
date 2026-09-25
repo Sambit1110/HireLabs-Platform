@@ -2341,7 +2341,7 @@ export function HeroSection({
               <div className="hl-copy">
 
                 <span className="hl-kicker">
-                  Semantic candidate matching
+                  Skill-based candidate matching
                 </span>
 
 
@@ -2423,8 +2423,8 @@ export function HeroSection({
 
 
                 <div className="hl-quiet-note">
-                  Semantic matching · Gemini embeddings ·
-                  pgvector · Supabase
+                  Skill matching · Gemini AI briefs ·
+                  Supabase RLS
                 </div>
 
               </div>
@@ -2605,12 +2605,12 @@ export function HeroSection({
                       <div className="hl-score">
 
                         <span className="hl-score-number">
-                          97.4%
+                          88%
                         </span>
 
 
                         <span className="hl-score-label">
-                          semantic match
+                          skill match
                         </span>
 
                       </div>
@@ -2725,41 +2725,31 @@ export function HeroSection({
                 >
 
                   <div className="hl-detail-label">
-                    Vector intelligence
+                    Skill intelligence
                   </div>
 
 
                   <div className="hl-detail-title">
-                    Searchable candidate representation
+                    Structured candidate profile
                   </div>
 
 
                   <div className="hl-vector">
 
-                    [
-                    {' '}
-                    -0.0234,
-                    {' '}
-                    0.0841,
-                    {' '}
-                    -0.0519,
+                    {'[ "React", "Node.js",'}
 
                     <br />
 
-                    0.0911,
-                    {' '}
-                    0.0172,
-                    ...
-                    ]
+                    {'"PostgreSQL", ... ]'}
 
                     <br />
                     <br />
 
-                    1536 dimensions
+                    whole-token skill match
 
                     <br />
 
-                    cosine distance → 0.026
+                    7 of 8 required skills
 
                   </div>
 
@@ -2789,11 +2779,11 @@ export function HeroSection({
                 <div className="hl-metric">
 
                   <span className="hl-metric-number">
-                    1536
+                    3×
                   </span>
 
                   <span className="hl-metric-label">
-                    Vector dimensions
+                    Parallel parsing
                   </span>
 
                 </div>
@@ -2802,11 +2792,11 @@ export function HeroSection({
                 <div className="hl-metric">
 
                   <span className="hl-metric-number">
-                    &lt; 85ms
+                    20
                   </span>
 
                   <span className="hl-metric-label">
-                    Match query
+                    Resumes per batch
                   </span>
 
                 </div>

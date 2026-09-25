@@ -1,16 +1,15 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
+import { SUPABASE_NOT_CONFIGURED, getSupabaseConfig } from "@/lib/config";
+
 let browserClient: ReturnType<typeof createSupabaseClient> | null = null;
 
-/** Creates one shared browser client for the current app. */
+/** Creates one shared browser client for the current app. Throws a clear error when unconfigured. */
 export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url, key, configured } = getSupabaseConfig();
 
-  if (!url || !key) {
-    throw new Error(
-      "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local."
-    );
+  if (!configured) {
+    throw new Error(SUPABASE_NOT_CONFIGURED);
   }
 
   if (!browserClient) {

@@ -3,7 +3,7 @@ import React from 'react';
 export function Footer() {
   const productLinks = [
     { label: 'AI Resume Parser', href: '#demo' },
-    { label: 'Semantic Match Engine', href: '#demo' },
+    { label: 'Skill Match Engine', href: '#demo' },
     { label: 'Architecture Pipeline', href: '#architecture' },
     { label: 'Legacy ATS vs HireLabs', href: '#comparison' },
   ];
@@ -11,7 +11,7 @@ export function Footer() {
   const securityLinks = [
     { label: 'PostgreSQL RLS Policies', href: '#security' },
     { label: 'Private Storage Isolation', href: '#security' },
-    { label: 'Gemini Embedding-002', href: '#security' },
+    { label: 'Verified API Access', href: '#security' },
     { label: 'Explainable AI', href: '#security' },
     { label: 'Next.js App Router', href: '#architecture' },
   ];
@@ -453,8 +453,9 @@ export function Footer() {
             </div>
 
             <p className="hl-footer-brand-text">
-              Built around semantic matching, PostgreSQL, pgvector, Gemini
-              embeddings, and private Supabase data boundaries.
+              Built around transparent skill matching, server-side resume
+              parsing, optional Gemini analysis, and private Supabase data
+              boundaries.
             </p>
 
             <div className="hl-footer-tech">
@@ -463,7 +464,7 @@ export function Footer() {
               </span>
 
               <span className="hl-footer-tech-pill">
-                pgvector
+                PostgreSQL
               </span>
 
               <span className="hl-footer-tech-pill">
