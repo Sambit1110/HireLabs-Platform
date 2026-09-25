@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const API_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 
 const clip = (value, max) => String(value || '').slice(0, max);
@@ -196,3 +196,4 @@ Return JSON matching the provided schema. Keep lists focused (3-8 items).`;
     );
   }
 }
+

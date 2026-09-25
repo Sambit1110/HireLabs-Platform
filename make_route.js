@@ -1,4 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+﻿const fs = require('fs');
+
+const routeContent = \import { NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 
 export const runtime = 'nodejs';
@@ -80,11 +82,7 @@ export async function POST(request) {
       .replace(/\\s+/g, ' ')
       .trim();
 
-    let aiData = { candidateName: 'Candidate', candidateTitle: 'Applicant', extractedSkills: [], yearsExperience: null, resume_score: 50, improvement_tips: [
-          "Ensure your resume format is ATS-friendly.",
-          "Add quantifiable metrics to your recent roles.",
-          "Highlight leadership experience more prominently."
-        ] };
+    let aiData = { candidateName: 'Candidate', candidateTitle: 'Applicant', extractedSkills: [], yearsExperience: null, resume_score: 50, improvement_tips: [] };
     
     if (process.env.GEMINI_API_KEY) {
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
@@ -94,8 +92,8 @@ export async function POST(request) {
           'x-goog-api-key': process.env.GEMINI_API_KEY,
         },
         body: JSON.stringify({
-          model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
-          input: `You are an expert technical recruiter and resume reviewer. Parse the following resume text and return a JSON object with EXACTLY this schema: { "candidateName": "string", "candidateTitle": "string", "extractedSkills": ["string"], "yearsExperience": number, "resume_score": number (0-100 score based on ATS readability, impact, and formatting), "improvement_tips": ["string"] (3-5 highly specific, actionable tips to improve this exact resume). \\n\\nFILE NAME: ${file.name}\\n\\nRESUME TEXT:\\n${parsedText.slice(0, 10000)}`,
+          model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+          input: \\\You are an expert technical recruiter and resume reviewer. Parse the following resume text and return a JSON object with EXACTLY this schema: { "candidateName": "string", "candidateTitle": "string", "extractedSkills": ["string"], "yearsExperience": number, "resume_score": number (0-100 score based on ATS readability, impact, and formatting), "improvement_tips": ["string"] (3-5 highly specific, actionable tips to improve this exact resume). \\n\\nFILE NAME: \\\\\\\\\n\\nRESUME TEXT:\\n\\\\\\\\\\,
           response_format: {
             type: 'text',
             mime_type: 'application/json',
@@ -120,7 +118,7 @@ export async function POST(request) {
         const textOut = payload?.output_text || (payload?.output?.[0]?.text) || payload?.output?.[0]?.content?.parts?.[0]?.text;
         if (textOut) {
           try {
-            aiData = JSON.parse(textOut.replace(/```json/gi, '').replace(/```/g, '').trim());
+            aiData = JSON.parse(textOut.replace(/\\\\\\\\\\\\\\\json/gi, '').replace(/\\\\\\\\\\\\\\\/g, '').trim());
           } catch (e) {
             console.error("Failed to parse Gemini JSON:", e);
           }
@@ -150,3 +148,5 @@ export async function POST(request) {
     }, { status: 500 });
   }
 }
+\;
+fs.writeFileSync('app/api/parse-resume/route.js', routeContent, 'utf-8');

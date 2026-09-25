@@ -27,14 +27,11 @@ export function InteractiveDemo({ onAuthRequired }) {
   const [isLoadingResumes, setIsLoadingResumes] = useState(false);
   const [isInteractive, setIsInteractive] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-<<<<<<< HEAD
   const [aiInsight, setAiInsight] = useState(null);
   const [aiRoleBrief, setAiRoleBrief] = useState(null);
   const [aiError, setAiError] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-=======
   const [viewMode, setViewMode] = useState('grid');
->>>>>>> 6efdc7160947e227cbf034dcc0ed1a73bf8427c9
 
   const sectionRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -112,7 +109,9 @@ export function InteractiveDemo({ onAuthRequired }) {
       createdAt: resume.created_at,
       yearsExperience: resume.years_experience ?? null,
       profileCompleteness: resume.profile_completeness ?? 0,
-      parserError: resume.parser_error || '',
+      parserError: resume.parser_error || "",
+      resume_score: resume.resume_score ?? 0,
+      improvement_tips: resume.improvement_tips || [],
     };
   });
 
@@ -147,9 +146,7 @@ export function InteractiveDemo({ onAuthRequired }) {
 
         const { data, error } = await supabase
           .from('resumes')
-          .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
-          )
+          .select('id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error, resume_score, improvement_tips')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -220,6 +217,8 @@ export function InteractiveDemo({ onAuthRequired }) {
         candidate_title: result.candidateTitle || null,
         years_experience: result.yearsExperience ?? null,
         profile_completeness: result.profileCompleteness || 0,
+        resume_score: result.resumeScore || 0,
+        improvement_tips: result.improvementTips || [],
         parser_error: null,
       };
 
@@ -400,9 +399,7 @@ export function InteractiveDemo({ onAuthRequired }) {
             file_size: file.size,
             processing_status: 'uploaded',
           })
-          .select(
-            'id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error'
-          )
+          .select('id, file_name, file_path, file_type, file_size, processing_status, created_at, parsed_text, extracted_skills, candidate_name, candidate_title, years_experience, profile_completeness, parser_error, resume_score, improvement_tips')
           .single();
 
         if (dbError) {
@@ -421,9 +418,7 @@ export function InteractiveDemo({ onAuthRequired }) {
       }
 
       if (!savedResumes.length) {
-        throw new Error(
-          'None of the selected resumes could be uploaded.'
-        );
+        throw new Error("Upload failed: " + (failedFiles[0]?.error?.message || "None of the selected resumes could be uploaded. Did you run the SQL migration?"));
       }
 
       setUploadedResumes((current) => {
@@ -4110,204 +4105,50 @@ export function InteractiveDemo({ onAuthRequired }) {
 
                   <div className="hl-demo-panel">
 
-                    <div className="hl-code-card">
-
-                      <div className="hl-code-top">
-
-                        <div className="hl-code-file">
-
-                          <span className="hl-code-dot" />
-
-                          normalized_profile.json
-
+                    <div className="hl-code-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', background: '#ffffff', color: '#0f172a' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Resume Scorecard</h3>
+                          <span className="hl-ai-badge">Gemini AI</span>
                         </div>
-
-
-                        <div className="hl-code-model">
-                          Gemini embedding 002
-                        </div>
-
+                        
+                        {activeCandidate.source === 'uploaded' && activeCandidate.processingStatus !== 'completed' ? (
+                          <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748b' }}>
+                            <div className="hl-spinner" style={{ margin: '0 auto 16px', borderColor: '#cbd5e1', borderTopColor: '#0f172a' }} />
+                            Parsing resume...
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                              <div style={{ fontSize: '42px', fontWeight: '900', color: (activeCandidate.resume_score || 0) >= 80 ? '#10b981' : (activeCandidate.resume_score || 0) >= 50 ? '#f59e0b' : '#ef4444' }}>
+                                {activeCandidate.resume_score || (activeCandidate.source === 'sample' ? 88 : 0)}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: '600', color: '#1e293b' }}>ATS & Quality Score</div>
+                                <div style={{ fontSize: '14px', color: '#64748b' }}>Out of 100</div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: '600', color: '#1e293b' }}>Improvement Tips</h4>
+                              <ul style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {(activeCandidate.improvement_tips || (activeCandidate.source === 'sample' ? [
+                                  "Highlight leadership experience more prominently.",
+                                  "Include quantifiable metrics for your React projects."
+                                ] : [])).length > 0 ? (
+                                  (activeCandidate.improvement_tips || (activeCandidate.source === 'sample' ? [
+                                    "Highlight leadership experience more prominently.",
+                                    "Include quantifiable metrics for your React projects."
+                                  ] : [])).map((tip, idx) => (
+                                    <li key={idx} style={{ fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>{tip}</li>
+                                  ))
+                                ) : (
+                                  <li style={{ fontSize: '14px', color: '#64748b' }}>No tips available.</li>
+                                )}
+                              </ul>
+                            </div>
+                          </>
+                        )}
                       </div>
-
-
-                      <div className="hl-code-content">
-
-                        <pre>
-{`{
-  `}
-<span className="hl-code-key">
-  "candidate_profile"
-</span>{`: {
-    `}
-<span className="hl-code-key">
-  "full_name"
-</span>{`: `}
-<span className="hl-code-string">
-  "${activeCandidate.name}"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "title"
-</span>{`: `}
-<span className="hl-code-string">
-  "${activeCandidate.title}"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "years_experience"
-</span>{`: `}
-<span className="hl-code-number">
-  {activeCandidate.source === 'sample'
-    ? activeCandidate.yearsExperience
-    : 'pending'}
-</span>{`
-  },
-  `}
-{activeCandidate.source === 'uploaded' ? (
-  <>
-    <span className="hl-code-key">
-      "source_file"
-    </span>{`: `}
-    <span className="hl-code-string">
-      "${activeCandidate.fileName}"
-    </span>{`,
-    `}
-    <span className="hl-code-key">
-      "processing_status"
-    </span>{`: `}
-    <span className="hl-code-string">
-      "${activeCandidate.processingStatus}"
-    </span>{`
-  },
-  `}
-  </>
-) : (
-  <>
-    <span className="hl-code-key">
-      "skills_normalized"
-    </span>{`: {
-      `}
-    <span className="hl-code-key">
-      "frontend"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Next.js 15"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "React"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "TypeScript"
-    </span>{`
-      ],
-      `}
-    <span className="hl-code-key">
-      "backend_database"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Supabase"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "PostgreSQL"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "pgvector"
-    </span>{`
-      ],
-      `}
-    <span className="hl-code-key">
-      "ai_ml"
-    </span>{`: [
-        `}
-    <span className="hl-code-string">
-      "Gemini Embeddings"
-    </span>{`,
-        `}
-    <span className="hl-code-string">
-      "RAG Pipelines"
-    </span>{`
-      ]
-    },
-    `}
-  </>
-)}
-<span className="hl-code-key">
-  "vector_embedding"
-</span>{`: {
-    `}
-<span className="hl-code-key">
-  "model"
-</span>{`: `}
-<span className="hl-code-string">
-  "models/gemini-embedding-002"
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "dimensions"
-</span>{`: `}
-<span className="hl-code-number">
-  1536
-</span>{`,
-    `}
-<span className="hl-code-key">
-  "sample_vector"
-</span>{`: [
-      `}
-<span className="hl-code-number">
-  -0.02341
-</span>{`, `}
-<span className="hl-code-number">
-  0.08412
-</span>{`, `}
-<span className="hl-code-number">
-  -0.05193
-</span>{`,
-      ...
-    ]
-  }
-}`}
-                        </pre>
-
-
-                        <div className="hl-vector-box">
-
-                          <div className="hl-vector-label">
-                            Searchable representation
-                          </div>
-
-
-                          <div className="hl-vector-value">
-                            [-0.02341, 0.08412, -0.05193, 0.01248, ...]
-                          </div>
-
-
-                          <div className="hl-vector-meta">
-
-                            <span className="hl-mini-pill">
-                              1536 dimensions
-                            </span>
-
-                            <span className="hl-mini-pill">
-                              pgvector ready
-                            </span>
-
-                            <span className="hl-mini-pill">
-                              Private record
-                            </span>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    </div>
 
                   </div>
 
