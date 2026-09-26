@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 
 export const runtime = 'nodejs';
@@ -87,37 +87,31 @@ export async function POST(request) {
         ] };
     
     if (process.env.GEMINI_API_KEY) {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
-          input: `You are an expert technical recruiter and resume reviewer. Parse the following resume text and return a JSON object with EXACTLY this schema: { "candidateName": "string", "candidateTitle": "string", "extractedSkills": ["string"], "yearsExperience": number, "resume_score": number (0-100 score based on ATS readability, impact, and formatting), "improvement_tips": ["string"] (3-5 highly specific, actionable tips to improve this exact resume). \\n\\nFILE NAME: ${file.name}\\n\\nRESUME TEXT:\\n${parsedText.slice(0, 10000)}`,
-          response_format: {
-            type: 'text',
-            mime_type: 'application/json',
-            schema: {
-              type: 'object',
+      try {
+        const { GoogleGenAI, Type } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        
+        const response = await ai.models.generateContent({
+          model: process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+          contents: `You are an expert technical recruiter and resume reviewer. Parse the following resume text and return a JSON object.\n\nFILE NAME: ${file.name}\n\nRESUME TEXT:\n${parsedText.slice(0, 10000)}`,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
               properties: {
-                candidateName: { type: 'string' },
-                candidateTitle: { type: 'string' },
-                extractedSkills: { type: 'array', items: { type: 'string' } },
-                yearsExperience: { type: 'integer' },
-                resume_score: { type: 'integer' },
-                improvement_tips: { type: 'array', items: { type: 'string' } }
+                candidateName: { type: Type.STRING },
+                candidateTitle: { type: Type.STRING },
+                extractedSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                yearsExperience: { type: Type.INTEGER },
+                resume_score: { type: Type.INTEGER },
+                improvement_tips: { type: Type.ARRAY, items: { type: Type.STRING } }
               },
               required: ["candidateName", "candidateTitle", "extractedSkills", "resume_score", "improvement_tips"]
             }
-          },
-        }),
-      });
+          }
+        });
 
-      if (response.ok) {
-        const payload = await response.json();
-        const textOut = payload?.output_text || (payload?.output?.[0]?.text) || payload?.output?.[0]?.content?.parts?.[0]?.text;
+        const textOut = response.text;
         if (textOut) {
           try {
             aiData = JSON.parse(textOut.replace(/```json/gi, '').replace(/```/g, '').trim());
@@ -125,6 +119,8 @@ export async function POST(request) {
             console.error("Failed to parse Gemini JSON:", e);
           }
         }
+      } catch (apiError) {
+        console.error("Gemini API Error:", apiError);
       }
     }
 

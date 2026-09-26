@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -151,31 +151,19 @@ ${clip(body.jobDescription, 12000)}
 Return JSON matching the provided schema. Keep lists focused (3-8 items).`;
     }
 
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        input,
-        response_format: {
-          type: 'text',
-          mime_type: 'application/json',
-          schema,
-        },
-      }),
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: input,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: schema
+      }
     });
 
-    const payload = await response.json();
-
-    if (!response.ok) {
-      const message = payload?.error?.message || 'Gemini request failed.';
-      return NextResponse.json({ error: message }, { status: 502 });
-    }
-
-    const outputText = extractOutputText(payload);
+    const outputText = response.text;
     if (!outputText) {
       throw new Error('Gemini returned no usable output.');
     }
