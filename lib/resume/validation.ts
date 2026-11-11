@@ -6,12 +6,13 @@ const ALLOWED_TYPES = new Set([
 ]);
 
 export function validateResume(file: File): string | null {
-  if (!ALLOWED_TYPES.has(file.type)) {
+  const supportedByExtension = /\.(pdf|docx)$/i.test(file.name);
+  if (!ALLOWED_TYPES.has(file.type) && !(!file.type && supportedByExtension)) {
     return "Only PDF and DOCX files are allowed.";
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return "Resume must be smaller than 5 MB.";
+    return "Resume must be 5 MB or smaller.";
   }
 
   return null;

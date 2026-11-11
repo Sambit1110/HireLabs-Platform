@@ -168,7 +168,7 @@ export default function LandingPage() {
       }
 
       if (data.session) {
-        window.location.href = '/';
+        window.location.href = '/dashboard';
       } else {
         setAuthMessage(
           'Signed in, but no active session was returned. Please try again.'
@@ -275,13 +275,12 @@ export default function LandingPage() {
         data.session
       ) {
         setAuthMessage(
-          'Account created and signed in. Opening your resume library…'
+          'Account created and signed in. Opening your dashboard…'
         );
 
         window.setTimeout(
           () => {
-            window.location.href =
-              '/';
+            window.location.href = '/dashboard';
           },
           700
         );

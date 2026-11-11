@@ -125,7 +125,7 @@ function AuthCallback() {
           requestedNext.startsWith('/') &&
           !requestedNext.startsWith('//')
             ? requestedNext
-            : '/';
+            : '/dashboard';
 
         if (isMounted) {
           router.replace(destination);

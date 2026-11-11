@@ -1,49 +1,13 @@
-import { NextResponse } from 'next/server';
+import { apiError, apiSuccess } from '@/lib/api/response';
+import { authenticateRequest } from '@/lib/supabase/server-auth';
+import { parseAIJson } from '@/lib/ai/parse-json';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 
 const clip = (value, max) => String(value || '').slice(0, max);
-
-function extractOutputText(payload) {
-  if (typeof payload?.output_text === 'string') return payload.output_text;
-
-  const output = Array.isArray(payload?.output) ? payload.output : [];
-  const parts = [];
-
-  for (const item of output) {
-    if (typeof item?.text === 'string') parts.push(item.text);
-    const itemParts = Array.isArray(item?.content?.parts) ? item.content.parts : [];
-    for (const part of itemParts) {
-      if (typeof part?.text === 'string') parts.push(part.text);
-    }
-  }
-
-  return parts.join('\n').trim();
-}
-
-function parseJson(text) {
-  const cleaned = String(text || '')
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const first = cleaned.indexOf('{');
-    const last = cleaned.lastIndexOf('}');
-    if (first >= 0 && last > first) {
-      return JSON.parse(cleaned.slice(first, last + 1));
-    }
-    throw new Error('The AI returned an unreadable response.');
-  }
-}
 
 const candidateSchema = {
   type: 'object',
@@ -94,13 +58,10 @@ const roleSchema = {
 };
 
 export async function POST(request) {
+  const auth = await authenticateRequest(request);
+  if (auth.response) return auth.response;
   if (!process.env.GEMINI_API_KEY) {
-    return NextResponse.json(
-      {
-        error: 'AI features are not configured. Add GEMINI_API_KEY to your Vercel environment variables.',
-      },
-      { status: 503 }
-    );
+    return apiError('AI_UNAVAILABLE', 'AI features are not configured.', 503);
   }
 
   try {
@@ -108,7 +69,7 @@ export async function POST(request) {
     const mode = body?.mode;
 
     if (mode !== 'candidate' && mode !== 'role') {
-      return NextResponse.json({ error: 'Invalid AI analysis mode.' }, { status: 400 });
+      return apiError('INVALID_MODE', 'Invalid AI analysis mode.', 400);
     }
 
     const schema = mode === 'candidate' ? candidateSchema : roleSchema;
@@ -168,20 +129,12 @@ Return JSON matching the provided schema. Keep lists focused (3-8 items).`;
       throw new Error('Gemini returned no usable output.');
     }
 
-    const result = parseJson(outputText);
+    const result = parseAIJson(outputText);
 
-    return NextResponse.json({
-      result,
-      model: MODEL,
-    });
+    return apiSuccess({ result, model: MODEL });
   } catch (error) {
     console.error('AI analysis error:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Unable to generate AI analysis.',
-      },
-      { status: 500 }
-    );
+    return apiError('ANALYSIS_FAILED', 'Unable to generate AI analysis.', 500);
   }
 }
 
