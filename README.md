@@ -38,6 +38,17 @@ The root `index.html`, `signup.html`, `app.js`, `style.css`, and `supabase.js` a
 
    Sign in with a magic link, upload a PDF or DOCX, then submit a job description to test the full flow.
 
+### Resume trained-model setup
+
+The resume parser uses the included spaCy transformer/NER wheel as the primary extraction model. Gemini remains a fallback for environments where the Python model cannot run.
+
+```bash
+uv venv --python 3.11 .venv
+uv pip install --python .venv/Scripts/python.exe -r scripts/python/requirements.txt
+```
+
+Set `RESUME_PYTHON_PATH` when your Python executable is outside `.venv/Scripts/python.exe`. The model package is stored in `models/`.
+
 ### Development Without Outbound Email
 
 The login screen supports both magic-link and email/password sign-in. To create a local account without configuring SMTP:

@@ -5,6 +5,7 @@ import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { parseAIJson } from '@/lib/ai/parse-json';
+import { parseResumeWithModel } from '@/lib/resume/model-parser';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -319,6 +320,29 @@ function validateEnrichmentResult(value) {
 }
 
 async function enrichResume(text, filename) {
+  try {
+    const modelProfile = await parseResumeWithModel(text);
+
+    if (
+      modelProfile.candidateName
+      || modelProfile.candidateTitle
+      || modelProfile.extractedSkills.length > 0
+      || modelProfile.yearsExperience !== null
+    ) {
+      return {
+        value: modelProfile,
+        error: null,
+      };
+    }
+  } catch (error) {
+    console.error('Resume trained model enrichment failed:', {
+      name:
+        error instanceof Error
+          ? error.name
+          : 'UnknownError',
+    });
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return {
       value: null,
