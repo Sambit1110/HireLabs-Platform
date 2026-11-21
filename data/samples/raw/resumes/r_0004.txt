@@ -1,0 +1,25 @@
+Marcus Vance
+Mobile Application Developer | iOS & Android (Flutter / Swift)
+Email: marcus.vance@example.com | GitHub: github.com/mvance
+
+PROFESSIONAL SUMMARY
+Mobile Application Developer with 3 years of hands-on experience developing cross-platform and native mobile applications for iOS and Android. Proficient in Flutter, Dart, Swift, Kotlin, and Firebase.
+
+TECHNICAL SKILLS
+- Mobile Development: Flutter, Dart, Swift (iOS), Kotlin (Android), React Native
+- Mobile Architecture: BLoC, Provider, MVVM, Clean Architecture
+- Backend & Cloud: Firebase Auth, Firestore, Push Notifications, RESTful APIs
+- Tooling: Xcode, Android Studio, Fastlane, TestFlight, App Store Connect
+
+PROFESSIONAL EXPERIENCE
+Mobile Engineer | AppWave Mobile (2022 - Present)
+- Developed, released, and maintained 4 Flutter cross-platform applications published on iOS App Store and Google Play.
+- Implemented offline-first data caching and push notifications using Firebase Cloud Messaging.
+- Built custom UI animations and native Swift/Kotlin plugins for device sensor access.
+
+Junior Mobile Developer | MobileSoft (2021 - 2022)
+- Collaborated on native iOS applications using Swift and UIKit.
+- Fixed UI bugs and improved app startup time by 20%.
+
+EDUCATION
+B.S. in Information Technology (2017 - 2021)

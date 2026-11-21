@@ -8,6 +8,7 @@ import { parseAIJson } from '@/lib/ai/parse-json';
 import { normalizePythonProfile } from '@/lib/resume/model-parser';
 import { callModelServer, useLocalModels } from '@/lib/ai/model-server';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
+import { embedText } from '@/lib/resume/embedding';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -443,6 +444,7 @@ export async function POST(request) {
   if (auth.response) {
     return auth.response;
   }
+
   const limited = checkAIRateLimit(auth.user.id);
   if (limited) return limited;
 
@@ -591,6 +593,19 @@ export async function POST(request) {
     const profileCompleteness =
       calculateCompleteness(profile);
 
+    // Generate 384-d dense embedding vector for semantic matching
+    let embedding = null;
+    let embeddedAt = null;
+    try {
+      const embedResult = await embedText(text);
+      if (Array.isArray(embedResult.vector) && embedResult.vector.length === 384) {
+        embedding = embedResult.vector;
+        embeddedAt = new Date().toISOString();
+      }
+    } catch (embedError) {
+      console.warn('Embedding generation on parse failed (will be retried/backfilled):', embedError?.message);
+    }
+
     const fields = {
       parsed_text: text,
       extracted_skills: profile.extractedSkills,
@@ -600,6 +615,8 @@ export async function POST(request) {
       profile_completeness: profileCompleteness,
       parser_error: enrichment.error || null,
       processing_status: 'parsed',
+      embedding,
+      embedded_at: embeddedAt,
     };
 
     const {
@@ -611,13 +628,12 @@ export async function POST(request) {
       auth.user.id,
       fields
     ).select(
-      'id,processing_status,candidate_name,candidate_title,years_experience,extracted_skills,profile_completeness,parser_error'
+      'id,processing_status,candidate_name,candidate_title,years_experience,extracted_skills,profile_completeness,parser_error,embedded_at'
     ).single();
 
     if (saveError) {
       throw saveError;
     }
-
     return apiSuccess({ ...saved, model_used: enrichment.modelUsed || null });
   } catch (error) {
     console.error('Resume processing failed:', {
