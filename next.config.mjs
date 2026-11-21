@@ -6,10 +6,8 @@ const nextConfig = {
   // A package-lock.json in a parent directory would otherwise be picked as the root.
   turbopack: { root: import.meta.dirname },
   experimental: {
-    // `typescript` is the TS 6 API package (needed by typescript-eslint), which
-    // ships no `tsc` binary, so type-check through the TypeScript API instead of
-    // the CLI. The TS 7 compiler remains available as @typescript/native.
-    useTypeScriptCli: false,
+    // Next.js requires the TypeScript CLI when using TypeScript 7.x
+    useTypeScriptCli: true,
   },
 };
 
