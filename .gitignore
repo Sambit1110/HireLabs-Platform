@@ -14,7 +14,6 @@ HireLabs-Data/
 __pycache__/
 *.py[cod]
 
-
 # Scratch and one-off helper scripts
 make_route.js
 map_fields.js
@@ -31,4 +30,3 @@ test_gemini.js
 update_regex.js
 update_route.js
 write_route.js
-

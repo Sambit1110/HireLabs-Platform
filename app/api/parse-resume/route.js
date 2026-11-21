@@ -628,7 +628,6 @@ export async function POST(request) {
     if (saveError) {
       throw saveError;
     }
-
     return apiSuccess(saved);
   } catch (error) {
     console.error('Resume processing failed:', {

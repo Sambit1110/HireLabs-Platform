@@ -1,25 +1,49 @@
 # HireLabs
 
-An AI-powered resume parser and semantic applicant tracking system built with Next.js App Router, Supabase (Auth, Postgres, Storage), custom fine-tuned `hirelabs-matcher` embeddings (384d), and pgvector. Candidate files remain in a private Supabase Storage bucket; vectors and profile data are scoped to the signed-in user through row-level security.
+An AI-assisted resume workspace built with the Next.js App Router, Supabase (Auth, Postgres, Storage), custom fine-tuned `hirelabs-matcher` embeddings (384d), and pgvector. Recruiters upload PDF/DOCX resumes into a private storage bucket, HireLabs parses them, and the dashboard ranks candidates against a job description and explains each evaluation. Resume files, embeddings, and profile data are scoped to the signed-in user through row-level security.
+
+## Status
+
+| Area | State |
+|---|---|
+| Auth, upload, private storage, resume library | Built |
+| Resume parsing | Built. A downloaded spaCy model (`en_Resume_Parser_pipeline`) runs first, with Gemini as the fallback. Our own trained parser (`hirelabs-parser`) is in progress. |
+| Candidate evaluation | Built on Gemini. Our fine-tuned evaluator (`hirelabs-evaluator`) is in progress and will become the primary model. |
+| Semantic matching | Built. The `/api/match` endpoint, pgvector HNSW migration (`supabase/migrations/005_semantic_matching.sql`), and `hirelabs-matcher` model (384d fine-tuned from `BAAI/bge-small-en-v1.5`) are implemented (see [`docs/api/MATCH_CONTRACT.md`](docs/api/MATCH_CONTRACT.md)). |
+| Model results page | Built. It shows real numbers once the evaluation script writes `public/model-results.json` (see [`docs/results/RESULTS_FORMAT.md`](docs/results/RESULTS_FORMAT.md)). |
+
+## Dashboard features
+
+- **Model badge:** every AI result shows which model answered: green "Our model" for `hirelabs-*` models, grey "Gemini fallback" otherwise.
+- **Explained evaluations:** fit score and verdict, matched vs missing skills, quoted resume evidence, risk flags and interview questions. "Insufficient evidence" is never turned into a score.
+- **Rank candidates for a job:** paste a job description to rank your parsed resumes, then use **Explain score** to open the full evaluation.
+- **Model results** (`/dashboard/results`): keyword baseline vs Gemini vs our models on a held-out test set, plus the fairness check.
+- In development (`npm run dev`), **Preview sample** buttons show clearly labelled fictional data, so the UI can be built and demoed before the models are ready. They are hidden in production builds.
 
 ## Project Structure
 
 ```text
-app/                           App Router pages and auth flow
-  auth/callback/               Supabase magic-link / OAuth callback
-  dashboard/resumes/           Authenticated resume management view
+app/                           App Router pages, API routes and auth flow
+  api/parse-resume/            PDF/DOCX extraction + profile enrichment
+  api/ai-analyze/              Role briefs and candidate evaluations
+  api/resumes/[resumeId]/      Resume delete (storage object + row)
+  dashboard/                   Overview, resume library (/resumes), model results (/results)
 components/
-  landing/                     Public marketing and interactive demo sections
-  layout/                      Navbar and footer
-  resume/                      Resume upload component
-  ui/                          Reusable primitives (Badge, Button, Modal, Tabs, etc.)
+  dashboard/                   Dashboard, AI analysis, ranking, evaluation view, model badge, results
+  landing/                     Public marketing sections
+  layout/, resume/, ui/        Navbar/footer, upload component, reusable primitives
 lib/
-  resume/validation.ts         File-type and size validation
-  supabase/client.ts           Browser Supabase client singleton
+  ai/                          AI JSON parsing, model badge info, evaluation normalization
+  eval/                        Model results file validation and formatting
+  fixtures/                    Clearly labelled SAMPLE data for development previews
+  resume/, supabase/, api/     Resume validation/text, Supabase clients and auth, API envelope
+scripts/python/                spaCy resume parser runner
 supabase/migrations/           Database schema and RLS policies
+docs/                          API contracts, results format, demo script, report drafts
+legacy/                        Original static prototype (reference only)
 ```
 
-The root `index.html`, `signup.html`, `app.js`, `style.css`, and `supabase.js` are retained as the original static prototype. See [`legacy/README.md`](legacy/README.md) for details. New work should go into the Next.js implementation.
+The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css`, `supabase.js`) lives in [`legacy/`](legacy/README.md) for reference only.
 
 ## Local Setup
 
@@ -38,6 +62,11 @@ The root `index.html`, `signup.html`, `app.js`, `style.css`, and `supabase.js` a
 
    Sign in with a magic link, upload a PDF or DOCX, then submit a job description to test the full flow.
 
+5. **Check your changes** before opening a pull request:
+
+   ```bash
+   npm run check
+   ```
 ### Resume trained-model setup
 
 The resume parser uses the included spaCy transformer/NER wheel as the primary extraction model. Gemini remains a fallback for environments where the Python model cannot run.
@@ -75,12 +104,12 @@ Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-passwo
 
 4. Set the Supabase Site URL to `https://YOUR-VERCEL-DOMAIN` and add `https://YOUR-VERCEL-DOMAIN/auth/callback` to redirect URLs, then deploy. Subsequent pushes trigger Vercel preview and production deployments automatically.
 
-> `vercel.json` allows the resume-processing function to run for up to 60 seconds. For large-scale ingestion, move processing to a queue/worker while keeping the `resumes.processing_status` state machine.
+> The API routes declare `maxDuration = 60`, so resume processing can run for up to 60 seconds. Vercel can't run the Python parser or a local LLM server, so a deployment there uses the Gemini fallback. For the demo, run everything locally.
 
 ## Security and Operational Notes
 
 - The migration enables RLS on every application table and restricts storage paths to `<auth-user-id>/...`.
-- The match RPC filters by `auth.uid()` even when invoked directly, preventing cross-team vectors from appearing in results.
+- The planned `match_resumes` function must filter by `auth.uid()`, so users can't see each other's resumes (see `docs/api/MATCH_CONTRACT.md`).
 - Explanations are instructed to rely on supplied evidence, flag gaps, and avoid protected characteristics. Treat AI scoring as decision support — retain human review and audit logs.
 - Semantic matching uses our fine-tuned `hirelabs-matcher` embedding model (384 dimensions, fine-tuned from `BAAI/bge-small-en-v1.5`), stored with pgvector and indexed via HNSW. Changing the embedding model or dimension count requires a corresponding vector column and index migration.
 
@@ -93,4 +122,4 @@ HireLabs includes optional Gemini-powered recruiting features in the Candidate m
 
 Keep the Gemini key server-side. Add `GEMINI_API_KEY` to your local `.env.local` and to the Vercel project Environment Variables. The client never receives the key.
 
-The app uses the Gemini Interactions API and defaults to `gemini-3.7-flash`; set `GEMINI_MODEL` to override it.
+The app calls Gemini through `@google/genai` (`models.generateContent`) and defaults to `gemini-3.5-flash` for analysis and `gemini-3.7-flash` for resume parsing; set `GEMINI_MODEL` to override both.
