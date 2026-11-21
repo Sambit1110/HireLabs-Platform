@@ -1,0 +1,5 @@
+# Python packages for the hirelabs-matcher embedding service (scripts/python/embed_service.py).
+# Separate from requirements.txt, which is for the spaCy resume parser.
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+sentence-transformers>=3,<6

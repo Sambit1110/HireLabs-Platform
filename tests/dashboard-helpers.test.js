@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { describeModel } from '../lib/ai/model-info.js';
 import { normalizeEvaluation } from '../lib/ai/evaluation.js';
+import { isParsedStatus, isPendingStatus, statusLabel } from '../lib/resume/status.js';
 
 describe('describeModel', () => {
   it('marks HireLabs models as our own', () => {
@@ -16,6 +17,14 @@ describe('describeModel', () => {
     expect(
       describeModel({ model_used: 'hirelabs-parser', model: 'gemini-3.5-flash' }).kind
     ).toBe('ours');
+  });
+
+  it('never labels placeholder stand-ins as our model', () => {
+    for (const id of ['hirelabs-matcher-fallback', 'hirelabs-matcher-fixture', 'hirelabs-evaluator-mock']) {
+      const info = describeModel({ model_used: id });
+      expect(info.kind).toBe('placeholder');
+      expect(info.label).toMatch(/not a real model/);
+    }
   });
 
   it('treats Gemini as the fallback', () => {
@@ -70,5 +79,28 @@ describe('normalizeEvaluation', () => {
     expect(result.verdict).toBeNull();
     expect(result.evidence).toEqual([]);
     expect(result.interviewQuestions).toEqual([]);
+  });
+});
+
+describe('resume statuses', () => {
+  it('treats parsed and completed as parsed', () => {
+    expect(isParsedStatus('parsed')).toBe(true);
+    expect(isParsedStatus('completed')).toBe(true);
+    expect(isParsedStatus('queued')).toBe(false);
+  });
+
+  it('treats uploaded, queued and processing as pending', () => {
+    for (const status of ['uploaded', 'queued', 'processing']) {
+      expect(isPendingStatus(status)).toBe(true);
+    }
+    expect(isPendingStatus('failed')).toBe(false);
+    expect(isPendingStatus(null)).toBe(false);
+  });
+
+  it('labels statuses for display', () => {
+    expect(statusLabel('completed')).toBe('Parsed');
+    expect(statusLabel('queued')).toBe('Pending');
+    expect(statusLabel('failed')).toBe('Failed');
+    expect(statusLabel('')).toBe('Unknown');
   });
 });

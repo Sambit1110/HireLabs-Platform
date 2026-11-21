@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_MATCHES } from "@/lib/fixtures/sample-evaluation";
 import ModelBadge from "@/components/dashboard/ModelBadge";
+import { isParsedStatus } from "@/lib/resume/status";
 
 const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
 const MAX_JOB_DESCRIPTION = 12000;
@@ -72,7 +73,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
   useEffect(() => () => controllerRef.current?.abort(), []);
 
   const byId = new Map(resumes.map((resume) => [resume.id, resume]));
-  const parsedCount = resumes.filter((resume) => resume.processing_status === "parsed").length;
+  const parsedCount = resumes.filter((resume) => isParsedStatus(resume.processing_status)).length;
 
   const rank = async () => {
     if (busy || !jobDescription.trim()) return;
@@ -242,6 +243,14 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
           {ranking.sample && (
             <p className="sample-banner" role="note">
               SAMPLE DATA: fictional candidates for previewing the layout. Not a real ranking.
+            </p>
+          )}
+
+          {ranking.model.kind === "placeholder" && (
+            <p className="sample-banner" role="note">
+              The embedding service isn&apos;t running, so these scores come from an offline
+              placeholder and don&apos;t reflect real similarity. Start the hirelabs-matcher
+              service (see README) for a real ranking.
             </p>
           )}
 

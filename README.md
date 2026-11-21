@@ -49,7 +49,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
 1. **Create a Supabase project.** Under **Authentication → URL Configuration**, set the Site URL to your current environment (`http://localhost:3000` locally, your production domain otherwise) and add `http://localhost:3000/auth/callback` (plus `https://YOUR-DOMAIN/auth/callback` in production) as redirect URLs. Then apply the recommended settings in [Authentication](#authentication).
 
-2. **Run the migration.** Open the Supabase SQL Editor and execute the file in [`supabase/migrations/`](supabase/migrations/) in filename order. Alternatively, link the Supabase CLI and run `supabase db push`.
+2. **Run the migrations.** Open the Supabase SQL Editor and execute **every** file in [`supabase/migrations/`](supabase/migrations/) in filename order (`001` … `006`). Alternatively, link the Supabase CLI and run `supabase db push`. `005` (pgvector, `job_descriptions`, `match_resumes`) is required for **Rank candidates**, and `006` must follow `003`, or every successful parse is rejected by the status check. `GET /api/health` reports which parts of the schema are present.
 
 3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your project URL, anon key, and a Gemini API key. `SUPABASE_SERVICE_ROLE_KEY` is reserved for future privileged background jobs and must never be exposed to the browser.
 
@@ -62,7 +62,19 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
    Create an account or sign in with email and password, upload a PDF or DOCX, then submit a job description to test the full flow.
 
-5. **Check your changes** before opening a pull request:
+5. **Start the matching service** (needed for **Rank candidates**). It serves `POST /embed` with the `hirelabs-matcher` model:
+
+   ```bash
+   python3 -m venv .venv-matcher
+   .venv-matcher/bin/pip install -r scripts/python/requirements-matcher.txt
+   .venv-matcher/bin/python scripts/python/embed_service.py
+   ```
+
+   It listens on `http://localhost:8000` (change with `PORT`) and loads the fine-tuned model from `models/hirelabs-matcher` (change with `MATCHER_MODEL_PATH`). If that folder is missing, it falls back to the base `BAAI/bge-small-en-v1.5` and reports `bge-small-en-v1.5-baseline`. Point the app at it with `EMBED_SERVICE_URL` (default `http://localhost:8000/embed`).
+
+   If the service isn't running in development, the app silently switches to hash-based placeholder vectors (`hirelabs-matcher-fallback`) so the flow stays clickable. The dashboard labels those results **"Offline placeholder, not a real model"** and warns that the scores are meaningless. Never demo with the placeholder. In production the request fails instead.
+
+6. **Check your changes** before opening a pull request:
 
    ```bash
    npm run check
