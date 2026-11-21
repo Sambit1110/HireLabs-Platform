@@ -1,6 +1,9 @@
 
 import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
+import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
+import { evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
+import { useLocalModels } from '@/lib/ai/model-server';
 import { parseAIJson } from '@/lib/ai/parse-json';
 
 export const runtime = 'nodejs';
@@ -41,6 +44,7 @@ const candidateSchema = {
       ],
     },
 
+    fit_score: { type: 'integer', minimum: 0, maximum: 100 },
     confidence: { type: 'integer' },
 
     strengths: stringArray,
@@ -93,6 +97,7 @@ const candidateSchema = {
     'technical_strengths',
     'relevant_projects',
     'fit_verdict',
+    'fit_score',
     'confidence',
     'strengths',
     'gaps',
@@ -266,6 +271,23 @@ function validateOutput(value, schema) {
   return false;
 }
 
+function placeholderValue(schema) {
+  if (schema.type === 'object') {
+    return Object.fromEntries(Object.entries(schema.properties).map(([key, child]) => [key, placeholderValue(child)]));
+  }
+  if (schema.enum) return 'insufficient_evidence';
+  if (schema.type === 'array') return [];
+  if (schema.type === 'integer') return 0;
+  return 'Sample analysis for interface development.';
+}
+
+function validateAnalysis(result, schema, mode) {
+  if (!validateOutput(result, schema)) return false;
+  if (mode !== 'candidate' || result.fit_verdict === 'insufficient_evidence') return true;
+  const expected = result.fit_score >= 75 ? 'strong' : result.fit_score >= 50 ? 'moderate' : 'weak';
+  return result.fit_verdict === expected;
+}
+
 function buildCandidatePrompt(body) {
   const candidate = body.candidate;
 
@@ -349,7 +371,9 @@ it must not be interpreted as proof of inability.
 
 F. FIT ASSESSMENT
 Use:
-strong, moderate, weak, or insufficient_evidence.
+Return a fit_score integer from 0 to 100 based on documented fit.
+Use strong for 75?100, moderate for 50?74, and weak for 0?49.
+Use insufficient_evidence if documented qualifications cannot be assessed.
 
 This is an advisory assessment of documented alignment,
 not a final employment decision.
@@ -425,14 +449,8 @@ export async function POST(request) {
   if (auth.response) {
     return auth.response;
   }
-
-  if (!process.env.GEMINI_API_KEY) {
-    return apiError(
-      'AI_UNAVAILABLE',
-      'AI features are not configured.',
-      503
-    );
-  }
+  const limited = checkAIRateLimit(auth.user.id);
+  if (limited) return limited;
 
   let body;
 
@@ -478,6 +496,12 @@ export async function POST(request) {
   }
 
   const mode = body.mode;
+  const provider = process.env.ENABLE_BIAS_CHECK === 'true'
+    ? request.headers.get('x-hirelabs-eval-provider')
+    : null;
+  if (provider !== null && (mode !== 'candidate' || !['local', 'gemini'].includes(provider))) {
+    return apiError('INVALID_INPUT', 'Invalid evaluation provider.', 400);
+  }
   const schema =
     mode === 'candidate' ? candidateSchema : roleSchema;
 
@@ -486,11 +510,35 @@ export async function POST(request) {
       ? buildCandidatePrompt(body)
       : buildRolePrompt(body);
 
+  if (mode === 'candidate' && provider === null && process.env.EVALUATOR_PLACEHOLDER === 'true') {
+    const model = 'evaluator-placeholder';
+    return apiSuccess({ result: placeholderValue(schema), model, model_used: model });
+  }
+
+  if (mode === 'candidate' && provider !== 'gemini' && useLocalModels()) {
+    try {
+      const result = await evaluateLocally(prompt, schema);
+      if (validateAnalysis(result, schema, mode)) {
+        return apiSuccess({ result, model: evaluatorModel, model_used: evaluatorModel });
+      }
+    } catch {
+      // Provider errors can contain candidate information.
+    }
+  }
+
+  if (provider === 'local') {
+    return apiError('LOCAL_EVALUATOR_UNAVAILABLE', 'Local evaluator returned no valid result.', 503);
+  }
+  if (!process.env.GEMINI_API_KEY) {
+    return apiError('AI_UNAVAILABLE', 'Gemini fallback is unavailable.', 503);
+  }
+
   try {
     const { GoogleGenAI } = await import('@google/genai');
 
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: { timeout: 18_000, retryOptions: { attempts: 1 } },
     });
 
     const response = await ai.models.generateContent({
@@ -498,8 +546,8 @@ export async function POST(request) {
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
-        responseSchema: schema,
-        temperature: 0.2,
+        responseJsonSchema: schema,
+        temperature: 0,
       },
     });
 
@@ -525,7 +573,7 @@ export async function POST(request) {
       );
     }
 
-    if (!validateOutput(result, schema)) {
+    if (!validateAnalysis(result, schema, mode)) {
       return apiError(
         'INVALID_AI_RESPONSE',
         'The AI service returned an incomplete or invalid analysis.',
@@ -536,6 +584,7 @@ export async function POST(request) {
     return apiSuccess({
       result,
       model: MODEL,
+      model_used: mode === 'candidate' ? 'gemini-fallback' : 'gemini',
     });
   } catch (error) {
     // Avoid logging prompts, resume text, or API secrets.

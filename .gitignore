@@ -6,6 +6,10 @@ node_modules/
 .venv/
 models/
 *.whl
+*.gguf
+*.safetensors
+HireLabs-Data/
+__pycache__/
 
 # TypeScript incremental build cache
 *.tsbuildinfo

@@ -68,16 +68,33 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    npm run check
    ```
 
-### Resume trained-model setup
+### Run everything locally
 
-The resume parser uses the included spaCy transformer/NER wheel as the primary extraction model. Gemini remains a fallback for environments where the Python model cannot run.
+1. Configure Supabase as described above. For a local Supabase instance, start Docker, run `supabase init` if `supabase/config.toml` is absent, then run `supabase start` and `supabase migration up --local`. Use the URL and public key from `supabase status` in `.env.local`.
+2. Run `npm ci`. Set `USE_LOCAL_MODELS=true` in `.env.local`. Set `GEMINI_API_KEY` and `GEMINI_MODEL` for fallback and role analysis.
+3. Run `python -m venv .venv`. Activate with `.venv\Scripts\Activate.ps1` in PowerShell or `source .venv/bin/activate` on macOS/Linux. Install dependencies with `python -m pip install -r services/model-server/requirements.txt` and install the team's parser wheel with `python -m pip install <wheel-path>`. Set `PARSER_MODEL` to its spaCy package name if it differs from `hirelabs_parser` and set `MATCHER_MODEL` to the local SentenceTransformer model directory. Start FastAPI and check its readiness.
 
-```bash
-uv venv --python 3.11 .venv
-uv pip install --python .venv/Scripts/python.exe -r scripts/python/requirements.txt
+   ```sh
+   python -m uvicorn main:app --app-dir services/model-server --host 127.0.0.1 --port 8000
+   curl http://127.0.0.1:8000/health
+   ```
+
+4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template.
+5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Stop FastAPI to demonstrate parser fallback or stop Ollama to demonstrate evaluator fallback. Both responses report `gemini-fallback`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
+
+For interface development, set `MODEL_PLACEHOLDERS=true` in the Python service environment and `EVALUATOR_PLACEHOLDER=true` in `.env.local`. Responses identify placeholders explicitly. Disable these options for the live demo. Keep both model services bound to loopback for local use.
+
+### Run the fairness audit
+
+Use 20 authorized dev resumes. Mayukh controls the locked test set. Create a private JSONL manifest with fields `id`, `split`, `role`, `jobDescription`, `candidate`, and `variants`. Candidate fields follow the analysis API and include `name`, `parsedText`, and optional `title`, `skills`, and `yearsExperience`. Each variant has a distinct `name` and an optional `gender_terms` object mapping exact, case-sensitive terms to replacements. Review each edit to preserve job evidence. Use resumes cleared for both providers.
+
+Set `USE_LOCAL_MODELS=true` and `ENABLE_BIAS_CHECK=true` in the local Next.js environment and restart it. Set `HIRELABS_ACCESS_TOKEN` in your shell to a current Supabase access token for the test user. If using a different Ollama model name, also set `BIAS_EXPECTED_LOCAL_MODEL` to that name.
+
+```sh
+python scripts/eval/bias_check.py path/to/private-cases.jsonl --output fairness-results.json
 ```
 
-Set `RESUME_PYTHON_PATH` when your Python executable is outside `.venv/Scripts/python.exe`. The model package is stored in `models/`.
+The script writes aggregate metrics. Keep the manifest and weights outside Git. See [report sections 6 and 8](docs/model-serving-and-fairness.md).
 
 ### Development Without Outbound Email
 
@@ -116,7 +133,7 @@ Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-passwo
 
 ## AI copilot configuration
 
-HireLabs includes optional Gemini-powered recruiting features in the Candidate matching workspace:
+HireLabs includes local evaluator and Gemini-powered recruiting features in the Candidate matching workspace:
 
 - AI role brief: turns a job description into must-have skills, nice-to-have skills, screening signals, and interview focus.
 - AI candidate deep dive: summarizes candidate fit, strengths, gaps, evidence signals, risk flags, and generates tailored interview questions.

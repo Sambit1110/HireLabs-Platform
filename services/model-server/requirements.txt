@@ -1,0 +1,4 @@
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+spacy>=3.8,<4
+sentence-transformers>=5,<6
