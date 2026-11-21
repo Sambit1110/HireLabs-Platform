@@ -799,7 +799,7 @@ export function Navbar({ onOpenAuthModal }) {
 
             <span className="hl-brand-version">
               <span className="hl-brand-version-dot" />
-              v2.4 live
+              Private
             </span>
           </a>
 

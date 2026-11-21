@@ -288,7 +288,7 @@ export function HeroSection({
           position: relative;
 
           min-height:
-            300vh;
+            180vh;
 
           background:
             linear-gradient(
@@ -778,6 +778,9 @@ export function HeroSection({
 
           pointer-events:
             none;
+
+          display:
+            none;
         }
 
 
@@ -839,7 +842,7 @@ export function HeroSection({
             28px;
 
           border-radius:
-            26px;
+            18px;
 
           background:
             var(--hl-white);
@@ -849,12 +852,12 @@ export function HeroSection({
             var(--hl-border);
 
           box-shadow:
-            0 30px 80px
+            0 18px 48px
             rgba(
               49,
               43,
               36,
-              0.12
+              0.08
             ),
 
             0 8px 24px
@@ -877,12 +880,6 @@ export function HeroSection({
               ${
                 resumeScale
               }
-            )
-            rotate(
-              ${
-                transformProgress *
-                -1.8
-              }deg
             );
 
           opacity:
@@ -954,37 +951,21 @@ export function HeroSection({
 
 
         .hl-resume-mark {
-          width:
-            43px;
+          padding: 7px 10px;
+          border: 1px solid rgba(111, 125, 85, 0.24);
+          border-radius: 999px;
+          background: #F4F5EF;
+          color: var(--hl-olive-dark);
+          font-size: 9px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
 
-          height:
-            43px;
 
-          display:
-            grid;
-
-          place-items:
-            center;
-
-          flex:
-            0 0 43px;
-
-          border-radius:
-            14px;
-
-          background:
-            var(--hl-espresso);
-
-          color:
-            var(--hl-cream);
-
-          font-family:
-            Georgia,
-            'Times New Roman',
-            serif;
-
-          font-size:
-            17px;
+        .hl-resume-text {
+          color: #675E55;
+          font-size: 11px;
+          line-height: 1.6;
         }
 
 
@@ -1215,23 +1196,11 @@ export function HeroSection({
           padding:
             24px;
 
-          border-radius:
-            24px;
-
-          background:
-            var(--hl-espresso);
-
-          color:
-            var(--hl-cream);
-
-          box-shadow:
-            0 36px 90px
-            rgba(
-              33,
-              28,
-              24,
-              0.2
-            );
+          border: 1px solid var(--hl-border);
+          border-radius: 18px;
+          background: #FFFFFF;
+          color: var(--hl-espresso);
+          box-shadow: 0 18px 48px rgba(33, 28, 24, 0.11);
         }
 
 
@@ -1264,7 +1233,7 @@ export function HeroSection({
             uppercase;
 
           color:
-            #BEB8AE;
+            #82796F;
 
           font-weight:
             800;
@@ -1302,7 +1271,7 @@ export function HeroSection({
             block;
 
           color:
-            #B9C69A;
+            var(--hl-olive-dark);
 
           font-size:
             28px;
@@ -1323,7 +1292,7 @@ export function HeroSection({
             5px;
 
           color:
-            #9D978D;
+            #82796F;
 
           font-size:
             9px;
@@ -1343,13 +1312,7 @@ export function HeroSection({
           margin:
             20px 0;
 
-          background:
-            rgba(
-              255,
-              255,
-              255,
-              0.13
-            );
+          background: var(--hl-border);
         }
 
 
@@ -1389,7 +1352,7 @@ export function HeroSection({
             9px;
 
           color:
-            #E2DDD3;
+            var(--hl-espresso);
 
           font-size:
             11px;
@@ -1413,15 +1376,10 @@ export function HeroSection({
             50%;
 
           background:
-            rgba(
-              111,
-              125,
-              85,
-              0.3
-            );
+            rgba(111, 125, 85, 0.12);
 
           color:
-            #C2D19F;
+            var(--hl-olive-dark);
 
           font-size:
             10px;
@@ -1433,7 +1391,7 @@ export function HeroSection({
 
         .hl-match-value {
           color:
-            #AAA39A;
+            #82796F;
 
           font-size:
             10px;
@@ -1556,25 +1514,10 @@ export function HeroSection({
           border-radius:
             11px;
 
-          background:
-            #F4F0E7;
-
-          color:
-            #696158;
-
-          font-family:
-            'SFMono-Regular',
-            Consolas,
-            monospace;
-
-          font-size:
-            8px;
-
-          line-height:
-            1.65;
-
-          overflow:
-            hidden;
+          background: #F4F5EF;
+          color: #675E55;
+          font-size: 10px;
+          line-height: 1.6;
         }
 
 
@@ -1826,6 +1769,9 @@ export function HeroSection({
 
           pointer-events:
             none;
+
+          display:
+            none;
         }
 
 
@@ -1904,6 +1850,9 @@ export function HeroSection({
             0;
 
           pointer-events:
+            none;
+
+          display:
             none;
 
           opacity:
@@ -2316,13 +2265,8 @@ export function HeroSection({
 
                 <span className="hl-eyebrow-dot" />
 
-                Intelligent hiring infrastructure
+                A practical resume workspace
 
-              </div>
-
-
-              <div className="hl-version">
-                HireLabs · v2.4
               </div>
 
             </div>
@@ -2341,23 +2285,20 @@ export function HeroSection({
               <div className="hl-copy">
 
                 <span className="hl-kicker">
-                  Semantic candidate matching
+                  PDF + DOCX · Private candidate files
                 </span>
 
 
                 <h1 className="hl-title">
 
                   <span className="hl-title-line">
-                    Hire better.
+                    Resumes, ready
                   </span>
 
 
                   <span className="hl-title-line">
-
-                    Skip the{' '}
-
                     <span className="hl-title-accent">
-                      guesswork.
+                      for review.
                     </span>
 
                   </span>
@@ -2366,10 +2307,10 @@ export function HeroSection({
 
 
                 <p className="hl-description">
-                  HireLabs turns resumes into structured,
-                  searchable candidate intelligence — then
-                  matches people to the roles where they can
-                  actually make an impact.
+                  Upload resumes, review extracted candidate details,
+                  and keep files together in a private workspace.
+                  Check each profile against its source before making
+                  a hiring decision.
                 </p>
 
 
@@ -2384,7 +2325,7 @@ export function HeroSection({
                   >
 
                     <span>
-                      Explore Live Sandbox
+                      Try the live sandbox
                     </span>
 
 
@@ -2423,8 +2364,7 @@ export function HeroSection({
 
 
                 <div className="hl-quiet-note">
-                  Semantic matching · Gemini embeddings ·
-                  pgvector · Supabase
+                  Searchable profiles · Private storage · Human review
                 </div>
 
               </div>
@@ -2453,19 +2393,19 @@ export function HeroSection({
                     <div>
 
                       <div className="hl-resume-name">
-                        Alex Mercer
+                        Maya Chen
                       </div>
 
 
                       <div className="hl-resume-role">
-                        Lead Full-Stack AI Engineer
+                        Product Designer · 6 years
                       </div>
 
                     </div>
 
 
                     <div className="hl-resume-mark">
-                      AM
+                      Parsed
                     </div>
 
                   </div>
@@ -2478,10 +2418,11 @@ export function HeroSection({
                     </div>
 
 
-                    <div className="hl-resume-line long" />
-                    <div className="hl-resume-line medium" />
-                    <div className="hl-resume-line long" />
-                    <div className="hl-resume-line short" />
+                    <p className="hl-resume-text">
+                      Product Designer, Lumen
+                      <br />
+                      Led onboarding and design-system work across product teams.
+                    </p>
 
                   </div>
 
@@ -2496,27 +2437,27 @@ export function HeroSection({
                     <div className="hl-resume-skills">
 
                       <span className="hl-skill">
-                        React
+                        Figma
                       </span>
 
                       <span className="hl-skill">
-                        Node.js
+                        Design systems
                       </span>
 
                       <span className="hl-skill">
-                        PostgreSQL
+                        Prototyping
                       </span>
 
                       <span className="hl-skill">
-                        AWS
+                        User research
                       </span>
 
                       <span className="hl-skill">
-                        Python
+                        Accessibility
                       </span>
 
                       <span className="hl-skill">
-                        AI / ML
+                        Product strategy
                       </span>
 
                     </div>
@@ -2531,8 +2472,11 @@ export function HeroSection({
                     </div>
 
 
-                    <div className="hl-resume-line medium" />
-                    <div className="hl-resume-line short" />
+                    <p className="hl-resume-text">
+                      BFA, Communication Design
+                      <br />
+                      California College of the Arts · 2018
+                    </p>
 
                   </div>
 
@@ -2540,11 +2484,11 @@ export function HeroSection({
                   <div className="hl-resume-footer">
 
                     <span>
-                      resume.pdf
+                      maya_chen_resume.pdf
                     </span>
 
                     <span>
-                      Parsed successfully
+                      Sample profile
                     </span>
 
                   </div>
@@ -2591,12 +2535,12 @@ export function HeroSection({
                       <div>
 
                         <div className="hl-insight-label">
-                          HireLabs analysis
+                          Structured profile
                         </div>
 
 
                         <div className="hl-insight-title">
-                          Strong candidate fit
+                          Candidate profile
                         </div>
 
                       </div>
@@ -2605,12 +2549,12 @@ export function HeroSection({
                       <div className="hl-score">
 
                         <span className="hl-score-number">
-                          97.4%
+                          Ready
                         </span>
 
 
                         <span className="hl-score-label">
-                          semantic match
+                          to review
                         </span>
 
                       </div>
@@ -2631,13 +2575,13 @@ export function HeroSection({
                             ✓
                           </span>
 
-                          React &amp; Node.js
+                          Candidate
 
                         </div>
 
 
                         <span className="hl-match-value">
-                          matched
+                          Maya Chen
                         </span>
 
                       </div>
@@ -2651,13 +2595,13 @@ export function HeroSection({
                             ✓
                           </span>
 
-                          System architecture
+                          Current role
 
                         </div>
 
 
                         <span className="hl-match-value">
-                          matched
+                          Product Designer
                         </span>
 
                       </div>
@@ -2671,13 +2615,13 @@ export function HeroSection({
                             ✓
                           </span>
 
-                          5+ years experience
+                          Experience
 
                         </div>
 
 
                         <span className="hl-match-value">
-                          matched
+                          6 years
                         </span>
 
                       </div>
@@ -2691,13 +2635,13 @@ export function HeroSection({
                             ✓
                           </span>
 
-                          AI / ML background
+                          Skills
 
                         </div>
 
 
                         <span className="hl-match-value">
-                          strong fit
+                          6 extracted
                         </span>
 
                       </div>
@@ -2725,41 +2669,19 @@ export function HeroSection({
                 >
 
                   <div className="hl-detail-label">
-                    Vector intelligence
+                    Privacy
                   </div>
 
 
                   <div className="hl-detail-title">
-                    Searchable candidate representation
+                    Candidate files stay private
                   </div>
 
 
                   <div className="hl-vector">
 
-                    [
-                    {' '}
-                    -0.0234,
-                    {' '}
-                    0.0841,
-                    {' '}
-                    -0.0519,
-
-                    <br />
-
-                    0.0911,
-                    {' '}
-                    0.0172,
-                    ...
-                    ]
-
-                    <br />
-                    <br />
-
-                    1536 dimensions
-
-                    <br />
-
-                    cosine distance → 0.026
+                    Files are stored in a private workspace and
+                    accessible only to the signed-in account.
 
                   </div>
 
@@ -2779,67 +2701,12 @@ export function HeroSection({
               <div
                 className="hl-bottom-copy"
               >
-                Scroll to see a resume transform into a
-                ranked candidate signal.
+                Review extracted details alongside the original resume.
               </div>
 
 
-              <div className="hl-metrics">
-
-                <div className="hl-metric">
-
-                  <span className="hl-metric-number">
-                    1536
-                  </span>
-
-                  <span className="hl-metric-label">
-                    Vector dimensions
-                  </span>
-
-                </div>
-
-
-                <div className="hl-metric">
-
-                  <span className="hl-metric-number">
-                    &lt; 85ms
-                  </span>
-
-                  <span className="hl-metric-label">
-                    Match query
-                  </span>
-
-                </div>
-
-
-                <div className="hl-metric">
-
-                  <span className="hl-metric-number">
-                    100%
-                  </span>
-
-                  <span className="hl-metric-label">
-                    RLS scoped
-                  </span>
-
-                </div>
-
-              </div>
-
             </div>
 
-
-            {/* ===============================================
-                SCROLL INDICATOR
-               =============================================== */}
-
-            <div className="hl-scroll-indicator">
-
-              <span className="hl-scroll-line" />
-
-              Scroll to explore
-
-            </div>
 
           </div>
 
