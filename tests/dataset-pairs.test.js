@@ -7,6 +7,9 @@ import { parse } from 'csv-parse/sync';
 import { run, selectPairs, propose } from '../scripts/dataset/propose_pairs.mjs';
 import { columns, validateFit, convertReview } from '../scripts/dataset/review_to_jsonl.mjs';
 
+// macOS and most Linux installs only provide `python3`; Windows provides `python`.
+const PYTHON = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+
 const folders = [];
 function prepare() {
   const out = fs.mkdtempSync(path.join(os.tmpdir(),'hirelabs-pairs-'));
@@ -50,7 +53,7 @@ describe('pair review', () => {
     const csv = [columns.join(','),...rows.map(r => [r.pair_id,r.resume_id,r.jd_id,'','','',0,'weak','Fictional reviewer'].join(','))].join('\n');
     const reviewed = path.join(out,'reviewed.jsonl');
     fs.writeFileSync(reviewed,convertReview(csv,'train'));
-    execFileSync('python',['scripts/dataset/pairs.py',root,'train',reviewed]);
+    execFileSync(PYTHON,['scripts/dataset/pairs.py',root,'train',reviewed]);
     const records = file => fs.readFileSync(file,'utf8').trim().split('\n').map(line => JSON.parse(line));
     expect(records(path.join(root,'pairs/train.jsonl'))).toEqual(records(reviewed));
   });
