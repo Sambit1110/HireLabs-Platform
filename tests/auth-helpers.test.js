@@ -56,6 +56,7 @@ describe('friendlyAuthError', () => {
   it('maps known Supabase codes', () => {
     expect(friendlyAuthError({ code: 'invalid_credentials' }, 'signin')).toMatch(/not correct/);
     expect(friendlyAuthError({ code: 'weak_password' }, 'signup')).toMatch(/too weak/);
+    expect(friendlyAuthError({ code: 'otp_expired' }, 'callback')).toMatch(/already used/);
   });
 
   it('never reveals that an account exists', () => {
