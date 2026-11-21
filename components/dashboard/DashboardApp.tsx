@@ -400,7 +400,7 @@ export default function DashboardApp() {
         throw queryError;
       }
 
-      const records = (data || []) as Resume[];
+      const records = (data || []) as unknown as Resume[];
 
       setResumes(records);
 

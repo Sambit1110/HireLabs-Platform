@@ -12,6 +12,8 @@ import {
 } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
+import { safeRedirectPath } from '@/lib/auth/redirect';
+import { friendlyAuthError } from '@/lib/auth/messages';
 
 function AuthCallback() {
   const router = useRouter();
@@ -121,11 +123,7 @@ function AuthCallback() {
           searchParams.get('next');
 
         const destination =
-          requestedNext &&
-          requestedNext.startsWith('/') &&
-          !requestedNext.startsWith('//')
-            ? requestedNext
-            : '/dashboard';
+          safeRedirectPath(requestedNext);
 
         if (isMounted) {
           router.replace(destination);
@@ -136,9 +134,7 @@ function AuthCallback() {
         }
 
         setMessage(
-          error instanceof Error
-            ? error.message
-            : 'The authentication link could not be verified.'
+          friendlyAuthError(error, 'callback')
         );
       }
     };
