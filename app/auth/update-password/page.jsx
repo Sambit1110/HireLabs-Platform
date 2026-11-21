@@ -8,6 +8,11 @@ import {
 import { useRouter } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
+import { friendlyAuthError } from '@/lib/auth/messages';
+import {
+  PASSWORD_HINT,
+  validatePassword,
+} from '@/lib/auth/password';
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -132,10 +137,11 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setMessage(
-        'Password must be at least 8 characters.'
-      );
+    const passwordProblem =
+      validatePassword(password);
+
+    if (passwordProblem) {
+      setMessage(passwordProblem);
       return;
     }
 
@@ -167,6 +173,16 @@ export default function UpdatePasswordPage() {
         );
       }
 
+      const emailProblem =
+        validatePassword(
+          password,
+          session.user?.email || ''
+        );
+
+      if (emailProblem) {
+        throw new Error(emailProblem);
+      }
+
       const { error } =
         await supabase.auth.updateUser({
           password,
@@ -182,14 +198,16 @@ export default function UpdatePasswordPage() {
 
       window.setTimeout(() => {
         router.replace(
-          '/'
+          '/dashboard'
         );
       }, 700);
     } catch (error) {
       setMessage(
-        error instanceof Error
+        error instanceof Error &&
+          !('code' in error) &&
+          !('status' in error)
           ? error.message
-          : 'Unable to update your password. Please request a new reset link.'
+          : friendlyAuthError(error, 'update')
       );
     } finally {
       setIsLoading(false);
@@ -300,7 +318,8 @@ export default function UpdatePasswordPage() {
                     event.target.value
                   )
                 }
-                placeholder="At least 8 characters"
+                placeholder={PASSWORD_HINT}
+                maxLength={72}
                 autoComplete="new-password"
                 style={{
                   width: '100%',

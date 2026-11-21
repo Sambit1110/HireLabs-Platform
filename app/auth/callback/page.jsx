@@ -12,6 +12,8 @@ import {
 } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/client';
+import { safeRedirectPath } from '@/lib/auth/redirect';
+import { friendlyAuthError } from '@/lib/auth/messages';
 
 function AuthCallback() {
   const router = useRouter();
@@ -37,6 +39,27 @@ function AuthCallback() {
          *
          * ?code=...
          */
+        /*
+         * ---------------------------------------------------------
+         * 0. Supabase reports link problems in the URL
+         * ---------------------------------------------------------
+         *
+         * e.g. ?error=access_denied&error_code=otp_expired
+         * (in the query for PKCE links, in the hash for older links)
+         */
+        const hashErrorParams =
+          typeof window !== 'undefined' && window.location.hash
+            ? new URLSearchParams(window.location.hash.substring(1))
+            : null;
+
+        const linkErrorCode =
+          searchParams.get('error_code') ||
+          hashErrorParams?.get('error_code');
+
+        if (linkErrorCode || searchParams.get('error')) {
+          throw { code: linkErrorCode || 'otp_expired' };
+        }
+
         const code = searchParams.get('code');
 
         if (code) {
@@ -121,11 +144,7 @@ function AuthCallback() {
           searchParams.get('next');
 
         const destination =
-          requestedNext &&
-          requestedNext.startsWith('/') &&
-          !requestedNext.startsWith('//')
-            ? requestedNext
-            : '/dashboard';
+          safeRedirectPath(requestedNext);
 
         if (isMounted) {
           router.replace(destination);
@@ -136,9 +155,7 @@ function AuthCallback() {
         }
 
         setMessage(
-          error instanceof Error
-            ? error.message
-            : 'The authentication link could not be verified.'
+          friendlyAuthError(error, 'callback')
         );
       }
     };

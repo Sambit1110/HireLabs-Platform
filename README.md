@@ -47,7 +47,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
 ## Local Setup
 
-1. **Create a Supabase project.** Under **Authentication → URL Configuration**, set the Site URL to your current environment (`http://localhost:3000` locally, your production domain otherwise) and add `http://localhost:3000/auth/callback` as a redirect URL. Enable email magic links.
+1. **Create a Supabase project.** Under **Authentication → URL Configuration**, set the Site URL to your current environment (`http://localhost:3000` locally, your production domain otherwise) and add `http://localhost:3000/auth/callback` (plus `https://YOUR-DOMAIN/auth/callback` in production) as redirect URLs. Then apply the recommended settings in [Authentication](#authentication).
 
 2. **Run the migration.** Open the Supabase SQL Editor and execute the file in [`supabase/migrations/`](supabase/migrations/) in filename order. Alternatively, link the Supabase CLI and run `supabase db push`.
 
@@ -60,7 +60,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    npm run dev
    ```
 
-   Sign in with a magic link, upload a PDF or DOCX, then submit a job description to test the full flow.
+   Create an account or sign in with email and password, upload a PDF or DOCX, then submit a job description to test the full flow.
 
 5. **Check your changes** before opening a pull request:
 
@@ -80,13 +80,33 @@ Set `RESUME_PYTHON_PATH` when your Python executable is outside `.venv/Scripts/p
 
 ### Development Without Outbound Email
 
-The login screen supports both magic-link and email/password sign-in. To create a local account without configuring SMTP:
+The login screen uses email and password. To create a local account without configuring SMTP:
 
 1. Go to **Supabase → Authentication → Providers → Email** and temporarily disable **Confirm email**.
 2. Use **Create an account** with a password of at least eight characters.
 3. Re-enable confirmation and configure a transactional email provider before deploying to production.
 
-Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-password` to Supabase Auth redirect URLs to support password resets.
+Password reset emails link to `/auth/callback?next=/auth/update-password`, so the `/auth/callback` redirect URLs above are all that's needed.
+
+## Authentication
+
+- **Sessions live in cookies** (`@supabase/ssr`), not localStorage. `proxy.js` (Next.js 16's replacement for middleware) refreshes the session on each page request and redirects signed-out visitors from `/dashboard` and `/dashboard/resumes` to the sign-in dialog, then back to the page they wanted. `/dashboard/results` stays public.
+- **API routes** still verify the bearer token on the server (`lib/supabase/server-auth.js`), and row-level security protects the data. The proxy check is a convenience layer, not the only protection.
+- **Redirects after sign-in** only go to same-site paths (`lib/auth/redirect.js`).
+- **Error messages** are mapped to plain language, and sign-up and password reset never reveal whether an email is registered (`lib/auth/messages.js`).
+- **Passwords** need at least 8 characters with letters and numbers, at most 72, and must not contain the email name (`lib/auth/password.js`).
+
+Recommended Supabase dashboard settings (enforced on the server, so they can't be bypassed):
+
+| Where | Setting |
+|---|---|
+| Authentication → Providers → Email | **Confirm email**: on. **Minimum password length**: 8. **Password requirements**: letters and digits. |
+| Authentication → Attack Protection | **Leaked password protection**: on (if your plan includes it). Optionally enable **CAPTCHA** (hCaptcha or Turnstile); the sign-in form needs a CAPTCHA widget added before you turn this on. |
+| Authentication → Rate Limits | Keep the defaults, or lower the sign-in/sign-up limits for the demo. |
+| Authentication → URL Configuration | Site URL set to your real domain; redirect URLs limited to your own `/auth/callback` URLs. |
+| Authentication → Emails → SMTP | Use your own SMTP provider before real users sign up (the built-in sender is heavily rate limited). |
+
+Existing users are signed out once after this change, because sessions moved from localStorage to cookies.
 
 ## Deploying with GitHub and Vercel
 

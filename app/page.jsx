@@ -7,6 +7,19 @@ import React, {
 } from 'react';
 
 import { createClient } from '@/lib/supabase/client';
+import {
+  DEFAULT_AFTER_LOGIN,
+  safeRedirectPath,
+} from '@/lib/auth/redirect';
+import {
+  RESET_SENT_MESSAGE,
+  SIGNUP_CHECK_EMAIL_MESSAGE,
+  friendlyAuthError,
+} from '@/lib/auth/messages';
+import {
+  PASSWORD_HINT,
+  validatePassword,
+} from '@/lib/auth/password';
 
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
@@ -47,6 +60,38 @@ export default function LandingPage() {
 
   const [isAuthLoading, setIsAuthLoading] =
     useState(false);
+
+  // Where to go after signing in (set when the server redirected a
+  // signed-out visitor away from a protected page).
+  const [afterLogin, setAfterLogin] =
+    useState(DEFAULT_AFTER_LOGIN);
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    if (params.get('auth') !== 'signin') return;
+
+    setAfterLogin(
+      safeRedirectPath(params.get('next'))
+    );
+    setAuthMode('signin');
+    setAuthMessage(
+      'Please sign in to continue.'
+    );
+    setIsAuthModalOpen(true);
+
+    // Remove the auth parameters so a refresh doesn't reopen the dialog.
+    params.delete('auth');
+    params.delete('next');
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`
+    );
+  }, []);
 
   const ctaRef = useRef(null);
 
@@ -159,7 +204,7 @@ export default function LandingPage() {
 
       const { data, error } =
         await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
 
@@ -168,7 +213,7 @@ export default function LandingPage() {
       }
 
       if (data.session) {
-        window.location.href = '/dashboard';
+        window.location.href = afterLogin;
       } else {
         setAuthMessage(
           'Signed in, but no active session was returned. Please try again.'
@@ -176,9 +221,7 @@ export default function LandingPage() {
       }
     } catch (error) {
       setAuthMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to sign in. Please check your email and password.'
+        friendlyAuthError(error, 'signin')
       );
     } finally {
       setIsAuthLoading(false);
@@ -199,7 +242,7 @@ export default function LandingPage() {
 
       const { error } =
         await supabase.auth.resetPasswordForEmail(
-          email,
+          email.trim(),
           {
             redirectTo:
               `${window.location.origin}/auth/callback?next=/auth/update-password`,
@@ -210,14 +253,10 @@ export default function LandingPage() {
         throw error;
       }
 
-      setAuthMessage(
-        'If an account exists for this email, a password reset link has been sent. Check your inbox.'
-      );
+      setAuthMessage(RESET_SENT_MESSAGE);
     } catch (error) {
       setAuthMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to send the password reset email. Please try again.'
+        friendlyAuthError(error, 'reset')
       );
     } finally {
       setIsAuthLoading(false);
@@ -231,6 +270,14 @@ export default function LandingPage() {
     event.preventDefault();
 
     setAuthMessage('');
+
+    const passwordProblem =
+      validatePassword(password, email);
+
+    if (passwordProblem) {
+      setAuthMessage(passwordProblem);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setAuthMessage(
@@ -251,7 +298,7 @@ export default function LandingPage() {
       } =
         await supabase.auth.signUp(
           {
-            email,
+            email: email.trim(),
             password,
             options: {
               emailRedirectTo:
@@ -264,15 +311,12 @@ export default function LandingPage() {
         throw error;
       }
 
+      // When email confirmation is on, Supabase returns the same response
+      // whether or not the email is already registered. Show one message
+      // for both, so the form can't be used to check who has an account.
       if (
-        data.user?.identities
-          ?.length === 0
-      ) {
-        setAuthMessage(
-          'An account already exists for this email. Switch to sign in instead.'
-        );
-      } else if (
-        data.session
+        data.session &&
+        data.user?.identities?.length
       ) {
         setAuthMessage(
           'Account created and signed in. Opening your dashboard…'
@@ -280,20 +324,18 @@ export default function LandingPage() {
 
         window.setTimeout(
           () => {
-            window.location.href = '/dashboard';
+            window.location.href = afterLogin;
           },
           700
         );
       } else {
         setAuthMessage(
-          'Account created. A confirmation email was requested; if it does not arrive, configure Supabase email delivery before trying again.'
+          SIGNUP_CHECK_EMAIL_MESSAGE
         );
       }
     } catch (error) {
       setAuthMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to create the account.'
+        friendlyAuthError(error, 'signup')
       );
     } finally {
       setIsAuthLoading(false);
@@ -2080,9 +2122,10 @@ export default function LandingPage() {
                         }
                         placeholder={
                           authMode === 'signup'
-                            ? 'At least 8 characters'
+                            ? PASSWORD_HINT
                             : 'Enter your password'
                         }
+                        maxLength={72}
                         autoComplete={
                           authMode === 'signin'
                             ? 'current-password'
