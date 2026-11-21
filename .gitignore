@@ -6,3 +6,6 @@ node_modules/
 .venv/
 models/
 *.whl
+
+# TypeScript incremental build cache
+*.tsbuildinfo

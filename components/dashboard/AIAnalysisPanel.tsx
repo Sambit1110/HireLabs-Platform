@@ -9,6 +9,12 @@ import {
 } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
+import { SAMPLE_EVALUATION } from "@/lib/fixtures/sample-evaluation";
+import CandidateEvaluation from "@/components/dashboard/CandidateEvaluation";
+import ModelBadge from "@/components/dashboard/ModelBadge";
+
+const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
 
 type Candidate = {
   id: string;
@@ -27,20 +33,36 @@ type AnalysisResult = {
   role: string;
   data: unknown;
   generatedAt: string;
+  model: ModelInfo;
+  sample?: boolean;
 };
 
 type ApiResponse = {
   success?: boolean;
   data?: {
     result?: unknown;
+    model?: string;
+    model_used?: string;
   };
   error?: {
     message?: string;
   } | string;
 };
 
+/**
+ * Pre-fill the panel from elsewhere on the dashboard (e.g. "Explain score"
+ * in the candidate ranking). Change `key` to apply a new preset.
+ */
+export type AnalysisPreset = {
+  key: number;
+  candidateId: string;
+  role: string;
+  jobDescription: string;
+};
+
 type AIAnalysisPanelProps = {
   candidates: Candidate[];
+  preset?: AnalysisPreset | null;
 };
 
 function isRecord(
@@ -246,6 +268,8 @@ function ResultDisplay({
           analysisType: analysis.mode,
           role: analysis.role,
           generatedAt: analysis.generatedAt,
+          model: analysis.model.id,
+          sample: Boolean(analysis.sample),
           result: analysis.data,
         },
         null,
@@ -278,6 +302,8 @@ function ResultDisplay({
           <p>
             Role: <strong>{analysis.role}</strong>
           </p>
+
+          <ModelBadge model={analysis.model} />
         </div>
 
         <button
@@ -289,6 +315,13 @@ function ResultDisplay({
         </button>
       </div>
 
+      {analysis.sample && (
+        <p className="sample-banner" role="note">
+          SAMPLE DATA: a fictional result for previewing the layout. Not a
+          real evaluation.
+        </p>
+      )}
+
       <p className="resume-note">
         Generated on{" "}
         {new Date(
@@ -299,7 +332,9 @@ function ResultDisplay({
         resume evidence and job requirements.
       </p>
 
-      {sections.length > 0 ? (
+      {analysis.mode === "candidate" && isRecord(analysis.data) ? (
+        <CandidateEvaluation data={analysis.data} />
+      ) : sections.length > 0 ? (
         <div
           className="ai-insights-grid"
           style={{
@@ -355,6 +390,7 @@ function ResultDisplay({
 
 export default function AIAnalysisPanel({
   candidates,
+  preset = null,
 }: AIAnalysisPanelProps) {
   const [candidateId, setCandidateId] = useState("");
   const [role, setRole] = useState("");
@@ -371,11 +407,28 @@ export default function AIAnalysisPanel({
     null
   );
 
+  const sectionRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     return () => {
       controllerRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!preset) return;
+
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    setBusy(false);
+    setResult(null);
+    setError("");
+    setNotice("Job details and candidate filled in from the ranking.");
+    setCandidateId(preset.candidateId);
+    if (preset.role.trim()) setRole(preset.role);
+    setJobDescription(preset.jobDescription);
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [preset]);
 
   const selectedCandidate = useMemo(() => {
     return (
@@ -501,6 +554,7 @@ export default function AIAnalysisPanel({
           mode === "candidate" ? candidateId : null,
         data: payload.data.result,
         generatedAt: new Date().toISOString(),
+        model: describeModel(payload.data),
       });
 
       setNotice(
@@ -524,6 +578,19 @@ export default function AIAnalysisPanel({
     }
   };
 
+  const previewSample = () => {
+    resetOutput();
+    setResult({
+      mode: "candidate",
+      role: role.trim() || "Backend Engineer (sample)",
+      candidateId: null,
+      data: SAMPLE_EVALUATION,
+      generatedAt: new Date().toISOString(),
+      model: describeModel({ model_used: "hirelabs-evaluator" }),
+      sample: true,
+    });
+  };
+
   const cancelAnalysis = () => {
     controllerRef.current?.abort();
     controllerRef.current = null;
@@ -534,6 +601,7 @@ export default function AIAnalysisPanel({
 
   return (
     <section
+      ref={sectionRef}
       className="dashboard-card ai-analysis"
       aria-labelledby="ai-analysis-heading"
     >
@@ -706,6 +774,17 @@ export default function AIAnalysisPanel({
             onClick={cancelAnalysis}
           >
             Cancel
+          </button>
+        )}
+
+        {SHOW_SAMPLE_PREVIEW && !busy && (
+          <button
+            type="button"
+            className="dashboard-secondary"
+            onClick={previewSample}
+            title="Development only: shows fictional data"
+          >
+            Preview sample result
           </button>
         )}
 
