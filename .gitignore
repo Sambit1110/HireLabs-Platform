@@ -30,3 +30,4 @@ test_gemini.js
 update_regex.js
 update_route.js
 write_route.js
+*.spacy
