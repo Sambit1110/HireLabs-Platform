@@ -12,7 +12,10 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/resume/ResumeUpload";
-import AIAnalysisPanel from "@/components/dashboard/AIAnalysisPanel";
+import AIAnalysisPanel, {
+  type AnalysisPreset,
+} from "@/components/dashboard/AIAnalysisPanel";
+import CandidateRanking from "@/components/dashboard/CandidateRanking";
 
 type Resume = {
   id: string;
@@ -362,6 +365,22 @@ export default function DashboardApp() {
     string[]
   >([]);
 
+  const [analysisPreset, setAnalysisPreset] =
+    useState<AnalysisPreset | null>(null);
+
+  const explainCandidate = (
+    candidateId: string,
+    role: string,
+    jobDescription: string
+  ) => {
+    setAnalysisPreset((current) => ({
+      key: (current?.key || 0) + 1,
+      candidateId,
+      role,
+      jobDescription,
+    }));
+  };
+
   const load = useCallback(async () => {
     if (!user) return;
 
@@ -693,6 +712,10 @@ export default function DashboardApp() {
           >
             Resume library
           </Link>
+
+          <Link href="/dashboard/results">
+            Model results
+          </Link>
         </nav>
 
         <div className="dashboard-account">
@@ -844,7 +867,15 @@ export default function DashboardApp() {
             </div>
           </div>
 
-          <AIAnalysisPanel candidates={aiCandidates} />
+          <CandidateRanking
+            resumes={resumes}
+            onExplain={explainCandidate}
+          />
+
+          <AIAnalysisPanel
+            candidates={aiCandidates}
+            preset={analysisPreset}
+          />
         </section>
 
         {!library && (

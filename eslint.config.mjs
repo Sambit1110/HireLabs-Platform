@@ -16,25 +16,6 @@ export default [
       "legacy/**",
       "out/**",
       "*.min.js",
-      // Root-level one-off codemod / legacy static prototype scripts.
-      // They are not imported by the Next.js app (see legacy/README.md).
-      "app.js",
-      "make_route.js",
-      "map_fields.js",
-      "modify_demo.js",
-      "remove_git.js",
-      "remove_modal.js",
-      "remove_modal_lines.js",
-      "replace_card.js",
-      "replace_card2.js",
-      "safe_mod.js",
-      "supabase.js",
-      "test_api.js",
-      "test_api2.js",
-      "test_gemini.js",
-      "update_regex.js",
-      "update_route.js",
-      "write_route.js",
       // .ts/.tsx are excluded from ESLint: typescript-eslint does not support
       // the TypeScript 7.x toolchain pinned in this repo. Type safety for these
       // files is enforced by `npm run typecheck` (tsc --noEmit).
