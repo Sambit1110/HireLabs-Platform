@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import sys
 
@@ -19,7 +20,7 @@ def unique(values):
 
 def experience_from_text(text, entities):
     for entity in entities:
-        if entity["label"] == "YEARS OF EXPERIENCE":
+        if entity["label"] in {"YEARS OF EXPERIENCE", "YEARS_EXPERIENCE"}:
             match = re.search(
                 r"\b(\d+(?:\.\d+)?)\s*(?:\+?\s*years?|yrs?)\b",
                 entity["text"],
@@ -45,9 +46,13 @@ def main():
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Resume text is required.")
 
-    import en_Resume_Parser_pipeline
-
-    nlp = en_Resume_Parser_pipeline.load()
+    model = os.environ.get("HIRELABS_PARSER_MODEL")
+    if model:
+        import spacy
+        nlp = spacy.load(model)
+    else:
+        import en_Resume_Parser_pipeline
+        nlp = en_Resume_Parser_pipeline.load()
     doc = nlp(text[:50000])
     entities = [
         {"text": entity.text, "label": entity.label_}
@@ -61,10 +66,11 @@ def main():
 
     name = unique(by_label.get("NAME", []))[0:1]
     title = unique(
-        by_label.get("WORKED AS", [])
+        by_label.get("TITLE", [])
+        + by_label.get("WORKED AS", [])
         + by_label.get("DESIGNATION", [])
     )[0:1]
-    skills = unique(by_label.get("SKILLS", []))
+    skills = unique(by_label.get("SKILL", []) + by_label.get("SKILLS", []))
 
     json.dump(
         {
