@@ -1,0 +1,17 @@
+Senior Backend Engineer (Node.js & Cloud Infrastructure)
+
+About the Role:
+We are seeking an experienced Senior Backend Engineer to design and scale our next-generation distributed backend platform. You will lead the architecture of high-throughput microservices, optimize database performance, and deploy scalable containerized services to AWS.
+
+Key Responsibilities:
+- Design, build, and maintain mission-critical backend services in Node.js and TypeScript.
+- Architect high-performance PostgreSQL databases, indexing strategies, and caching solutions with Redis.
+- Orchestrate and manage containerized microservices using Docker and Kubernetes in AWS.
+- Collaborate with frontend engineers and product teams to define resilient REST and GraphQL APIs.
+
+Requirements:
+- 5+ years of software engineering experience focusing on backend and distributed systems.
+- Deep expertise in Node.js, TypeScript, and modern JavaScript runtime environments.
+- Strong proficiency with PostgreSQL, schema design, query optimization, and connection pooling.
+- Hands-on experience with Docker, Kubernetes, and AWS cloud services (ECS, RDS, S3).
+- Solid understanding of asynchronous patterns, message queues (Kafka/RabbitMQ), and microservice resilience.

@@ -1,0 +1,16 @@
+Senior Frontend Engineer (React, Next.js & TypeScript)
+
+About the Role:
+We are looking for a Senior Frontend Engineer to build modern, responsive, and high-performance web applications. You will be responsible for defining our frontend architecture, maintaining our design system, and ensuring top-tier user experiences.
+
+Key Responsibilities:
+- Build responsive, accessible web interfaces using React 18/19, Next.js App Router, and TypeScript.
+- Architect client state management and server state caching with tools like React Query, Zustand, or Redux.
+- Implement modular, accessible UI components with Tailwind CSS and Radix UI.
+- Drive web performance optimization, targeting excellent Core Web Vitals and SEO metrics.
+
+Requirements:
+- 4+ years of professional frontend development experience with modern React ecosystems.
+- Deep proficiency in TypeScript, React, and Next.js (App Router preferred).
+- Expertise in Tailwind CSS, CSS architecture, and accessible component libraries.
+- Strong track record of improving web performance, bundle size optimization, and automated testing (Vitest / Jest).

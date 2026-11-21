@@ -1,6 +1,6 @@
 # HireLabs
 
-An AI-assisted resume workspace built with the Next.js App Router and Supabase (Auth, Postgres, Storage). Recruiters upload PDF/DOCX resumes into a private storage bucket, HireLabs parses them, and the dashboard ranks candidates against a job description and explains each evaluation. Resume files and profile data are scoped to the signed-in user through row-level security.
+An AI-assisted resume workspace built with the Next.js App Router, Supabase (Auth, Postgres, Storage), custom fine-tuned `hirelabs-matcher` embeddings (384d), and pgvector. Recruiters upload PDF/DOCX resumes into a private storage bucket, HireLabs parses them, and the dashboard ranks candidates against a job description and explains each evaluation. Resume files, embeddings, and profile data are scoped to the signed-in user through row-level security.
 
 ## Status
 
@@ -9,7 +9,7 @@ An AI-assisted resume workspace built with the Next.js App Router and Supabase (
 | Auth, upload, private storage, resume library | Built |
 | Resume parsing | Built. A downloaded spaCy model (`en_Resume_Parser_pipeline`) runs first, with Gemini as the fallback. Our own trained parser (`hirelabs-parser`) is in progress. |
 | Candidate evaluation | Built on Gemini. Our fine-tuned evaluator (`hirelabs-evaluator`) is in progress and will become the primary model. |
-| Semantic matching | Dashboard UI built. The `/api/match` endpoint, pgvector migration and `hirelabs-matcher` model are in progress (see [`docs/api/MATCH_CONTRACT.md`](docs/api/MATCH_CONTRACT.md)). |
+| Semantic matching | Built. The `/api/match` endpoint, pgvector HNSW migration (`supabase/migrations/005_semantic_matching.sql`), and `hirelabs-matcher` model (384d fine-tuned from `BAAI/bge-small-en-v1.5`) are implemented (see [`docs/api/MATCH_CONTRACT.md`](docs/api/MATCH_CONTRACT.md)). |
 | Model results page | Built. It shows real numbers once the evaluation script writes `public/model-results.json` (see [`docs/results/RESULTS_FORMAT.md`](docs/results/RESULTS_FORMAT.md)). |
 
 ## Dashboard features
@@ -67,7 +67,6 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    ```bash
    npm run check
    ```
-
 ### Resume trained-model setup
 
 The resume parser uses the included spaCy transformer/NER wheel as the primary extraction model. Gemini remains a fallback for environments where the Python model cannot run.
@@ -112,7 +111,7 @@ Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-passwo
 - The migration enables RLS on every application table and restricts storage paths to `<auth-user-id>/...`.
 - The planned `match_resumes` function must filter by `auth.uid()`, so users can't see each other's resumes (see `docs/api/MATCH_CONTRACT.md`).
 - Explanations are instructed to rely on supplied evidence, flag gaps, and avoid protected characteristics. Treat AI scoring as decision support — retain human review and audit logs.
-- The planned embedding column must match the embedding model's dimension count (384 for the `bge-small` family). Changing models requires a new column and index migration.
+- Semantic matching uses our fine-tuned `hirelabs-matcher` embedding model (384 dimensions, fine-tuned from `BAAI/bge-small-en-v1.5`), stored with pgvector and indexed via HNSW. Changing the embedding model or dimension count requires a corresponding vector column and index migration.
 
 ## AI copilot configuration
 

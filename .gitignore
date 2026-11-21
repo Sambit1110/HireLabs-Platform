@@ -6,6 +6,27 @@ node_modules/
 .venv/
 models/
 *.whl
-
-# TypeScript incremental build cache
+*.safetensors
+*.gguf
+*.bin
+HireLabs-Data/
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
+
+# Scratch and one-off helper scripts
+make_route.js
+map_fields.js
+modify_demo.js
+remove_git.js
+remove_modal.js
+remove_modal_lines.js
+replace_card.js
+replace_card2.js
+safe_mod.js
+test_api.js
+test_api2.js
+test_gemini.js
+update_regex.js
+update_route.js
+write_route.js

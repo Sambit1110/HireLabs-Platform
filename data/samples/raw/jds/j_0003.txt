@@ -1,0 +1,16 @@
+Machine Learning Engineer - Semantic Search & NLP
+
+About the Role:
+Join our AI platform team to build state-of-the-art semantic search, neural retrieval, and dense embedding systems. You will fine-tune contrastive embedding models, optimize vector retrieval with pgvector/HNSW, and deploy production inference microservices.
+
+Key Responsibilities:
+- Fine-tune dense retrieval and sentence embedding models using PyTorch and Hugging Face / Sentence-Transformers.
+- Design and benchmark vector retrieval pipelines with pgvector, HNSW indexes, and hybrid BM25 search.
+- Package and serve low-latency inference models using FastAPI, Docker, and ONNX Runtime.
+- Evaluate information retrieval metrics: Recall@K, MRR, and NDCG on domain-specific datasets.
+
+Requirements:
+- 3+ years of experience developing and deploying machine learning or NLP models.
+- Deep knowledge of Transformer architectures, contrastive learning (MultipleNegativesRankingLoss), and dense representations.
+- Proficient in Python, PyTorch, Hugging Face Transformers, and Sentence-Transformers.
+- Experience with vector databases, pgvector, similarity search metrics (cosine, dot product), and embedding serving.

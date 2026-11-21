@@ -1,0 +1,20 @@
+Devon Miller
+Junior Web Developer
+Email: devon.miller@example.com | GitHub: github.com/devonmiller
+
+PROFESSIONAL SUMMARY
+Motivated Junior Web Developer with 1 year of internship experience building responsive landing pages and simple web interfaces. Eager to expand skills in modern frontend frameworks and responsive web design.
+
+TECHNICAL SKILLS
+- Core Web: HTML5, CSS3, JavaScript (basic ES6)
+- Libraries: jQuery, Bootstrap 5, Introductory React
+- Version Control: Git, GitHub
+
+EXPERIENCE
+Junior Web Developer Intern | Local Web Agency (2023 - 2024)
+- Converted design mockups into static HTML/CSS/JavaScript web pages.
+- Assisted in updating website content, fixing layout bugs across browser sizes.
+- Created interactive forms with client-side JavaScript validation.
+
+EDUCATION
+Associate Degree in Web Development (2021 - 2023)
