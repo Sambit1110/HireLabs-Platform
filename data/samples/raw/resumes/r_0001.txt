@@ -1,0 +1,27 @@
+Priya Raman
+Senior Backend Engineer | Distributed Systems & Cloud Infrastructure
+Email: priya.raman@example.com | GitHub: github.com/priyaraman | LinkedIn: linkedin.com/in/priyaraman
+
+PROFESSIONAL SUMMARY
+Results-driven Backend Engineer with 7 years of experience designing and scaling fault-tolerant microservices, distributed architectures, and cloud infrastructure. Proficient in Node.js, Go, PostgreSQL, Docker, Kubernetes, and AWS. Reduced latency by 45% through query optimization and distributed caching with Redis.
+
+TECHNICAL SKILLS
+- Languages: JavaScript (ES6+), TypeScript, Node.js, Go, Python, SQL
+- Databases & Storage: PostgreSQL, Redis, MongoDB, pgvector
+- Cloud & DevOps: AWS (EC2, S3, RDS, ECS), Docker, Kubernetes, Terraform, CI/CD GitHub Actions
+- Architecture: Microservices, RESTful APIs, GraphQL, Event-Driven Architecture, Kafka, RabbitMQ
+
+PROFESSIONAL EXPERIENCE
+Senior Backend Engineer | CloudScale Tech (2022 - Present)
+- Designed and maintained high-throughput RESTful and event-driven microservices using Node.js and PostgreSQL, processing over 15M daily requests.
+- Implemented database indexing, connection pooling, and pgvector cosine similarity search, reducing query response times by 40%.
+- Containerized backend workloads using Docker and orchestrated multi-region deployments with Kubernetes on AWS.
+- Led the migration from monolithic backend to decoupled microservices with Kafka message brokers.
+
+Backend Developer | Nexa Innovations (2019 - 2022)
+- Built scalable backend services with Express.js, TypeScript, and PostgreSQL.
+- Architected automated CI/CD pipelines deploying to AWS ECS and RDS instances.
+- Optimized database schemas and wrote high-performance complex SQL aggregations.
+
+EDUCATION
+B.Tech in Computer Science & Engineering | National Institute of Technology (2015 - 2019)

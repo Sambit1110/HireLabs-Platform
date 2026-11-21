@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it } from 'vitest';
 import assert from 'node:assert/strict';
 
 import { clearAllResumes, requestParse, uploadResume } from '../lib/resume/service.js';
@@ -6,7 +6,7 @@ import { clearAllResumes, requestParse, uploadResume } from '../lib/resume/servi
 const USER = '11111111-1111-1111-1111-111111111111';
 
 /** Minimal in-memory stand-in for the Supabase client surface used by the service. */
-function fakeSupabase({ rows = [], objects = [], failRemove = new Set(), failInsert = false } = {}) {
+function fakeSupabase({ rows = [], objects = [], _failRemove = new Set(), failInsert = false } = {}) {
   const db = { rows: rows.map((row) => ({ ...row })), failDelete: false };
   const storage = { objects: new Set(objects), removeCalls: [] };
 

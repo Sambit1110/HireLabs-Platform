@@ -18,35 +18,35 @@ export function ArchitectureFlow() {
       title: 'Secure Upload',
       short: 'Start with the source',
       desc:
-        'PDF/DOCX uploaded straight from the browser to a private, user-scoped Supabase Storage bucket.',
+        'PDF/DOCX uploaded to user-scoped private Supabase Storage bucket.',
       label: 'PRIVATE INPUT',
       visual: 'upload',
     },
     {
       num: '02',
-      title: 'Server Parse',
+      title: 'LLM Normalize',
       short: 'Turn a resume into structure',
       desc:
-        'The server fetches the file from storage, extracts the text, and pulls out name, title, experience, and skills.',
+        'Gemini extracts candidate profile, skills ontology, and work history.',
       label: 'STRUCTURED DATA',
       visual: 'normalize',
     },
     {
       num: '03',
-      title: 'Skill Extraction',
-      short: 'Create a comparable signal',
+      title: '1536-dim Embed',
+      short: 'Create a searchable signal',
       desc:
-        'Skills are normalized against a curated catalog with exact aliases (JS → JavaScript, Node → Node.js).',
-      label: 'SKILL SIGNAL',
+        'Vector representation generated via Gemini Embedding-002 model.',
+      label: 'VECTOR SIGNAL',
       visual: 'embed',
     },
     {
       num: '04',
-      title: 'Transparent Match',
-      short: 'Rank the candidates',
+      title: 'pgvector RPC',
+      short: 'Find the closest candidates',
       desc:
-        'Score = required skills found ÷ required skills, computed over the signed-in user’s own resumes.',
-      label: 'SKILL MATCHING',
+        'Cosine distance calculated in Postgres filtered by signed-in auth.uid().',
+      label: 'SEMANTIC SEARCH',
       visual: 'search',
     },
     {
@@ -54,7 +54,7 @@ export function ArchitectureFlow() {
       title: 'Explain & Rank',
       short: 'Make the result useful',
       desc:
-        'Every result lists matched and missing skills; optional Gemini deep dives add strengths, gaps, and interview questions.',
+        'AI generates evidence quotes and flags gap analysis for HR decision support.',
       label: 'DECISION SUPPORT',
       visual: 'explain',
     },
@@ -3147,7 +3147,7 @@ export function ArchitectureFlow() {
                       <div className="hl-profile-mini">
 
                         <div className="hl-mini-heading">
-                          Parsed profile
+                          Gemini profile
                         </div>
 
 
@@ -3194,7 +3194,7 @@ export function ArchitectureFlow() {
                     >
 
                       <div className="hl-embedding-label">
-                        Skill catalog
+                        Gemini Embedding-002
                       </div>
 
 
@@ -3225,11 +3225,11 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            Whole-token
+                            1536
                           </strong>
 
                           <span>
-                            matching
+                            dimensions
                           </span>
 
                         </div>
@@ -3238,11 +3238,11 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            Aliases
+                            Vector
                           </strong>
 
                           <span>
-                            normalized
+                            representation
                           </span>
 
                         </div>
@@ -3251,7 +3251,7 @@ export function ArchitectureFlow() {
                         <div className="hl-embed-stat">
 
                           <strong>
-                            Explainable
+                            Searchable
                           </strong>
 
                           <span>
@@ -3281,7 +3281,7 @@ export function ArchitectureFlow() {
                       <div className="hl-query-box">
 
                         <div className="hl-query-label">
-                          Role requirements
+                          Semantic query
                         </div>
 
 
@@ -3316,7 +3316,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            88%
+                            97.4%
                           </div>
 
                         </div>
@@ -3344,7 +3344,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            63%
+                            84.7%
                           </div>
 
                         </div>
@@ -3372,7 +3372,7 @@ export function ArchitectureFlow() {
 
 
                           <div className="hl-search-score">
-                            25%
+                            71.2%
                           </div>
 
                         </div>
@@ -3402,7 +3402,7 @@ export function ArchitectureFlow() {
                           <div className="hl-score-circle">
 
                             <span>
-                              88%
+                              97%
                             </span>
 
                           </div>

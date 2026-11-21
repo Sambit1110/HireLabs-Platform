@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createClient } from '../../lib/supabase/client';
-import { useAuthSession } from '../../hooks/useAuthSession';
 
 /**
  * HireLabs Navigation
@@ -18,7 +17,7 @@ import { useAuthSession } from '../../hooks/useAuthSession';
 export function Navbar({ onOpenAuthModal }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user } = useAuthSession();
+  const [user, setUser] = useState(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const supabase = useMemo(() => {
@@ -74,13 +73,38 @@ export function Navbar({ onOpenAuthModal }) {
       const { error } = await supabase.auth.signOut();
 
       if (error) throw error;
-      // useAuthSession receives SIGNED_OUT and updates every consumer; no reload needed.
+
+      setUser(null);
+      window.location.href = '/';
     } catch (error) {
       console.error('Sign out failed:', error);
-    } finally {
       setIsSigningOut(false);
     }
   };
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (mounted) setUser(data.user ?? null);
+    };
+
+    void loadUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (mounted) setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     const handleScroll = () => {

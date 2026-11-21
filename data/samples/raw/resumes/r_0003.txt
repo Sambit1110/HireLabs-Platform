@@ -1,0 +1,26 @@
+Dr. Elena Rostova
+Machine Learning Engineer & NLP Researcher
+Email: elena.rostova@example.com | Scholar: scholar.google.com/elena | GitHub: github.com/erostova
+
+PROFESSIONAL SUMMARY
+Machine Learning Engineer with 5+ years of specialized experience in Natural Language Processing (NLP), Transformer architectures, semantic search, and dense vector embeddings. Experienced in fine-tuning Sentence-Transformers, Hugging Face models, and deploying low-latency model inference pipelines with FastAPI and ONNX Runtime.
+
+TECHNICAL SKILLS
+- Machine Learning & Deep Learning: PyTorch, Hugging Face Transformers, Sentence-Transformers, Scikit-Learn
+- NLP & Semantic Retrieval: Dense Embeddings, BGE, ColBERT, BM25, FAISS, pgvector, Vector Databases
+- Languages: Python, C++, SQL, Bash
+- Tools & Serving: FastAPI, Docker, Triton Inference Server, Ray, MLflow, ONNX
+
+PROFESSIONAL EXPERIENCE
+Lead ML Engineer | SemanticSearch AI (2021 - Present)
+- Trained domain-specific contrastive embedding models using MultipleNegativesRankingLoss, boosting retrieval Recall@5 by 24% over generic baseline models.
+- Built end-to-end vector retrieval pipelines integrating pgvector and HNSW indexing for 10M+ documents.
+- Deployed real-time inference microservices with FastAPI and PyTorch on GPU/CPU instances with sub-50ms p99 latency.
+
+Data Scientist / ML Researcher | Vector Labs (2019 - 2021)
+- Developed text classification, named entity recognition (NER), and semantic similarity scoring systems.
+- Published research papers on contrastive representation learning for technical domain corpora.
+
+EDUCATION
+Ph.D. in Computer Science (NLP Focus) | Institute of Computing (2015 - 2019)
+M.S. in Artificial Intelligence (2013 - 2015)

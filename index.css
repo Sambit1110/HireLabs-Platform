@@ -2684,3 +2684,49 @@ textarea {
   }
 
 }
+/* Authenticated resume workspace */
+.dashboard-shell { min-height: 100vh; background: #f7f6f3; color: #25221f; }
+.dashboard-header { min-height: 72px; display: flex; align-items: center; gap: 32px; padding: 12px max(24px, calc((100vw - 1180px) / 2)); background: #fff; border-bottom: 1px solid #e8e5df; }
+.dashboard-brand { color: inherit; text-decoration: none; font-weight: 800; font-size: 21px; }
+.dashboard-header nav { display: flex; gap: 20px; flex: 1; }
+.dashboard-header nav a, .dashboard-section-heading a { color: #625d56; text-decoration: none; }
+.dashboard-header nav a[aria-current="page"] { color: #23211e; font-weight: 700; }
+.dashboard-account { display: flex; align-items: center; gap: 16px; color: #625d56; font-size: 13px; }
+.dashboard-logout, .dashboard-secondary, .dashboard-danger { border: 1px solid #d8d3ca; background: #fff; border-radius: 8px; padding: 9px 13px; color: inherit; cursor: pointer; }
+.dashboard-danger { color: #a52a24; border-color: #e6c6c2; }
+.dashboard-content { max-width: 1180px; margin: 0 auto; padding: 44px 24px 80px; }
+.dashboard-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+.dashboard-heading h1 { margin: 4px 0 8px; font-size: clamp(28px, 4vw, 38px); }
+.dashboard-heading p { color: #6b665e; }
+.dashboard-eyebrow { color: #787168; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
+.dashboard-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 24px 0; }
+.dashboard-stat, .dashboard-card, .dashboard-empty, .dashboard-skeleton { padding: 20px; background: #fff; border: 1px solid #e8e5df; border-radius: 12px; }
+.dashboard-stat span { display: block; color: #706a62; font-size: 13px; }
+.dashboard-stat strong { display: block; margin-top: 8px; font-size: 28px; }
+.dashboard-card { margin: 24px 0; }
+.dashboard-card h2, .dashboard-section-heading h2 { margin-top: 0; }
+.dashboard-label { display: block; margin: 16px 0 7px; font-weight: 600; }
+.resume-upload-card input[type="file"] { display: block; max-width: 100%; margin-bottom: 16px; }
+.upload-results { padding-left: 20px; }
+.text-success { color: #23734b; }.text-error { color: #a52a24; }
+.dashboard-section-heading { display: flex; justify-content: space-between; align-items: center; margin: 34px 0 14px; }
+.dashboard-resume-list { display: grid; gap: 12px; }
+.dashboard-resume { display: flex; justify-content: space-between; gap: 24px; padding: 19px 20px; background: #fff; border: 1px solid #e8e5df; border-radius: 12px; }
+.resume-title-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.resume-title-line h3 { margin: 0; font-size: 17px; }
+.dashboard-resume p { margin: 7px 0; color: #625d56; font-size: 14px; }
+.dashboard-resume .resume-filename { color: #25221f; font-weight: 600; }
+.resume-meta { font-size: 12px !important; }
+.resume-status { border-radius: 99px; padding: 4px 9px; background: #f1eee8; font-size: 11px; font-weight: 700; }
+.status-parsed { color: #23734b; background: #e8f4ec; }.status-failed { color: #a52a24; background: #f9eae8; }.status-processing { color: #8a6415; background: #fbf3de; }
+.resume-skills { max-width: 780px; }.resume-note { color: #855e15 !important; }
+.resume-actions { display: flex; align-items: center; gap: 8px; }
+.dashboard-empty { text-align: center; padding: 44px 20px; }
+.dashboard-alert { padding: 12px 15px; background: #f9eae8; color: #912c26; border-radius: 8px; }
+.dashboard-shell button:focus-visible, .dashboard-header a:focus-visible, .dashboard-shell input:focus-visible { outline: 3px solid #477fe5; outline-offset: 3px; }
+.ai-analysis-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; }.ai-analysis-fields .dashboard-label:nth-child(2) { grid-row: span 2; }
+.ai-analysis-input { box-sizing: border-box; display: block; width: 100%; margin-top: 7px; padding: 10px 12px; border: 1px solid #d8d3ca; border-radius: 8px; background: #fff; color: #25221f; font: inherit; }
+.ai-analysis-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }.ai-analysis-result { max-height: 480px; overflow: auto; margin-top: 18px; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; background: #f7f6f3; border-radius: 8px; font-size: 12px; }
+@media (max-width: 720px) { .dashboard-header { flex-wrap: wrap; gap: 12px 20px; padding: 14px 18px; }.dashboard-header nav { order: 3; width: 100%; }.dashboard-account { margin-left: auto; }.dashboard-content { padding: 28px 16px 56px; }.dashboard-stats { grid-template-columns: repeat(2, 1fr); }.dashboard-resume { flex-direction: column; }.resume-actions { justify-content: flex-start; flex-wrap: wrap; } }
+@media (max-width: 720px) { .ai-analysis-fields { grid-template-columns: 1fr; }.ai-analysis-fields .dashboard-label:nth-child(2) { grid-row: auto; } }
+@media (max-width: 430px) { .dashboard-account span { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }.dashboard-stats { gap: 8px; }.dashboard-stat { padding: 15px; } }

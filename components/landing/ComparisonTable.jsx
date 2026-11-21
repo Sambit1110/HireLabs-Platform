@@ -15,35 +15,35 @@ export function ComparisonTable() {
     {
       label: 'Matching method',
       legacy:
-        'Raw keyword or substring search',
+        'Exact string / regex matching',
       hirelabs:
-        'Whole-token matching against a curated skill catalog',
+        '1536-dimensional semantic vectors',
       legacyNote:
-        '“Java” matches “JavaScript”; noise inflates scores',
+        'Brittle phrasing dependency',
       hirelabsNote:
-        'No partial-word false positives',
+        'Meaning-aware representation',
     },
     {
-      label: 'Equivalent spellings',
+      label: 'Context awareness',
       legacy:
         'Misses equivalent phrasing such as “K8s” vs “Kubernetes”',
       hirelabs:
-        'Known aliases resolve to one skill (K8s → Kubernetes, JS → JavaScript)',
+        'Understands domain equivalents and architecture context',
       legacyNote:
-        'The same skill can look different',
+        'Same meaning can look different',
       hirelabsNote:
-        'Consistent, deterministic normalization',
+        'Context survives wording changes',
     },
     {
       label: 'Match explanation',
       legacy:
         'Opaque score with no rationale',
       hirelabs:
-        'Matched and missing skills listed for every candidate',
+        'Evidence citations and qualification-gap signals',
       legacyNote:
         'Hard to audit',
       hirelabsNote:
-        'Score = matched ÷ required skills',
+        'Clear supporting evidence',
     },
     {
       label: 'Security',
@@ -57,15 +57,15 @@ export function ComparisonTable() {
         'Database-enforced boundaries',
     },
     {
-      label: 'Bulk processing',
+      label: 'Search architecture',
       legacy:
-        'Resumes processed one at a time',
+        'Separate search infrastructure and sync overhead',
       hirelabs:
-        'Server-side parsing, several resumes in parallel',
+        'pgvector directly inside PostgreSQL',
       legacyNote:
-        'One bad file can stall the batch',
+        'Another system to synchronize',
       hirelabsNote:
-        'Each result appears as soon as it is ready',
+        'Search where the data already lives',
     },
   ];
 
@@ -1626,7 +1626,7 @@ export function ComparisonTable() {
 
               <span className="hl-comparison-kicker-dot" />
 
-              Why transparent matching matters
+              Why semantic matching matters
 
             </div>
 
@@ -1650,9 +1650,9 @@ export function ComparisonTable() {
 
             <p className="hl-comparison-description">
               Traditional ATS workflows are built around
-              finding raw words and hiding how a score was reached. HireLabs
-              extracts real skills, resolves common aliases,
-              and shows exactly which requirements each resume meets.
+              finding exact words. HireLabs looks at the
+              relationship between skills, experience,
+              context, and the role itself.
             </p>
 
 
@@ -1691,7 +1691,7 @@ export function ComparisonTable() {
 
 
             <div className="hl-comparison-top-cell hirelabs">
-              HireLabs skill-based ATS
+              HireLabs semantic ATS
             </div>
 
           </div>

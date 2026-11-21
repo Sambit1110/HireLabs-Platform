@@ -6,21 +6,21 @@ export function FeaturesGrid() {
   const features = [
     {
       number: '01',
-      eyebrow: 'SKILLS',
-      title: 'Real skills, not raw keywords.',
+      eyebrow: 'UNDERSTANDING',
+      title: 'Meaning, not just keywords.',
       description:
-        'Resumes are scanned against a curated skill catalog with whole-token matching and exact aliases, so “Java” never matches “JavaScript” and “K8s” still counts as Kubernetes.',
-      tags: ['Skill Catalog', 'Exact Aliases'],
+        'Gemini embeddings capture technical skills, seniority, and cross-domain experience so candidate discovery is based on meaning rather than simple keyword overlap.',
+      tags: ['Gemini Embeddings', '1536 Dimensions'],
       featured: true,
       visual: 'embedding',
     },
     {
       number: '02',
-      eyebrow: 'BATCH',
-      title: 'Scan a stack of resumes at once.',
+      eyebrow: 'SEARCH',
+      title: 'Search candidates at database speed.',
       description:
-        'Upload up to 20 PDF or DOCX files. The server parses several in parallel and each result appears the moment it is ready — one bad file never blocks the rest.',
-      tags: ['Parallel Parsing', 'Per-file Status'],
+        'Native Postgres cosine-distance queries with pgvector and HNSW indexing keep semantic candidate search fast without maintaining a separate vector database.',
+      tags: ['pgvector', 'HNSW', '<85ms'],
       visual: 'search',
     },
     {
@@ -28,7 +28,7 @@ export function FeaturesGrid() {
       eyebrow: 'SECURITY',
       title: 'Every team sees its own data.',
       description:
-        'Resume records, parsed profiles, and files are scoped to the authenticated user through Supabase Row Level Security, and every API request is verified server-side.',
+        'Candidate records, vectors, and files are scoped to the authenticated user through Supabase Row Level Security.',
       tags: ['RLS', 'Private Storage'],
       visual: 'security',
     },
@@ -46,8 +46,8 @@ export function FeaturesGrid() {
       eyebrow: 'EXPLAINABILITY',
       title: 'Know why the candidate ranked.',
       description:
-        'Every score lists the matched and missing skills behind it. Optional Gemini deep dives are instructed to cite resume evidence and avoid protected characteristics.',
-      tags: ['Matched Skills', 'Gap Analysis'],
+        'Match explanations stay grounded in supplied evidence, highlight qualification gaps, and avoid using protected demographic traits.',
+      tags: ['Evidence', 'Gap Analysis'],
       visual: 'explain',
     },
     {
@@ -56,7 +56,7 @@ export function FeaturesGrid() {
       title: 'A modern stack underneath.',
       description:
         'Built around Next.js App Router, authenticated routes, server-side rendering, and cloud-ready deployment primitives.',
-      tags: ['Next.js 16', 'Vercel Ready'],
+      tags: ['Next.js 15', 'Vercel Ready'],
       visual: 'stack',
     },
   ];
@@ -66,8 +66,8 @@ export function FeaturesGrid() {
       return (
         <div className="hl-feature-visual hl-embedding-visual">
           <div className="hl-embedding-header">
-            <span>Skill signal</span>
-            <span>WHOLE-TOKEN</span>
+            <span>Candidate representation</span>
+            <span>1536 DIM</span>
           </div>
 
           <div
@@ -98,13 +98,13 @@ export function FeaturesGrid() {
 
           <div className="hl-embedding-bottom">
             <div>
-              <strong>Precise</strong>
-              <span>no partial words</span>
+              <strong>Semantic</strong>
+              <span>meaning retained</span>
             </div>
 
             <div>
-              <strong>Normalized</strong>
-              <span>known aliases</span>
+              <strong>Searchable</strong>
+              <span>vector signal</span>
             </div>
 
             <div>
@@ -136,7 +136,7 @@ export function FeaturesGrid() {
                 </span>
               </div>
 
-              <b>88%</b>
+              <b>97.4%</b>
             </div>
 
             <div className="hl-search-row">
@@ -152,7 +152,7 @@ export function FeaturesGrid() {
                 </span>
               </div>
 
-              <b>63%</b>
+              <b>84.7%</b>
             </div>
 
             <div className="hl-search-row">
@@ -167,7 +167,7 @@ export function FeaturesGrid() {
                 </span>
               </div>
 
-              <b>25%</b>
+              <b>71.2%</b>
             </div>
           </div>
         </div>
@@ -214,7 +214,7 @@ export function FeaturesGrid() {
 
             <div className="blocked">
               <span>×</span>
-              Another team’s resumes
+              Another team's private vectors
             </div>
 
             <div className="blocked">
@@ -261,7 +261,7 @@ export function FeaturesGrid() {
       return (
         <div className="hl-feature-visual hl-explain-visual">
           <div className="hl-explain-score">
-            <span>88%</span>
+            <span>97.4%</span>
             <small>match</small>
           </div>
 
@@ -294,7 +294,7 @@ export function FeaturesGrid() {
       <div className="hl-feature-visual hl-stack-visual">
         <div className="hl-stack-layer">
           <span>Frontend</span>
-          <strong>Next.js 16</strong>
+          <strong>Next.js 15</strong>
         </div>
 
         <div className="hl-stack-layer">
@@ -303,8 +303,8 @@ export function FeaturesGrid() {
         </div>
 
         <div className="hl-stack-layer">
-          <span>Matching</span>
-          <strong>Skill catalog</strong>
+          <span>Search</span>
+          <strong>pgvector</strong>
         </div>
       </div>
     );

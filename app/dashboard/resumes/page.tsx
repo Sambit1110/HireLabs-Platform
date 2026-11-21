@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
 
-export default function ResumeDashboardRedirect() {
-  redirect("/");
+import DashboardApp from "@/components/dashboard/DashboardApp";
+
+export default function ResumeLibraryPage() {
+  return <DashboardApp />;
 }

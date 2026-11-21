@@ -1,8 +1,8 @@
 import '../index.css';
 
 export const metadata = {
-  title: 'HireLabs - AI Resume Parser & Skill-Based Applicant Tracking System',
-  description: 'Resume parser and skill-based ATS with transparent matching, parallel server-side parsing, optional Gemini analysis, and Supabase Row Level Security.',
+  title: 'HireLabs - AI Resume Parser & Resume Workspace',
+  description: 'A private resume workspace with AI-assisted resume parsing and secure Supabase storage.',
 };
 
 export default function RootLayout({ children }) {

@@ -1,0 +1,5 @@
+{"pair_id": "p_0006", "resume_id": "r_0001", "jd_id": "j_0001", "fit_score": 93, "fit_verdict": "strong", "label_source": "human"}
+{"pair_id": "p_0007", "resume_id": "r_0002", "jd_id": "j_0002", "fit_score": 90, "fit_verdict": "strong", "label_source": "human"}
+{"pair_id": "p_0008", "resume_id": "r_0003", "jd_id": "j_0003", "fit_score": 95, "fit_verdict": "strong", "label_source": "human"}
+{"pair_id": "p_0009", "resume_id": "r_0005", "jd_id": "j_0001", "fit_score": 28, "fit_verdict": "weak", "label_source": "human"}
+{"pair_id": "p_0010", "resume_id": "r_0004", "jd_id": "j_0003", "fit_score": 30, "fit_verdict": "weak", "label_source": "human"}
