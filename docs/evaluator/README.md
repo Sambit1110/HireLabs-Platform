@@ -13,6 +13,19 @@ Pushpita supplies the labelled pairs and source texts. Mayukh keeps the locked t
 
 All commands take the path to `HireLabs-Data/` and write into `HireLabs-Data/evaluator/` (files are private, mode 600).
 
+### 0. Import reviewed pairs (when they arrive as a review CSV)
+
+```bash
+node scripts/evaluator/import_reviews.mjs reviews.csv /path/to/HireLabs-Data [--force]
+```
+
+Turns a reviewed pair CSV into `pairs/train.jsonl` and `pairs/dev.jsonl`, split by the pair ID prefix.
+- **Scores:** accepted as 0–100, or as 0–1 decimals, which are multiplied by 100 (0.83 becomes 83).
+- **Verdicts:** accepted in the team's words or as "Strong / Partial / No Fit", which map to strong, moderate and weak.
+- **Held back** in `evaluator/import-held.json` for the labeller: unreviewed rows, unknown verdicts, scores outside their verdict band, and test-split rows.
+- **Label source:** a row with a proposal counts as `gemini_checked` (the same rule as `review_to_jsonl.mjs`).
+- **Safety:** existing pairs files are never overwritten without `--force`.
+
 ### 1. Prepare
 
 ```bash
@@ -91,22 +104,20 @@ Run the three steps again on the same `HireLabs-Data/` and the same repository r
 - **Done:**
   - the shared prompt specification
   - the synthetic example
-  - the join, checks, dev package, generation, quarantine, review queue and training-file tools
+  - the import, join, checks, dev package, generation, quarantine, review queue and training-file tools
   - tests with synthetic data
-- **Run on Pushpita's handoff copy:**
-  - 1,500 train and 1,500 dev **candidate** pairs, all structurally clean: no missing texts, wrong splits, locked test resumes, duplicates or train/dev resume overlap
-  - All 300 job descriptions appear in both splits (by design: only resumes are split)
-- **Shortfall: no labelled pairs exist yet.** The candidate pairs have no proposed or reviewed scores (0 / 3,000), and `pairs/train.jsonl` and `pairs/dev.jsonl` have not been produced. So right now:
-  - training examples: **0** of the 1,000–2,000 target
-  - fixed dev IDs: **0** of 20
-  - review queue: **0** of at least 100
-  - human-reviewed targets: **0**
-  - Hrittima's 50 Label Studio annotations are tracked separately in Label Studio.
-- **Next:**
-  1. Pushpita produces the labelled `pairs/*.jsonl` with `scripts/dataset/pairs.py`.
-  2. Run prepare, generate and build.
-  3. Hrittima reviews the queue.
-  4. Re-run build and hand off.
+- **Pushpita's 50 reviewed pairs, imported:**
+  - **24 train and 24 dev** pairs; `prepare` found no issues
+  - 2 pairs held for Pushpita: scores 73 and 70 are moderate but marked "Strong Fit"
+  - **Frozen dev 20:** 8 strong, 5 moderate, 7 weak; 10 thin-evidence; **no `insufficient_evidence` labels exist yet**
+  - Data version `492437c28b69`
+  - Private handoff: `HireLabs-Data/evaluator/handoff-gpt6/` and its zip
+- **Shortfall:**
+  - 24 labelled training pairs against the 1,000–2,000 target
+  - no generated or reviewed training targets yet: generation needs the team's Gemini key, then Hrittima reviews at least 100
+  - 0 human-reviewed targets
+  - Hrittima's 50 Label Studio annotations are tracked in Label Studio
+- **Open question:** every row had a proposal identical to its review, so these labels count as `gemini_checked`. If Pushpita scored them without Gemini they are `human`; no score changes.
 
 ## Report section 5: how the targets were made (draft for GPT-6 #2)
 
