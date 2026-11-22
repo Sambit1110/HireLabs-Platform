@@ -166,13 +166,7 @@ function CandidateComparison({
       </div>
 
       <div style={{ overflowX: "auto", marginTop: 16 }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            textAlign: "left",
-          }}
-        >
+        <table className="compare-table">
           <thead>
             <tr>
               <th scope="col" style={{ padding: 12 }}>
@@ -800,14 +794,7 @@ export default function DashboardApp() {
               }
               placeholder="Search candidate, title, or skill"
               aria-label="Search resumes"
-              style={{
-                flex: "1 1 240px",
-                padding: 12,
-                border: "1px solid #888",
-                borderRadius: 8,
-                background: "transparent",
-                color: "inherit",
-              }}
+              className="dashboard-search"
             />
 
             <select
@@ -818,10 +805,7 @@ export default function DashboardApp() {
                 )
               }
               aria-label="Filter by processing status"
-              style={{
-                padding: 12,
-                borderRadius: 8,
-              }}
+              className="dashboard-select"
             >
               <option value="all">All statuses</option>
               <option value="parsed">Parsed</option>
