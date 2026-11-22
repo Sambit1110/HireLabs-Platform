@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "build:roses": "node scripts/landing/build-paper-bouquet.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
