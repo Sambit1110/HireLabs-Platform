@@ -20,7 +20,7 @@ function candidatePayload(candidate) {
 }
 
 /**
- * Gemini role brief + per-candidate deep dives.
+ * Role brief + per-candidate deep dives.
  * `insights` is keyed by candidate id so concurrent analyses never overwrite
  * each other: { [candidateId]: { status: 'loading'|'completed'|'failed', result, error, candidateName } }.
  */

@@ -307,7 +307,7 @@ export default function ModelResults() {
 
             <p className="resume-note">
               Bold green values are the best result for each metric. Our models run
-              locally; Gemini is a large paid model used as the fallback.
+              locally; Gemini is a large paid model shown only for comparison.
             </p>
           </>
         )}

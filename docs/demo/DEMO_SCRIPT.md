@@ -23,7 +23,7 @@
 | 4 | 1:15 | Click **Explain score** on the top candidate → Evaluate candidate | "Our fine-tuned LLM gives a score *with reasons*: matched skills, missing skills, and evidence quoted from the resume." Point at the **`hirelabs-evaluator`** badge. If the model says "insufficient evidence", say: "it refuses to guess." |
 | 5 | 1:00 | Nav → **Model results** | Walk the table: keyword baseline vs Gemini vs ours, on a test set no model saw. Say honestly where Gemini still wins, and why ours is still worth it (free, private, runs locally). |
 | 6 | 0:45 | Scroll to **Fairness check** | "We swapped only names and genders on identical resumes. Here's how much the score moved." If there's a before/after with names removed, show it. |
-| 7 | 0:30 | Stop the model server → run the evaluation again | "If our model server is down, the app falls back to Gemini, and the badge tells you." |
+| 7 | 0:30 | Stop Ollama → run the evaluation again | "Every answer comes from our own models. If the evaluator is down, the app says so. It never sends the resume to an outside AI." |
 | 8 | 0:30 | Closing slide | Team roles (one line each) and what we'd do next. |
 
 ## Likely teacher questions (who answers)
@@ -34,7 +34,7 @@
 | "Did you train it or download it?" | Hrittima (LLM), Sagnik (matcher), Pushpita (parser): show the notebooks and loss charts |
 | "How do you know it's better?" | Mayukh (held-out test set, comparison table) |
 | "Is it biased?" | Arpan (fairness check) |
-| "Why use Gemini at all?" | Arpan: only as a fallback, and to help label data (knowledge distillation), checked by humans |
+| "Do you use any external AI, like Gemini?" | Arpan: no. Parsing, matching, scoring and the role brief all run on our own models. The app has no external fallback. |
 | "Can I try it?" | Sambit: hand over the laptop with the demo account |
 
 ## If something breaks

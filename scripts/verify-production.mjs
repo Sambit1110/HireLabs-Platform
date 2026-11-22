@@ -4,9 +4,8 @@
  * never prints secret values. Exit code 1 if any check FAILs.
  *
  *   node --env-file=.env.local scripts/verify-production.mjs \
- *     --url https://your-app.vercel.app [--gemini] [--e2e]
+ *     --url https://your-app.vercel.app [--e2e]
  *
- * --gemini  makes ONE small real Gemini request (costs a request).
  * --e2e     runs a two-account end-to-end test against the deployment. Needs
  *           two existing *test* accounts in the Supabase project:
  *             VERIFY_A_EMAIL, VERIFY_A_PASSWORD, VERIFY_B_EMAIL, VERIFY_B_PASSWORD
@@ -36,17 +35,16 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.
 const deploymentUrl = (option('url') || process.env.HIRELABS_URL || '').replace(/\/$/, '');
 
 console.log('Environment (presence only):');
-for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'GEMINI_API_KEY', 'GEMINI_MODEL', 'AI_FEATURES_ENABLED']) {
+for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'USE_LOCAL_MODELS', 'OLLAMA_MODEL', 'AI_FEATURES_ENABLED']) {
   console.log(`  ${name} = ${present(name) ? 'PRESENT' : 'MISSING'}`);
 }
 // Secrets exposed to the browser bundle are always a failure.
-for (const name of ['NEXT_PUBLIC_GEMINI_API_KEY', 'NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY']) {
+for (const name of ['NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY']) {
   if (present(name)) report('FAIL', `${name} must never be public`, 'remove it and rotate the key');
 }
 console.log('');
 
 report(supabaseUrl && supabaseKey ? 'PASS' : 'FAIL', 'Supabase URL + publishable/anon key configured');
-report(present('GEMINI_API_KEY') ? 'PASS' : 'SKIPPED', 'Gemini API key configured', present('GEMINI_API_KEY') ? '' : 'AI features will report "not configured"');
 
 // ------------------------------------------------------------------ 2. deployment health
 if (!deploymentUrl) {
@@ -57,7 +55,7 @@ if (!deploymentUrl) {
     const health = await response.json();
     const ok = health.application === 'ok' && health.supabase_configured && health.database === 'connected' && health.schema_version === 'verified';
     report(ok ? 'PASS' : 'FAIL', 'Deployment /api/health',
-      `status=${health.status} database=${health.database} schema=${health.schema_version}${health.schema_missing ? ` missing=${health.schema_missing.join(',')}` : ''} gemini_configured=${health.gemini_configured}`);
+      `status=${health.status} database=${health.database} schema=${health.schema_version}${health.schema_missing ? ` missing=${health.schema_missing.join(',')}` : ''} local_models=${health.local_models_enabled} evaluator=${health.evaluator_model}`);
   } catch (error) {
     report('FAIL', 'Deployment /api/health', `unreachable (${error.name})`);
   }
@@ -78,33 +76,7 @@ if (supabaseUrl && supabaseKey) {
   report('SKIPPED', 'Supabase schema', 'credentials unavailable');
 }
 
-// ------------------------------------------------------------------ 4. Gemini (opt-in)
-if (!flag('gemini')) {
-  report('SKIPPED', 'Real Gemini request', 'pass --gemini to spend one request');
-} else if (!present('GEMINI_API_KEY')) {
-  report('SKIPPED', 'Real Gemini request', 'GEMINI_API_KEY unavailable');
-} else {
-  try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        model: process.env.GEMINI_MODEL || 'gemini-3.7-flash',
-        input: 'Reply with JSON {"ok": true}.',
-        response_format: { type: 'text', mime_type: 'application/json', schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] } },
-        generation_config: { max_output_tokens: 256 },
-        store: false,
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-    const payload = await response.json().catch(() => ({}));
-    report(response.ok ? 'PASS' : 'FAIL', 'Real Gemini request', response.ok ? `model ${process.env.GEMINI_MODEL || 'gemini-3.7-flash'}` : `HTTP ${response.status} ${payload?.error?.status ?? ''}`.trim());
-  } catch (error) {
-    report('FAIL', 'Real Gemini request', error.name);
-  }
-}
-
-// ------------------------------------------------------------------ 5. two-account E2E (opt-in)
+// ------------------------------------------------------------------ 4. two-account E2E (opt-in)
 const accounts = ['VERIFY_A_EMAIL', 'VERIFY_A_PASSWORD', 'VERIFY_B_EMAIL', 'VERIFY_B_PASSWORD'];
 if (!flag('e2e')) {
   report('SKIPPED', 'Two-account end-to-end', 'pass --e2e (needs two test accounts)');
@@ -192,8 +164,8 @@ async function runE2E() {
     const again = await api('/api/parse-resume', a.token, { resumeId });
     report(again.body.alreadyProcessed === true ? 'PASS' : 'FAIL', 'Completed resume is not parsed twice');
 
-    if (!present('GEMINI_API_KEY')) {
-      report('SKIPPED', 'AI through the deployment', 'Gemini not configured locally; check /api/health gemini_configured');
+    if (process.env.USE_LOCAL_MODELS !== 'true') {
+      report('SKIPPED', 'AI through the deployment', 'local models off; check /api/health local_models_enabled');
     } else {
       const role = await api('/api/ai-analyze', a.token, { mode: 'role', role: 'Backend Engineer', jobDescription: 'Python, PostgreSQL, AWS.' });
       report(role.status === 200 && role.body.result?.role_summary ? 'PASS' : 'FAIL', 'AI role brief through the deployment', `HTTP ${role.status}`);

@@ -61,7 +61,8 @@ describe('shared candidate prompt', () => {
     expect(route).toContain("from '@/lib/ai/candidate-prompt'");
     expect(route).not.toMatch(/const candidateSchema\s*=/);
     expect(route).not.toMatch(/function buildCandidatePrompt/);
-    expect(route).toMatch(/evaluateLocally\(\s*buildCandidateMessages\(body\)/);
+    expect(route).toMatch(/mode === 'candidate' \? buildCandidateMessages\(body\)/);
+    expect(route).toMatch(/evaluateLocally\(input, schema\)/);
   });
 });
 

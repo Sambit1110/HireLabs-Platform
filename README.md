@@ -7,14 +7,14 @@ An AI-assisted resume workspace built with the Next.js App Router, Supabase (Aut
 | Area | State |
 |---|---|
 | Auth, upload, private storage, resume library | Built |
-| Resume parsing | Built. A downloaded spaCy model (`en_Resume_Parser_pipeline`) runs first, with Gemini as the fallback. Our own trained parser (`hirelabs-parser`) is in progress. |
-| Candidate evaluation | Built on Gemini. Our fine-tuned evaluator (`hirelabs-evaluator`) is in progress and will become the primary model. |
+| Resume parsing | Built. A downloaded spaCy model (`en_Resume_Parser_pipeline`) is served by the model server. Our own trained parser (`hirelabs-parser`) is in progress. If the parser is unavailable, the resume text is saved without profile fields. There is no external fallback. |
+| Candidate evaluation and role brief | Run only on our fine-tuned evaluator (`hirelabs-evaluator`) through Ollama. Fine-tuning is in progress. If Ollama is down, the API returns 503. |
 | Semantic matching | Built. The `/api/match` endpoint, pgvector HNSW migration (`supabase/migrations/005_semantic_matching.sql`), and `hirelabs-matcher` model (384d fine-tuned from `BAAI/bge-small-en-v1.5`) are implemented (see [`docs/api/MATCH_CONTRACT.md`](docs/api/MATCH_CONTRACT.md)). |
 | Model results page | Built. It shows real numbers once the evaluation script writes `public/model-results.json` (see [`docs/results/RESULTS_FORMAT.md`](docs/results/RESULTS_FORMAT.md)). |
 
 ## Dashboard features
 
-- **Model badge:** every AI result shows which model answered: green "Our model" for `hirelabs-*` models, grey "Gemini fallback" otherwise.
+- **Model badge:** every AI result shows which model answered: green "Our model" for `hirelabs-*` models, amber for an offline placeholder.
 - **Explained evaluations:** fit score and verdict, matched vs missing skills, quoted resume evidence, risk flags and interview questions. "Insufficient evidence" is never turned into a score.
 - **Rank candidates for a job:** paste a job description to rank your parsed resumes, then use **Explain score** to open the full evaluation.
 - **Model results** (`/dashboard/results`): keyword baseline vs Gemini vs our models on a held-out test set, plus the fairness check.
@@ -51,7 +51,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
 2. **Run the migrations.** Open the Supabase SQL Editor and execute **every** file in [`supabase/migrations/`](supabase/migrations/) in filename order (`001` … `006`). Alternatively, link the Supabase CLI and run `supabase db push`. `005` (pgvector, `job_descriptions`, `match_resumes`) is required for **Rank candidates**, and `006` must follow `003`, or every successful parse is rejected by the status check. `GET /api/health` reports which parts of the schema are present.
 
-3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your project URL, anon key, and a Gemini API key. `SUPABASE_SERVICE_ROLE_KEY` is reserved for future privileged background jobs and must never be exposed to the browser.
+3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your project URL and anon key. No external AI key is needed: every model runs on the team's own services (see [Run everything locally](#run-everything-locally)). `SUPABASE_SERVICE_ROLE_KEY` is reserved for future privileged background jobs and must never be exposed to the browser.
 
 4. **Start the dev server.**
 
@@ -82,7 +82,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 ### Run everything locally
 
 1. Configure Supabase as described above. For a local Supabase instance, start Docker, run `supabase init` if `supabase/config.toml` is absent, then run `supabase start` and `supabase migration up --local`. Use the URL and public key from `supabase status` in `.env.local`.
-2. Run `npm ci`. Set `USE_LOCAL_MODELS=true` in `.env.local`. Set `GEMINI_API_KEY` and `GEMINI_MODEL` for fallback and role analysis.
+2. Run `npm ci`. Set `USE_LOCAL_MODELS=true` in `.env.local`.
 3. Run `python -m venv .venv`. Activate with `.venv\Scripts\Activate.ps1` in PowerShell or `source .venv/bin/activate` on macOS/Linux. Install dependencies with `python -m pip install -r services/model-server/requirements.txt` and install the team's parser wheel with `python -m pip install <wheel-path>`. Set `PARSER_MODEL` to its spaCy package name if it differs from `hirelabs_parser` and set `MATCHER_MODEL` to the local SentenceTransformer model directory. Start FastAPI and check its readiness.
 
    ```sh
@@ -91,7 +91,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    ```
 
 4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template. The app requests a 16384-token context (`OLLAMA_NUM_CTX`) and refuses any prompt that would not fit, because Ollama would otherwise cut it silently.
-5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Stop FastAPI to demonstrate parser fallback or stop Ollama to demonstrate evaluator fallback. Both responses report `gemini-fallback`. Set `DISABLE_GEMINI_FALLBACK=true` to keep resume data off Gemini: candidate analysis then returns 503 and parsing saves the text without enrichment. Candidate analysis also drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
+5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Run the role brief to verify it also reports `hirelabs-evaluator`. Stop Ollama and the analysis returns 503 `LOCAL_EVALUATOR_UNAVAILABLE`. Stop FastAPI and parsing saves the text without profile fields. Candidate analysis drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
 
 For interface development, set `MODEL_PLACEHOLDERS=true` in the Python service environment and `EVALUATOR_PLACEHOLDER=true` in `.env.local`. Responses identify placeholders explicitly. Disable these options for the live demo. Keep both model services bound to loopback for local use.
 
@@ -153,7 +153,7 @@ Existing users are signed out once after this change, because sessions moved fro
 
 4. Set the Supabase Site URL to `https://YOUR-VERCEL-DOMAIN` and add `https://YOUR-VERCEL-DOMAIN/auth/callback` to redirect URLs, then deploy. Subsequent pushes trigger Vercel preview and production deployments automatically.
 
-> The API routes declare `maxDuration = 60`, so resume processing can run for up to 60 seconds. Vercel can't run the Python parser or a local LLM server, so a deployment there uses the Gemini fallback. For the demo, run everything locally.
+> The API routes declare `maxDuration = 60`, so resume processing can run for up to 60 seconds. Vercel can't run the Python model server or Ollama. A Vercel deployment needs `MODEL_SERVER_URL` and `OLLAMA_URL` pointing at a machine that runs them, protected so only the app can reach them. Otherwise AI features return 503. For the demo, run everything locally.
 
 ## Security and Operational Notes
 
@@ -164,11 +164,9 @@ Existing users are signed out once after this change, because sessions moved fro
 
 ## AI copilot configuration
 
-HireLabs includes optional Gemini-powered recruiting features in the Candidate matching workspace:
+The Candidate matching workspace has two AI features, both answered by the team's own evaluator (`hirelabs-evaluator` in Ollama):
 
 - AI role brief: turns a job description into must-have skills, nice-to-have skills, screening signals, and interview focus.
 - AI candidate deep dive: summarizes candidate fit, strengths, gaps, evidence signals, risk flags, and generates tailored interview questions.
 
-Keep the Gemini key server-side. Add `GEMINI_API_KEY` to your local `.env.local` and to the Vercel project Environment Variables. The client never receives the key.
-
-The app calls Gemini through `@google/genai` (`models.generateContent`) and defaults to `gemini-3.5-flash` for analysis and `gemini-3.7-flash` for resume parsing; set `GEMINI_MODEL` to override both.
+No external AI provider is called. Set `OLLAMA_URL`, `OLLAMA_MODEL` and `OLLAMA_NUM_CTX` (default 16384, which should match the Modelfile) to point the app at the evaluator.

@@ -1,34 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { SAMPLE_EVALUATION } from '../lib/fixtures/sample-evaluation.js';
 import { checkEvidence } from '../lib/ai/evidence.js';
 import { evaluateLocally, estimateTokens, evaluatorContextSize } from '../lib/ai/local-llm.js';
-import { geminiFallbackAllowed } from '../lib/ai/model-server.js';
-
-const generateContent = vi.fn();
 
 vi.mock('@/lib/supabase/server-auth', () => ({
   authenticateRequest: vi.fn(async () => ({ supabase: {}, user: { id: 'user-1' } })),
 }));
 vi.mock('@/lib/api/ai-rate-limit', () => ({ checkAIRateLimit: () => null }));
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
-    constructor() {
-      this.models = { generateContent };
-    }
-  },
-}));
 
-const ENV_KEYS = [
-  'GEMINI_API_KEY', 'DISABLE_GEMINI_FALLBACK', 'USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX',
-  'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK',
-];
+const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX', 'OLLAMA_MODEL', 'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK'];
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 const realFetch = globalThis.fetch;
 
 beforeEach(() => {
   for (const key of ENV_KEYS) delete process.env[key];
-  generateContent.mockReset();
 });
 afterEach(() => {
   for (const key of ENV_KEYS) {
@@ -43,15 +31,18 @@ Rewrote the payments API in Node.js, cutting p95 latency
 from 900 ms to 220 ms.
 Designed and maintained PostgreSQL schemas for 30+ tables.`;
 
-const candidateRequest = () => new Request('http://localhost/api/ai-analyze', {
+const analyzeRequest = (body) => new Request('http://localhost/api/ai-analyze', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({
-    mode: 'candidate',
     role: 'Backend Engineer',
     jobDescription: 'Build Node.js services on PostgreSQL.',
-    candidate: { name: 'Priya Raman', parsedText: RESUME },
+    ...body,
   }),
+});
+const candidateRequest = () => analyzeRequest({
+  mode: 'candidate',
+  candidate: { name: 'Priya Raman', parsedText: RESUME },
 });
 
 const ollamaReply = (result) => vi.fn(async () => new Response(
@@ -59,25 +50,61 @@ const ollamaReply = (result) => vi.fn(async () => new Response(
   { status: 200, headers: { 'content-type': 'application/json' } },
 ));
 
-describe('Gemini fallback switch', () => {
-  it('is allowed only with a key and without DISABLE_GEMINI_FALLBACK=true', () => {
-    expect(geminiFallbackAllowed()).toBe(false);
-    process.env.GEMINI_API_KEY = 'test-key';
-    expect(geminiFallbackAllowed()).toBe(true);
-    process.env.DISABLE_GEMINI_FALLBACK = 'true';
-    expect(geminiFallbackAllowed()).toBe(false);
+const ROLE_BRIEF = {
+  role_summary: 'Backend role.', seniority: 'Not specified', must_have_skills: ['Node.js'],
+  nice_to_have_skills: [], responsibilities: ['Build services'], screening_signals: [], interview_focus: [],
+};
+
+describe('own models only', () => {
+  it('runs role analysis on the HireLabs evaluator', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    globalThis.fetch = ollamaReply(ROLE_BRIEF);
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+
+    const response = await POST(analyzeRequest({ mode: 'role' }));
+    const { data } = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.model_used).toBe('hirelabs-evaluator');
+    expect(data.result.must_have_skills).toEqual(['Node.js']);
+    expect(String(globalThis.fetch.mock.calls[0][0])).toContain('/api/chat');
   });
 
-  it('candidate analysis returns 503 and never calls Gemini when the switch is on', async () => {
-    process.env.GEMINI_API_KEY = 'test-key';
-    process.env.DISABLE_GEMINI_FALLBACK = 'true';
+  it('returns 503, with no other model tried, when the evaluator is down', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    globalThis.fetch = vi.fn(async () => { throw new TypeError('fetch failed'); });
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+
+    const response = await POST(candidateRequest());
+
+    expect(response.status).toBe(503);
+    expect((await response.json()).error.code).toBe('LOCAL_EVALUATOR_UNAVAILABLE');
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 503 when local models are turned off', async () => {
+    globalThis.fetch = vi.fn();
     const { POST } = await import('../app/api/ai-analyze/route.js');
 
     const response = await POST(candidateRequest());
 
     expect(response.status).toBe(503);
     expect((await response.json()).error.code).toBe('AI_UNAVAILABLE');
-    expect(generateContent).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('has no Gemini code in the website', () => {
+    const files = [];
+    const walk = (dir) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (/\.(js|mjs|jsx|ts|tsx)$/.test(name)) files.push(path);
+      }
+    };
+    ['app', 'lib', 'components', 'hooks'].forEach(walk);
+    const offenders = files.filter((file) => /@google\/genai|generativelanguage\.googleapis|GEMINI_API_KEY/.test(readFileSync(file, 'utf8')));
+    expect(offenders).toEqual([]);
   });
 });
 
@@ -103,7 +130,7 @@ describe('evidence quotes', () => {
     expect(checkEvidence(['"Rewrote the payments API … in Rust."'], RESUME).kept).toEqual([]);
   });
 
-  it('drops invented quotes from the local evaluator before they reach the dashboard', async () => {
+  it('drops invented quotes from the evaluator before they reach the dashboard', async () => {
     process.env.USE_LOCAL_MODELS = 'true';
     globalThis.fetch = ollamaReply(SAMPLE_EVALUATION);
     const { POST } = await import('../app/api/ai-analyze/route.js');
@@ -136,6 +163,18 @@ describe('local evaluator context', () => {
 
     expect(estimateTokens([{ role: 'user', content: long }])).toBeGreaterThan(4096);
     await expect(evaluateLocally(long, {})).rejects.toThrow(/context/);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('answers 413 when the request is too long for the evaluator', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    process.env.OLLAMA_NUM_CTX = '2500';
+    globalThis.fetch = vi.fn();
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+
+    const response = await POST(candidateRequest());
+
+    expect(response.status).toBe(413);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 

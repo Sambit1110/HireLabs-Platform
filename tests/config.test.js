@@ -5,11 +5,10 @@ import { getSupabaseConfig } from '../lib/config.js';
 import { getAiConfig } from '../lib/server/aiConfig.js';
 import { AuthUnavailableError, ConfigurationError, authenticateRequest } from '../lib/server/auth.js';
 import { consumeDailyQuota } from '../lib/server/quota.js';
-import { MAX_OUTPUT_TOKENS, runAnalysis, sanitizeResult } from '../lib/ai/analyze.js';
 
 const KEYS = [
   'NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'GEMINI_API_KEY', 'GEMINI_MODEL', 'AI_FEATURES_ENABLED',
+  'USE_LOCAL_MODELS', 'OLLAMA_MODEL', 'AI_FEATURES_ENABLED',
 ];
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 const setEnv = (values) => {
@@ -71,53 +70,24 @@ describe('server auth outcomes', () => {
 });
 
 describe('AI configuration', () => {
-  it('reads key/model on the server with a stable default model', () => {
-    setEnv({ GEMINI_API_KEY: 'k' });
+  it('reports the team evaluator, with local models off by default', () => {
+    setEnv({});
     const config = getAiConfig();
-    assert.equal(config.configured, true);
-    assert.equal(config.model, 'gemini-3.7-flash');
+    assert.equal(config.localModels, false);
+    assert.equal(config.evaluatorModel, 'hirelabs-evaluator');
     assert.equal(config.enabled, true);
-    setEnv({ GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-3.8-flash' });
-    assert.equal(getAiConfig().model, 'gemini-3.8-flash');
+    setEnv({ USE_LOCAL_MODELS: 'true', OLLAMA_MODEL: 'hirelabs-evaluator-v2' });
+    assert.equal(getAiConfig().localModels, true);
+    assert.equal(getAiConfig().evaluatorModel, 'hirelabs-evaluator-v2');
   });
 
   it('supports an emergency kill switch', () => {
-    setEnv({ GEMINI_API_KEY: 'k', AI_FEATURES_ENABLED: 'false' });
+    setEnv({ AI_FEATURES_ENABLED: 'false' });
     assert.equal(getAiConfig().enabled, false);
   });
-});
 
-describe('Gemini request limits', () => {
-  it('sets max_output_tokens and disables server-side storage', async () => {
-    let sent;
-    await runAnalysis({
-      mode: 'role', input: 'p', apiKey: 'k', model: 'm',
-      fetchImpl: async (url, init) => { sent = JSON.parse(init.body); return new Response(JSON.stringify({ output_text: '{}' })); },
-    });
-    assert.equal(sent.generation_config.max_output_tokens, MAX_OUTPUT_TOKENS);
-    assert.equal(sent.store, false);
-    assert.equal(sent.response_format.mime_type, 'application/json');
-  });
-
-  it('rejects oversized provider output', async () => {
-    await assert.rejects(runAnalysis({
-      mode: 'role', input: 'p', apiKey: 'k',
-      fetchImpl: async () => new Response(JSON.stringify({ output_text: `{"role_summary":"${'x'.repeat(70_000)}"}` })),
-    }), /too large/);
-  });
-
-  it('sanitizes results to the schema with bounded sizes', () => {
-    const result = sanitizeResult('candidate', {
-      candidate_summary: 's'.repeat(5000), fit_verdict: 'amazing', confidence: 250,
-      strengths: ['a', 42, '', ...Array(30).fill('x'.repeat(2000))], extra_field: 'dropped',
-    });
-    assert.equal(result.candidate_summary.length, 2000);
-    assert.equal(result.fit_verdict, 'insufficient_evidence');
-    assert.equal(result.confidence, 100);
-    assert.equal(result.strengths.length, 10);
-    assert.ok(result.strengths.every((item) => typeof item === 'string' && item.length <= 600));
-    assert.equal('extra_field' in result, false);
-    assert.deepEqual(result.gaps, []);
+  it('has no Gemini settings', () => {
+    assert.equal(Object.keys(getAiConfig()).some((key) => /gemini|apiKey/i.test(key)), false);
   });
 });
 

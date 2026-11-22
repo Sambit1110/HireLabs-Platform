@@ -15,7 +15,7 @@ const ipLimiter = createRateLimiter({ name: 'health-ip', limit: 30, windowMs: 60
 /**
  * Public, read-only deployment health.
  * Reports configuration *presence* and schema state only: never keys, tokens,
- * URLs or raw provider/database errors. It never calls Gemini (cost).
+ * URLs or raw database errors. It never calls a model.
  */
 async function checkDatabase({ url, key }) {
   const supabase = createClient(url, key, {
@@ -72,8 +72,8 @@ export async function GET(request) {
     database: db.database,
     schema_version: db.schema,
     ...(db.missing?.length ? { schema_missing: db.missing } : {}),
-    gemini_configured: ai.configured,
-    gemini_model: ai.model,
+    local_models_enabled: ai.localModels,
+    evaluator_model: ai.evaluatorModel,
     ai_enabled: ai.enabled,
     checked_at: new Date().toISOString(),
   };
