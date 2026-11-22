@@ -12,8 +12,11 @@ const MotionSpan = motion.span;
  * A headline whose words come into focus one by one as it scrolls into view.
  * The full text is always in the DOM (and in aria-label), so it stays
  * readable and indexable while it animates.
+ *
+ * `intro` is for the first screen: the words are marked for a CSS focus-in
+ * that starts with the server HTML instead of after hydration.
  */
-export function FocusText({ as = 'h2', text, className = '', delay = 0 }) {
+export function FocusText({ as = 'h2', text, className = '', delay = 0, intro = false }) {
   const Tag = as;
   const prefersReducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
@@ -22,7 +25,7 @@ export function FocusText({ as = 'h2', text, className = '', delay = 0 }) {
   // animation switches on after hydration only.
   useEffect(() => setMounted(true), []);
 
-  const animate = mounted && shouldAnimate(prefersReducedMotion);
+  const animate = !intro && mounted && shouldAnimate(prefersReducedMotion);
   const words = splitWords(text);
 
   return (
@@ -40,7 +43,12 @@ export function FocusText({ as = 'h2', text, className = '', delay = 0 }) {
               {word}
             </MotionSpan>
           ) : (
-            <span className="lp-focus__word">{word}</span>
+            <span
+              className={intro ? 'lp-focus__word lp-focus__word--intro' : 'lp-focus__word'}
+              style={intro ? { '--i': index } : undefined}
+            >
+              {word}
+            </span>
           )}
           {index < words.length - 1 ? ' ' : null}
         </span>

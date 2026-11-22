@@ -144,7 +144,11 @@ export function LandingNav({ onSignIn }) {
         </button>
       </div>
 
-      <div id="lp-mobile-nav" className={`lp-nav__panel ${isMobileOpen ? 'is-open' : ''}`}>
+      <div
+        id="lp-mobile-nav"
+        className={`lp-nav__panel ${isMobileOpen ? 'is-open' : ''}`}
+        inert={!isMobileOpen}
+      >
         <nav aria-label="Mobile navigation">
           {LINKS.map((link) => (
             <a key={link.href} href={link.href} className="lp-nav__panel-link" onClick={closeMenu}>
