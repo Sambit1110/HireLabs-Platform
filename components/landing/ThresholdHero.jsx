@@ -37,7 +37,7 @@ export function ThresholdHero({ onTrySample, onSignIn }) {
   const playDoor = animate && !skipIntro;
 
   return (
-    <section id="product" data-lp-theme="ink" className="lp-hero">
+    <section id="product" data-lp-theme="deep" className="lp-hero">
       <div className="lp-hero__glow" aria-hidden="true" />
       <div className="lp-hero__ribs" aria-hidden="true" />
 

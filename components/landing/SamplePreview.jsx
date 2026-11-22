@@ -9,7 +9,7 @@ const SAMPLE_CANDIDATES = [
 
 export function SamplePreview() {
   return (
-    <section id="demo" data-lp-theme="slate" className="lp-section lp-sample">
+    <section id="demo" data-lp-theme="mid" className="lp-section lp-sample">
       <div className="lp-container">
         <p className="lp-eyebrow lp-section__eyebrow">Product preview · Sample data</p>
         <FocusText as="h2" className="lp-heading" text="What a parsed profile looks like." />

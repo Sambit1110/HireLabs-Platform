@@ -15,7 +15,7 @@ const PATHS = [
 
 export function TwoPaths() {
   return (
-    <section data-lp-theme="slate" className="lp-section lp-paths">
+    <section data-lp-theme="mid" className="lp-section lp-paths">
       <div className="lp-container">
         <FocusText as="h2" className="lp-heading lp-paths__heading" text="You're probably here for one of two things" />
         <div className="lp-paths__grid">

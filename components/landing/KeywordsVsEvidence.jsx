@@ -9,7 +9,7 @@ const ROWS = [
 
 export function KeywordsVsEvidence() {
   return (
-    <section data-lp-theme="slate" className="lp-section lp-compare">
+    <section data-lp-theme="mid" className="lp-section lp-compare">
       <div className="lp-container">
         <p className="lp-eyebrow lp-section__eyebrow">Keyword filters vs HireLabs</p>
         <FocusText as="h2" className="lp-heading" text="Reading, not matching strings." />

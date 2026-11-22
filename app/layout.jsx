@@ -1,19 +1,13 @@
-import { DM_Serif_Display, Fraunces, Libre_Franklin } from 'next/font/google';
+import { DM_Serif_Display, Libre_Franklin } from 'next/font/google';
 
 import '../index.css';
 
-const displayFont = Fraunces({
-  subsets: ['latin'],
-  weight: ['200', '300'],
-  variable: '--lp-font-display',
-  display: 'swap',
-});
 
-const serifFont = DM_Serif_Display({
+const displayFont = DM_Serif_Display({
   subsets: ['latin'],
   weight: ['400'],
   style: ['normal', 'italic'],
-  variable: '--lp-font-serif',
+  variable: '--lp-font-display',
   display: 'swap',
 });
 
@@ -31,7 +25,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${serifFont.variable} ${bodyFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>

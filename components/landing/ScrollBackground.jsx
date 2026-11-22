@@ -6,26 +6,17 @@ import { themeFor } from '@/lib/landing/theme';
 
 /**
  * Fixed full-page colour layer. Whichever `[data-lp-theme]` section crosses
- * the middle of the viewport sets the page background and text colour,
- * using the active palette.
+ * the middle of the viewport sets the page background and text colour.
  */
-export function ScrollBackground({ palette = 'lavender' }) {
+export function ScrollBackground() {
   const layerRef = useRef(null);
-  const activeSection = useRef('ink');
-  const paletteRef = useRef(palette);
+  const activeSection = useRef('deep');
 
   const apply = (root) => {
-    const { bg, fg } = themeFor(activeSection.current, paletteRef.current);
+    const { bg, fg } = themeFor(activeSection.current);
     root.style.setProperty('--lp-bg', bg);
     root.style.setProperty('--lp-fg', fg);
   };
-
-  // Re-colour immediately when the palette is switched.
-  useEffect(() => {
-    paletteRef.current = palette;
-    const root = layerRef.current?.closest('.lp');
-    if (root) apply(root);
-  }, [palette]);
 
   useEffect(() => {
     const root = layerRef.current?.closest('.lp');

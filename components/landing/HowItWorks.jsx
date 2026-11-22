@@ -26,7 +26,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how" data-lp-theme="slate" className="lp-section lp-how">
+    <section id="how" data-lp-theme="mid" className="lp-section lp-how">
       <div className="lp-container">
         <p className="lp-eyebrow lp-section__eyebrow">How it works</p>
         <FocusText as="h2" className="lp-heading" text="From a pile of resumes to a reasoned shortlist." />

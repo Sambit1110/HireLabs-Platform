@@ -29,4 +29,15 @@ describe('landing page content guard', () => {
     expect(page).toContain('safeRedirectPath(');
     expect(page).toContain('friendlyAuthError(');
   });
+
+  it('only uses section themes that have colours', async () => {
+    const { THEMES } = await import('../lib/landing/theme.js');
+    const used = new Set();
+    for (const { text } of landingSources()) {
+      for (const match of text.matchAll(/data-lp-theme="([^"]+)"/g)) used.add(match[1]);
+      for (const match of text.matchAll(/theme = '([^']+)'/g)) used.add(match[1]);
+    }
+    expect(used.size).toBeGreaterThan(0);
+    expect([...used].filter((name) => !(name in THEMES))).toEqual([]);
+  });
 });

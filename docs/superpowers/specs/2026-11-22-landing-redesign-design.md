@@ -57,18 +57,22 @@ The public landing page (`/`) currently has a calm, light, editorial look (beige
 
 ## Visual system
 
+> **Revised 2026-11-22 (Sambit's decision):** after seeing the lavender build and a burgundy preview side by side, Sambit chose **burgundy** as the only theme for the landing page and the sign-in pop-up. The dashboard is unchanged. This table replaces the original lavender palette; where the sections below still say "lavender", read "cream", and where they say "mint", read "white pill".
+
 | Token | Value | Use |
 |---|---|---|
-| `--ink` | `#0F0F0F` | Page background (start) |
-| `--slate` | `#262632` | Mid-page background |
-| `--lavender` | `#BCBBFF` | Primary text on dark; background in the "principles" band |
-| `--mint` | `#9CFFE6` | Single accent: primary buttons, focus rings, small highlights |
-| `--sun` | `#F1E044` | Jamie touch only: circular badge and sticker icons |
-| `--line` | `rgba(188,187,255,0.22)` | Thin card outlines and dividers |
+| `--oxblood-deep` | `#2A0304` | Page background (start and end); section theme `deep` |
+| `--oxblood` | `#4A0608` | Mid-page background; section theme `mid` |
+| `--cream` | `#F3E9DF` | Primary text on dark; background of the "principles" band (section theme `cream`, dark text `#3A0506`) |
+| `--pill` | `#FFFFFF` | Primary pill buttons |
+| `--champagne` | `#E8CBA8` | Small accents: circular badge, sticker icons |
+| `--line` | `rgba(243,233,223,0.2)` | Thin card outlines and dividers |
 
-- Display: Fraunces, weight 200–300, sizes up to ~112px desktop / ~48px mobile, tight leading, sentence case.
-- Body and UI: Libre Franklin 300/400/600, small uppercase letter-spaced labels for nav and eyebrows.
-- Buttons: Jamie-style pills, mint fill, 1.5px dark outline, 3–4px offset shadow that shifts on hover/press.
+- Display: DM Serif Display (regular and italic), sizes up to ~112px desktop / ~48px mobile, tight leading, sentence case.
+- Body and UI: Libre Franklin 300/400/600, small uppercase letter-spaced labels for nav and eyebrows, with a short line before each eyebrow.
+- Buttons: white pills with dark oxblood text, 1.5px outline, small offset shadow that shifts on hover/press.
+- Texture: faint vertical ribs behind the hero, warm light leaks instead of a glow, and a slow scrolling phrase strip (decorative, hidden from screen readers) after the hero.
+- Sign-in pop-up: deep oxblood panel (`#3A0507`), cream text, white primary button; all sign-in behaviour unchanged.
 
 ## Page structure (top to bottom)
 
@@ -97,7 +101,7 @@ The public landing page (`/`) currently has a calm, light, editorial look (beige
 
 ## Behaviour details
 
-- **Background colour shift:** one fixed full-page layer whose colour is driven by overall scroll progress through section markers (ink → slate → lavender → slate → ink).
+- **Background colour shift:** one fixed full-page layer whose colour is driven by overall scroll progress through section markers (deep → mid → cream → mid → deep).
 - **Blur-to-focus words:** each word animates `filter: blur(12px)` → `blur(0)` and `opacity 0.15` → `1`, staggered, triggered as the line enters the viewport; runs once.
 - **Word wheel:** words placed around a `rotateX` cylinder; `useScroll` progress drives rotation over the section's pinned scroll distance (~150vh). On mobile, a static vertical list with the active word highlighted.
 - **Door intro:** plays once per page load; skippable by scrolling; skipped entirely with reduced motion.

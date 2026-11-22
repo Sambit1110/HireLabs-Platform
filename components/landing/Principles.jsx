@@ -45,7 +45,7 @@ export function Principles() {
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
 
   return (
-    <section ref={sectionRef} id="principles" data-lp-theme="lavender" className="lp-section lp-principles">
+    <section ref={sectionRef} id="principles" data-lp-theme="cream" className="lp-section lp-principles">
       <div className="lp-principles__slabs">
         {SLABS.map((slab) => (
           <Slab key={`${slab.left}-${slab.top}`} slab={slab} progress={scrollYProgress} animate={animate} />

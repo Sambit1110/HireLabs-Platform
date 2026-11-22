@@ -42,7 +42,7 @@ export function WordWheel({ words, label = 'What we read for' }) {
   return (
     <section
       ref={sectionRef}
-      data-lp-theme="ink"
+      data-lp-theme="deep"
       className={`lp-wheel ${spin ? 'is-spinning' : ''}`}
       aria-label={label}
     >

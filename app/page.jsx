@@ -22,9 +22,7 @@ import {
 
 import { LandingNav } from '@/components/landing/LandingNav';
 import { ScrollBackground } from '@/components/landing/ScrollBackground';
-import { ThemeSwitch } from '@/components/landing/ThemeSwitch';
 import { Marquee } from '@/components/landing/Marquee';
-import { paletteFromSearch } from '@/lib/landing/theme';
 import { ThresholdHero } from '@/components/landing/ThresholdHero';
 import { WordWheel } from '@/components/landing/WordWheel';
 import { Statement } from '@/components/landing/Statement';
@@ -69,13 +67,6 @@ export default function LandingPage() {
 
   // Where to go after signing in (set when the server redirected a
   // signed-out visitor away from a protected page).
-  // PREVIEW: compare palettes with ?theme=burgundy or the floating switch.
-  const [palette, setPalette] = useState('lavender');
-
-  useEffect(() => {
-    setPalette(paletteFromSearch(window.location.search));
-  }, []);
-
   const [afterLogin, setAfterLogin] =
     useState(DEFAULT_AFTER_LOGIN);
 
@@ -358,11 +349,9 @@ export default function LandingPage() {
     <>
 
 
-      <main className="hl-page lp" data-palette={palette}>
+      <main className="hl-page lp">
 
-        <ScrollBackground palette={palette} />
-
-        <ThemeSwitch palette={palette} onChange={setPalette} />
+        <ScrollBackground />
 
 
 
@@ -379,7 +368,7 @@ export default function LandingPage() {
 
         <ThresholdHero onTrySample={scrollToDemo} onSignIn={openAuth} />
 
-        {palette === 'burgundy' ? <Marquee /> : null}
+        <Marquee />
 
         <WordWheel
           words={['Skills', 'Experience', 'Projects', 'Education', 'Evidence', 'Gaps', 'Fit', 'Interview focus']}

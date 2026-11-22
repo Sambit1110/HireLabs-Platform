@@ -5,13 +5,19 @@ import { splitWords } from '../lib/landing/text.js';
 import { wheelPositions } from '../lib/landing/wheel.js';
 
 describe('themeFor', () => {
-  it('returns the lavender band with dark text', () => {
-    expect(themeFor('lavender')).toEqual({ bg: '#BCBBFF', fg: '#0F0F0F' });
+  it('returns the cream band with dark oxblood text', () => {
+    expect(themeFor('cream')).toEqual({ bg: '#F3E9DF', fg: '#3A0506' });
   });
 
-  it('falls back to ink for unknown names', () => {
-    expect(themeFor('nope')).toEqual(THEMES.ink);
-    expect(themeFor(undefined)).toEqual(THEMES.ink);
+  it('gives the deep and mid sections cream text on oxblood', () => {
+    expect(themeFor('deep')).toEqual({ bg: '#2A0304', fg: '#F3E9DF' });
+    expect(themeFor('mid')).toEqual({ bg: '#4A0608', fg: '#F3E9DF' });
+  });
+
+  it('falls back to deep for unknown names', () => {
+    expect(themeFor('nope')).toEqual(THEMES.deep);
+    expect(themeFor(undefined)).toEqual(THEMES.deep);
+    expect(themeFor('toString')).toEqual(THEMES.deep);
   });
 });
 
@@ -39,17 +45,5 @@ describe('wheelPositions', () => {
   it('returns nothing for zero or negative counts', () => {
     expect(wheelPositions(0)).toEqual([]);
     expect(wheelPositions(-3)).toEqual([]);
-  });
-});
-
-describe('palettes', () => {
-  it('gives burgundy sections cream text on oxblood', async () => {
-    const { themeFor: pick, paletteFromSearch } = await import('../lib/landing/theme.js');
-    expect(pick('ink', 'burgundy')).toEqual({ bg: '#2A0304', fg: '#F3E9DF' });
-    expect(pick('lavender', 'burgundy')).toEqual({ bg: '#F3E9DF', fg: '#3A0506' });
-    expect(pick('ink', 'nope')).toEqual({ bg: '#0F0F0F', fg: '#BCBBFF' });
-    expect(paletteFromSearch('?theme=burgundy')).toBe('burgundy');
-    expect(paletteFromSearch('?theme=hacker')).toBe('lavender');
-    expect(paletteFromSearch('')).toBe('lavender');
   });
 });

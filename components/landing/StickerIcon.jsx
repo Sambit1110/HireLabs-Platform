@@ -4,7 +4,7 @@
  */
 const ICONS = {
   parse: {
-    fill: 'var(--sun)',
+    fill: 'var(--champagne)',
     paths: (
       <>
         <path d="M14 9h12l6 6v20H14z" />
@@ -13,7 +13,7 @@ const ICONS = {
     ),
   },
   match: {
-    fill: 'var(--mint)',
+    fill: 'var(--cream)',
     paths: (
       <>
         <circle cx="17" cy="22" r="7" />
@@ -22,7 +22,7 @@ const ICONS = {
     ),
   },
   explain: {
-    fill: 'var(--sun)',
+    fill: 'var(--champagne)',
     paths: (
       <>
         <path d="M10 13h24v15H21l-6 5v-5h-5z" />
@@ -31,7 +31,7 @@ const ICONS = {
     ),
   },
   fair: {
-    fill: 'var(--mint)',
+    fill: 'var(--cream)',
     paths: (
       <>
         <path d="M22 10v24M14 34h16M12 15h20" />
