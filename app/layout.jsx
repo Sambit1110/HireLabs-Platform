@@ -1,4 +1,22 @@
+import { DM_Serif_Display, Libre_Franklin } from 'next/font/google';
+
 import '../index.css';
+
+
+const displayFont = DM_Serif_Display({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  variable: '--lp-font-display',
+  display: 'swap',
+});
+
+const bodyFont = Libre_Franklin({
+  subsets: ['latin'],
+  weight: ['300', '400', '600'],
+  variable: '--lp-font-body',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'HireLabs - AI Resume Parser & Resume Workspace',
@@ -7,7 +25,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
