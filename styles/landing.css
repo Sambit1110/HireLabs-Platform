@@ -900,3 +900,162 @@
     display: none;
   }
 }
+
+/* ---------- Sign-in pop-up (dark) ---------- */
+.lp .hl-modal-overlay {
+  background: rgba(8, 8, 10, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.lp .hl-modal-container {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #151519;
+  color: var(--lavender);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55);
+}
+
+.lp .hl-modal-header {
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.lp .hl-modal-title {
+  color: var(--lavender);
+  font: 600 11px var(--lp-font-body), sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lp .hl-modal-close {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--lavender);
+}
+
+.lp .hl-auth {
+  display: grid;
+  gap: 22px;
+}
+
+.lp .hl-auth-intro {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.lp .hl-auth-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--mint);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.lp .hl-auth-title {
+  margin: 0;
+  font-family: var(--lp-font-display), Georgia, serif;
+  font-weight: 200;
+  font-size: 38px;
+  line-height: 1.05;
+  color: var(--lavender);
+}
+
+.lp .hl-auth-subtitle {
+  max-width: 340px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--lavender);
+  opacity: 0.75;
+}
+
+.lp .hl-auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.lp .hl-auth-field {
+  display: grid;
+  gap: 8px;
+}
+
+.lp .hl-auth-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lavender);
+  opacity: 0.8;
+}
+
+.lp .hl-auth-input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--lavender);
+  font: 400 15px var(--lp-font-body), sans-serif;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.lp .hl-auth-input::placeholder {
+  color: rgba(188, 187, 255, 0.45);
+}
+
+.lp .hl-auth-input:focus {
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px rgba(156, 255, 230, 0.18);
+}
+
+/* "Show password" and "Forgot password?" use inline colours; lift them for contrast. */
+.lp .hl-auth-field button,
+.lp .hl-auth-form > button[type="button"] {
+  color: var(--lavender) !important;
+  opacity: 0.85;
+}
+
+.lp .hl-auth-message {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #1C1C22;
+  color: var(--lavender);
+  font-size: 14px;
+}
+
+.lp .hl-auth-mode {
+  border: 0;
+  background: none;
+  color: var(--mint);
+  font: 600 13px var(--lp-font-body), sans-serif;
+  cursor: pointer;
+}
+
+.lp .hl-auth-mode:hover {
+  text-decoration: underline;
+}
+
+/* Primary submit button becomes a mint pill with the offset shadow. */
+.lp .hl-auth-form .hl-btn-primary {
+  min-height: 50px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--ink);
+  font: 600 15px var(--lp-font-body), sans-serif;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.lp .hl-auth-form .hl-btn-primary:hover:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
