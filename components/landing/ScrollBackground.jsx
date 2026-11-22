@@ -6,25 +6,38 @@ import { themeFor } from '@/lib/landing/theme';
 
 /**
  * Fixed full-page colour layer. Whichever `[data-lp-theme]` section crosses
- * the middle of the viewport sets the page background and text colour.
+ * the middle of the viewport sets the page background and text colour,
+ * using the active palette.
  */
-export function ScrollBackground() {
+export function ScrollBackground({ palette = 'lavender' }) {
   const layerRef = useRef(null);
+  const activeSection = useRef('ink');
+  const paletteRef = useRef(palette);
+
+  const apply = (root) => {
+    const { bg, fg } = themeFor(activeSection.current, paletteRef.current);
+    root.style.setProperty('--lp-bg', bg);
+    root.style.setProperty('--lp-fg', fg);
+  };
+
+  // Re-colour immediately when the palette is switched.
+  useEffect(() => {
+    paletteRef.current = palette;
+    const root = layerRef.current?.closest('.lp');
+    if (root) apply(root);
+  }, [palette]);
 
   useEffect(() => {
     const root = layerRef.current?.closest('.lp');
     if (!root || typeof IntersectionObserver === 'undefined') return undefined;
 
-    const apply = (name) => {
-      const { bg, fg } = themeFor(name);
-      root.style.setProperty('--lp-bg', bg);
-      root.style.setProperty('--lp-fg', fg);
-    };
-
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) apply(entry.target.dataset.lpTheme);
+          if (entry.isIntersecting) {
+            activeSection.current = entry.target.dataset.lpTheme;
+            apply(root);
+          }
         }
       },
       // A thin band across the middle of the screen decides the theme,

@@ -39,6 +39,7 @@ export function ThresholdHero({ onTrySample, onSignIn }) {
   return (
     <section id="product" data-lp-theme="ink" className="lp-hero">
       <div className="lp-hero__glow" aria-hidden="true" />
+      <div className="lp-hero__ribs" aria-hidden="true" />
 
       {playDoor ? (
         <MotionDiv

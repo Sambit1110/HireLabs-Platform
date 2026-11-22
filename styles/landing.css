@@ -1059,3 +1059,260 @@
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 var(--ink);
 }
+
+/* ==========================================================================
+   PREVIEW: Burgundy palette (data-palette="burgundy" on the .lp root).
+   Deep oxblood, warm cream text, high-contrast serif headlines, white pills.
+   ========================================================================== */
+
+.lp.lp[data-palette="burgundy"] {
+  --ink: #2A0304;
+  --slate: #4A0608;
+  --lavender: #F3E9DF;          /* cream: primary text on dark */
+  --mint: #FFFFFF;              /* primary pill is white */
+  --sun: #E8CBA8;               /* champagne accent for the badge */
+  --line: rgba(243, 233, 223, 0.2);
+  background: var(--ink);
+}
+
+.lp[data-palette="burgundy"] .lp-display,
+.lp[data-palette="burgundy"] .lp-heading,
+.lp[data-palette="burgundy"] .lp-wheel__word,
+.lp[data-palette="burgundy"] .lp-wheel__list,
+.lp[data-palette="burgundy"] .lp-how__title,
+.lp[data-palette="burgundy"] .lp-sample__name,
+.lp[data-palette="burgundy"] .lp-principles__line,
+.lp[data-palette="burgundy"] .lp-compare__table td,
+.lp[data-palette="burgundy"] .lp-paths__title,
+.lp[data-palette="burgundy"] .lp-nav__brand,
+.lp[data-palette="burgundy"] .lp-footer__brand,
+.lp[data-palette="burgundy"] .hl-auth-title {
+  font-family: var(--lp-font-serif), 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.lp[data-palette="burgundy"] .lp-display {
+  font-size: clamp(46px, 7.2vw, 104px);
+  line-height: 1.04;
+}
+
+/* Eyebrow labels get a short rule in front: "—— HOW IT WORKS". */
+.lp[data-palette="burgundy"] .lp-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 32px;
+  height: 1px;
+  margin-right: 14px;
+  vertical-align: middle;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.lp[data-palette="burgundy"] .lp-wheel.is-spinning .lp-wheel__label::before {
+  display: none;
+}
+
+/* Pills: solid white primary, thin cream outline secondary, no offset shadow. */
+.lp[data-palette="burgundy"] .lp-pill {
+  border-width: 1px;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.lp[data-palette="burgundy"] .lp-pill:hover,
+.lp[data-palette="burgundy"] .lp-pill:active {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.lp[data-palette="burgundy"] .lp-pill--mint {
+  border-color: #FFFFFF;
+  background: #FFFFFF;
+  color: #2A0304;
+}
+
+.lp[data-palette="burgundy"] .lp-pill--ghost {
+  border-color: rgba(243, 233, 223, 0.6);
+  box-shadow: none;
+}
+
+.lp[data-palette="burgundy"] .lp-nav__actions .lp-pill {
+  box-shadow: none;
+}
+
+/* Sticker icons keep their shape but switch to champagne / cream. */
+.lp[data-palette="burgundy"] .lp-sticker {
+  background: var(--sun) !important;
+  border-color: #2A0304;
+  box-shadow: 3px 3px 0 #1A0102;
+}
+
+.lp[data-palette="burgundy"] .lp-sample__tag,
+.lp[data-palette="burgundy"] .lp-paths__arrow,
+.lp[data-palette="burgundy"] .hl-auth-mode {
+  color: var(--sun);
+}
+
+.lp[data-palette="burgundy"] .lp-card {
+  background: rgba(26, 1, 2, 0.28);
+}
+
+.lp[data-palette="burgundy"] .lp-paths__card:hover {
+  border-color: var(--sun);
+  background: rgba(232, 203, 168, 0.06);
+}
+
+.lp[data-palette="burgundy"] .lp-sample__card:nth-child(2) {
+  border-color: rgba(232, 203, 168, 0.5);
+}
+
+.lp[data-palette="burgundy"] .lp-nav.is-scrolled {
+  background: rgba(42, 3, 4, 0.78);
+}
+
+.lp[data-palette="burgundy"] .lp-footer {
+  background: #1C0203;
+}
+
+/* ---- Code-made textures (no photos) ---- */
+
+/* Warm light leaks instead of the lavender glow. */
+.lp[data-palette="burgundy"] .lp-hero__glow {
+  background:
+    radial-gradient(circle at 70% 40%, rgba(232, 203, 168, 0.22) 0%, rgba(232, 203, 168, 0) 45%),
+    radial-gradient(circle at 30% 70%, rgba(160, 20, 28, 0.35) 0%, rgba(160, 20, 28, 0) 55%);
+}
+
+/* Ribbed-glass panel on the right of the hero. */
+.lp-hero__ribs {
+  display: none;
+}
+
+.lp[data-palette="burgundy"] .lp-hero__ribs {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(44vw, 620px);
+  z-index: 1;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 240, 230, 0.10) 0px,
+      rgba(255, 240, 230, 0.02) 6px,
+      rgba(0, 0, 0, 0.18) 11px,
+      rgba(255, 240, 230, 0.06) 14px
+    ),
+    radial-gradient(ellipse at 55% 45%, rgba(243, 233, 223, 0.55) 0%, rgba(232, 203, 168, 0.25) 22%, rgba(74, 6, 8, 0) 60%),
+    linear-gradient(180deg, #5A0A0C, #2A0304);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+  filter: saturate(1.05);
+}
+
+/* The door glows cream instead of lavender. */
+.lp[data-palette="burgundy"] .lp-door__frame {
+  background: linear-gradient(180deg, #FFF8F0, #F3E9DF);
+  box-shadow: 0 0 140px 36px rgba(243, 233, 223, 0.35);
+}
+
+.lp[data-palette="burgundy"] .lp-door__panel {
+  background: linear-gradient(90deg, #6E0E12, #8C1A1F 60%, #A42A2F);
+}
+
+/* Principles band: cream with ribbed-glass slabs. */
+.lp[data-palette="burgundy"] .lp-slab {
+  border-color: rgba(58, 5, 6, 0.18);
+  background:
+    repeating-linear-gradient(90deg, rgba(58, 5, 6, 0.07) 0 2px, rgba(255, 255, 255, 0.0) 2px 9px),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(232, 203, 168, 0.25));
+}
+
+/* ---- Scrolling strip ---- */
+.lp-marquee {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding: 18px 0;
+  border-block: 1px solid var(--line);
+  background: #1C0203;
+  color: var(--lavender);
+}
+
+.lp-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 42s linear infinite;
+}
+
+.lp-marquee__group {
+  display: flex;
+}
+
+.lp-marquee__item {
+  padding: 0 28px;
+  font-family: var(--lp-font-serif), Georgia, serif;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.lp-marquee__item::after {
+  content: '·';
+  padding-left: 56px;
+  opacity: 0.5;
+}
+
+@keyframes lp-marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* ---- Preview theme switch ---- */
+.lp-theme-switch {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(15, 15, 15, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #F3E9DF;
+  font: 600 11px var(--lp-font-body), sans-serif;
+}
+
+.lp-theme-switch__label {
+  padding: 0 8px 0 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.lp-theme-switch button {
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lp-theme-switch button.is-active {
+  background: #F3E9DF;
+  color: #2A0304;
+}
+
+@media (max-width: 720px) {
+  .lp[data-palette="burgundy"] .lp-hero__ribs {
+    width: 70vw;
+    opacity: 0.55;
+  }
+}

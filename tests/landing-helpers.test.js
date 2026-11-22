@@ -41,3 +41,15 @@ describe('wheelPositions', () => {
     expect(wheelPositions(-3)).toEqual([]);
   });
 });
+
+describe('palettes', () => {
+  it('gives burgundy sections cream text on oxblood', async () => {
+    const { themeFor: pick, paletteFromSearch } = await import('../lib/landing/theme.js');
+    expect(pick('ink', 'burgundy')).toEqual({ bg: '#2A0304', fg: '#F3E9DF' });
+    expect(pick('lavender', 'burgundy')).toEqual({ bg: '#F3E9DF', fg: '#3A0506' });
+    expect(pick('ink', 'nope')).toEqual({ bg: '#0F0F0F', fg: '#BCBBFF' });
+    expect(paletteFromSearch('?theme=burgundy')).toBe('burgundy');
+    expect(paletteFromSearch('?theme=hacker')).toBe('lavender');
+    expect(paletteFromSearch('')).toBe('lavender');
+  });
+});
