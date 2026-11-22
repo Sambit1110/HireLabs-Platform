@@ -13,10 +13,22 @@ beforeAll(() => {
 });
 
 describe('hero server HTML', () => {
-  it('already contains the door, so it never appears after the finished hero', async () => {
+  it('already contains the closed glass intro, so it never appears after the finished hero', async () => {
     const { ThresholdHero } = await import('../components/landing/ThresholdHero.jsx');
     const html = renderToStaticMarkup(createElement(ThresholdHero, {}));
-    expect(html).toContain('class="lp-door"');
+    expect(html).toMatch(/<div class="lp-curtain" aria-hidden="true">/);
+    expect(html.match(/class="lp-curtain__brick"/g)).toHaveLength(20);
+    expect(html).toContain('class="lp-curtain__sheen"');
+    expect(html).not.toContain('lp-door');
+  });
+
+  it('dissolves the bricks in a wave outward from the glass edge', async () => {
+    const { ThresholdHero } = await import('../components/landing/ThresholdHero.jsx');
+    const html = renderToStaticMarkup(createElement(ThresholdHero, {}));
+    const delays = [...html.matchAll(/class="lp-curtain__brick" style="--d:(\d+)"/g)].map((match) => Number(match[1]));
+    expect(delays).toHaveLength(20);
+    expect(delays[0]).toBe(0);
+    expect(Math.max(...delays)).toBe(7);
   });
 
   it('marks the headline words for the CSS focus-in, not a post-hydration swap', async () => {
@@ -27,8 +39,10 @@ describe('hero server HTML', () => {
 
   it('plays the intro only for visitors who allow motion', () => {
     const noPreference = css.match(/@media \(prefers-reduced-motion: no-preference\)\s*{[\s\S]*?\n}/g) ?? [];
-    expect(noPreference.join('\n')).toMatch(/\.lp-door\s*{[^}]*animation:/);
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{[\s\S]*?\.lp-door\s*{[^}]*display:\s*none/);
+    expect(noPreference.join('\n')).toMatch(/\.lp-curtain__brick\s*{[^}]*animation:\s*lp-brick-out/);
+    expect(noPreference.join('\n')).toMatch(/\.lp-curtain__sheen\s*{[^}]*animation:\s*lp-sheen/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{[\s\S]*?\.lp-curtain\s*{[^}]*display:\s*none/);
+    expect(css).not.toMatch(/lp-door/);
   });
 });
 
