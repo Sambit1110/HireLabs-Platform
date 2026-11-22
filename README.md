@@ -153,7 +153,7 @@ Existing users are signed out once after this change, because sessions moved fro
 
 4. Set the Supabase Site URL to `https://YOUR-VERCEL-DOMAIN` and add `https://YOUR-VERCEL-DOMAIN/auth/callback` to redirect URLs, then deploy. Subsequent pushes trigger Vercel preview and production deployments automatically.
 
-> The API routes declare `maxDuration = 60`, so resume processing can run for up to 60 seconds. Vercel can't run the Python model server or Ollama. A Vercel deployment needs `MODEL_SERVER_URL` and `OLLAMA_URL` pointing at a machine that runs them, protected so only the app can reach them. Otherwise AI features return 503. For the demo, run everything locally.
+> The API routes declare `maxDuration = 60`, so resume processing can run for up to 60 seconds. Vercel can't run the Python model server or Ollama. A Vercel deployment reaches them on a team machine through a Cloudflare tunnel protected by a shared token (`MODEL_API_TOKEN`). See [Hosting the team's models](docs/hosting-models.md) and `scripts/host-models.sh`. Without hosting, AI features return 503.
 
 ## Security and Operational Notes
 
