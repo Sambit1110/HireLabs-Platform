@@ -363,6 +363,8 @@ body:has(.lp) {
   min-height: 100svh;
   padding: 120px 0 80px;
   overflow: hidden;
+  /* Lets the text measure the hero's width (cqw units) to stay on the glass. */
+  container-type: inline-size;
 }
 
 /* ---- Paper roses behind a glass-brick wall ---- */
@@ -510,8 +512,9 @@ body:has(.lp) {
     display: none;
   }
 
-  .lp-hero .lp-hero__lede {
-    max-width: none;
+  /* Phones: the glass covers the full width. */
+  .lp-hero .lp-hero__inner {
+    --lp-glass-room: calc(100cqw - 32px);
   }
 
   .lp-roses__shade {
@@ -524,19 +527,30 @@ body:has(.lp) {
 .lp-hero__inner {
   position: relative;
   z-index: 2;
+  /* Where the text starts (the container's left edge), and how much room is
+     left on the glass (52% of the hero) before its right edge, minus a margin. */
+  --lp-text-left: max(16px, calc((100cqw - 1180px) / 2));
+  --lp-glass-room: calc(52cqw - var(--lp-text-left) - 32px);
 }
 
 .lp-hero__eyebrow {
+  max-width: var(--lp-glass-room);
   margin: 0 0 28px;
   opacity: 0.75;
 }
 
 .lp-hero__title {
-  max-width: 13ch;
+  max-width: min(13ch, var(--lp-glass-room));
+}
+
+/* The longest line, "people behind", is about 6.17em wide: size the headline
+   so it always fits in the room on the glass (6.5 leaves a little slack). */
+.lp .lp-hero .lp-hero__title {
+  font-size: min(clamp(46px, 7.2vw, 104px), calc(var(--lp-glass-room) / 6.5));
 }
 
 .lp-hero__lede {
-  max-width: min(520px, 42vw);
+  max-width: min(520px, var(--lp-glass-room));
   margin: 32px 0 0;
   font-size: clamp(17px, 1.6vw, 20px);
   opacity: 0.85;
