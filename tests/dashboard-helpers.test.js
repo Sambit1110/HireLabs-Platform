@@ -39,6 +39,12 @@ describe('describeModel', () => {
 });
 
 describe('normalizeEvaluation', () => {
+  it('reports how many quotes the server removed, and 0 when none were', () => {
+    expect(normalizeEvaluation({ evidence_removed: 2 }).evidenceRemoved).toBe(2);
+    expect(normalizeEvaluation({}).evidenceRemoved).toBe(0);
+    expect(normalizeEvaluation({ evidence_removed: -1 }).evidenceRemoved).toBe(0);
+  });
+
   it('keeps a valid fit score and verdict', () => {
     const result = normalizeEvaluation({
       fit_verdict: 'strong',

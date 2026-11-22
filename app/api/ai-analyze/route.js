@@ -3,7 +3,8 @@ import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
 import { evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
-import { useLocalModels } from '@/lib/ai/model-server';
+import { checkEvidence } from '@/lib/ai/evidence';
+import { geminiFallbackAllowed, useLocalModels } from '@/lib/ai/model-server';
 import { parseAIJson } from '@/lib/ai/parse-json';
 import {
   CANDIDATE_LIMITS as LIMITS,
@@ -121,6 +122,16 @@ function validateInput(body) {
   }
 
   return null;
+}
+
+/** Drops evidence whose quotes are not in the resume and records how many went. */
+function candidateSuccess(result, body, model, modelUsed) {
+  const { kept, removed } = checkEvidence(result.evidence_signals, body.candidate.parsedText);
+  return apiSuccess({
+    result: { ...result, evidence_signals: kept, evidence_removed: removed.length },
+    model,
+    model_used: modelUsed,
+  });
 }
 
 function placeholderValue(schema) {
@@ -249,7 +260,7 @@ export async function POST(request) {
     try {
       const result = await evaluateLocally(buildCandidateMessages(body), schema);
       if (validateAnalysis(result, schema, mode)) {
-        return apiSuccess({ result, model: evaluatorModel, model_used: evaluatorModel });
+        return candidateSuccess(result, body, evaluatorModel, evaluatorModel);
       }
     } catch {
       // Provider errors can contain candidate information.
@@ -259,7 +270,10 @@ export async function POST(request) {
   if (provider === 'local') {
     return apiError('LOCAL_EVALUATOR_UNAVAILABLE', 'Local evaluator returned no valid result.', 503);
   }
-  if (!process.env.GEMINI_API_KEY) {
+  // Candidate mode sends resume data, so DISABLE_GEMINI_FALLBACK applies to it.
+  // Role mode sends only the job description and needs just the key.
+  const geminiAllowed = mode === 'candidate' ? geminiFallbackAllowed() : Boolean(process.env.GEMINI_API_KEY);
+  if (!geminiAllowed) {
     return apiError('AI_UNAVAILABLE', 'Gemini fallback is unavailable.', 503);
   }
 
@@ -311,11 +325,10 @@ export async function POST(request) {
       );
     }
 
-    return apiSuccess({
-      result,
-      model: MODEL,
-      model_used: mode === 'candidate' ? 'gemini-fallback' : 'gemini',
-    });
+    if (mode === 'candidate') {
+      return candidateSuccess(result, body, MODEL, 'gemini-fallback');
+    }
+    return apiSuccess({ result, model: MODEL, model_used: 'gemini' });
   } catch (error) {
     // Avoid logging prompts, resume text, or API secrets.
     const status = Number(error?.status || error?.code);
