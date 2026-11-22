@@ -1027,10 +1027,6 @@
   background: var(--d-champagne);
 }
 
-.results-bar--gemini span {
-  background: #C98A8F;
-}
-
 .results-metric-notes {
   display: grid;
   gap: 4px;

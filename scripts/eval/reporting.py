@@ -9,9 +9,9 @@ from .config import ENTITY_LABELS
 from .results_writer import validate_canonical_artifact
 
 _SYSTEM_ADAPTER_KEYS = {
-    "parser": {"Gemini": "gemini_parser", "hirelabs-parser": "spacy_parser"},
-    "matching": {"Gemini embeddings": "gemini_embeddings", "hirelabs-matcher": "hirelabs_matcher"},
-    "evaluator": {"Gemini": "gemini_evaluator", "hirelabs-evaluator": "hirelabs_evaluator"},
+    "parser": {"hirelabs-parser": "spacy_parser"},
+    "matching": {"hirelabs-matcher": "hirelabs_matcher"},
+    "evaluator": {"hirelabs-evaluator": "hirelabs_evaluator"},
 }
 
 
@@ -98,7 +98,7 @@ def _evaluation_section(artifact):
     lines = [
         "# Evaluation results", "",
         f"Evaluation split: **{artifact['split']}** ({artifact['dataset']['resumes']} resumes; {artifact['dataset']['pairs']} labeled pairs).",
-        "", "The keyword baseline is measured. Gemini and HireLabs rows are shown only when an explicit adapter supplies predictions; unavailable measurements remain `null`.",
+        "", "The keyword baseline is measured. HireLabs rows are shown only when an explicit adapter supplies predictions; unavailable measurements remain `null`. No external AI model is evaluated or used.",
         "", "## Systems", "",
         "| Task | System | Type | Availability |", "|---|---|---|---|",
     ]

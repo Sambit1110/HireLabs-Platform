@@ -38,24 +38,21 @@ def matcher():
     return CallableAdapter("hirelabs-matcher", rank, model_id=path)
 
 
-def evaluator(provider):
+def evaluator():
     token = os.environ["HIRELABS_ACCESS_TOKEN"]
     url = "http://127.0.0.1:3000/api/ai-analyze"
-    model = (os.getenv("BIAS_EXPECTED_LOCAL_MODEL", "hirelabs-evaluator") if provider == "local"
-             else os.getenv("GEMINI_MODEL", "gemini-fallback"))
+    model = os.getenv("BIAS_EXPECTED_LOCAL_MODEL", "hirelabs-evaluator")
 
     def predict(row):
         case = {"role": "Role described in the supplied job description",
                 "jobDescription": row["job_description"]}
-        return request_analysis_result(url, token, provider, case, {"parsedText": row["resume_text"]})
+        return request_analysis_result(url, token, "local", case, {"parsedText": row["resume_text"]})
 
     return CallableAdapter(model, predict)
 
 
 def configured():
-    factories = {"spacy_parser": parser, "hirelabs_matcher": matcher,
-                 "hirelabs_evaluator": lambda: evaluator("local"),
-                 "gemini_evaluator": lambda: evaluator("gemini")}
+    factories = {"spacy_parser": parser, "hirelabs_matcher": matcher, "hirelabs_evaluator": evaluator}
     selected = os.getenv("HIRELABS_EVAL_ADAPTERS", "").split(",")
     names = [name.strip() for name in selected]
     if not all(name in factories for name in names):

@@ -22,7 +22,6 @@ _TASKS = {
         "description": "Exact character-span extraction against human annotations.",
         "systems": {
             "Keyword baseline": "baseline",
-            "Gemini": "gemini",
             "hirelabs-parser": "ours",
         },
         "metrics": {},
@@ -32,7 +31,6 @@ _TASKS = {
         "description": "Rank explicitly judged resume candidates for each job query.",
         "systems": {
             "Keyword baseline": "baseline",
-            "Gemini embeddings": "gemini",
             "hirelabs-matcher": "ours",
         },
         "metrics": {
@@ -46,7 +44,6 @@ _TASKS = {
         "description": "Structured candidate assessment against human-reviewed labels.",
         "systems": {
             "Keyword baseline": "baseline",
-            "Gemini": "gemini",
             "hirelabs-evaluator": "ours",
         },
         "metrics": {
@@ -74,9 +71,9 @@ _TASKS["parser"]["metrics"] = _PARSER_METRICS
 
 _ALLOWED_MODES = {"development", "final"}
 _ALLOWED_ADAPTERS = {
-    "keyword_parser", "spacy_parser", "gemini_parser",
-    "skill_overlap_matcher", "hirelabs_matcher", "gemini_embeddings",
-    "keyword_evaluator", "gemini_evaluator", "hirelabs_evaluator",
+    "keyword_parser", "spacy_parser",
+    "skill_overlap_matcher", "hirelabs_matcher",
+    "keyword_evaluator", "hirelabs_evaluator",
 }
 
 

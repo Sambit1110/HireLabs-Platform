@@ -67,7 +67,7 @@ def request_analysis_result(url, token, provider, case, candidate):
             if error.code != 429 or not retry_after or attempt == 3:
                 raise ValueError(f"{provider} API returned HTTP {error.code}.") from None
             time.sleep(min(60, max(1, int(retry_after))))
-    expected = os.getenv("BIAS_EXPECTED_LOCAL_MODEL", "hirelabs-evaluator") if provider == "local" else "gemini-fallback"
+    expected = os.getenv("BIAS_EXPECTED_LOCAL_MODEL", "hirelabs-evaluator")
     if data["model_used"] != expected:
         raise ValueError(f"The API did not use the requested {provider} model.")
     return data["result"]
@@ -109,7 +109,8 @@ def main():
     if not token:
         cli.error("Set HIRELABS_ACCESS_TOKEN to a current Supabase user access token.")
     cases = load_cases(args.cases)
-    report = {provider: measure(cases, args.url, token, provider) for provider in ("local", "gemini")}
+    # Only the team's own evaluator is measured; the app has no other model.
+    report = {"local": measure(cases, args.url, token, "local")}
     with args.output.open("x", encoding="utf-8") as output:
         json.dump(report, output, indent=2)
         output.write("\n")

@@ -21,7 +21,7 @@
 | 2 | 1:00 | Dashboard → upload a resume | "Our own resume parser extracts the name, title and skills." Point at the **`hirelabs-parser`** badge. |
 | 3 | 1:00 | "Rank candidates for a job" → paste the job description → Rank | "Our matching model ranks candidates by meaning, not just keywords." Point at the **`hirelabs-matcher`** badge and the similarity bars. |
 | 4 | 1:15 | Click **Explain score** on the top candidate → Evaluate candidate | "Our fine-tuned LLM gives a score *with reasons*: matched skills, missing skills, and evidence quoted from the resume." Point at the **`hirelabs-evaluator`** badge. If the model says "insufficient evidence", say: "it refuses to guess." |
-| 5 | 1:00 | Nav → **Model results** | Walk the table: keyword baseline vs Gemini vs ours, on a test set no model saw. Say honestly where Gemini still wins, and why ours is still worth it (free, private, runs locally). |
+| 5 | 1:00 | Nav → **Model results** | Walk the table: keyword baseline vs our models, on a test set no model saw. Say honestly where ours is still weak, and what the next training round would fix. |
 | 6 | 0:45 | Scroll to **Fairness check** | "We swapped only names and genders on identical resumes. Here's how much the score moved." If there's a before/after with names removed, show it. |
 | 7 | 0:30 | Stop Ollama → run the evaluation again | "Every answer comes from our own models. If the evaluator is down, the app says so. It never sends the resume to an outside AI." |
 | 8 | 0:30 | Closing slide | Team roles (one line each) and what we'd do next. |

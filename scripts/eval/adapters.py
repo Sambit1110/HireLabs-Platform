@@ -62,9 +62,6 @@ class CallableAdapter:
 def unavailable_model_adapters() -> Mapping[str, UnavailableAdapter]:
     return {
         "spacy_parser": UnavailableAdapter("spacy_parser", "No configured exact-span parser model adapter is present."),
-        "gemini_parser": UnavailableAdapter("gemini_parser", "The current parser integration returns profile fields, not exact character spans."),
         "hirelabs_matcher": UnavailableAdapter("hirelabs_matcher", "Matcher service identity cannot be guaranteed without activating its local service."),
-        "gemini_embeddings": UnavailableAdapter("gemini_embeddings", "No Gemini embedding integration exists in this repository."),
-        "gemini_evaluator": UnavailableAdapter("gemini_evaluator", "The current endpoint contract lacks the agreed fit_score and is not available offline."),
         "hirelabs_evaluator": UnavailableAdapter("hirelabs_evaluator", "No evaluator model request/response adapter contract is present."),
     }

@@ -2,7 +2,7 @@
 
 The runner evaluates only an explicit prepared dataset root. Its default mode
 is development and it runs deterministic keyword baselines. It does not
-discover data, contact a model service, call Gemini, install packages, or emit
+discover data, contact a model service, call any external AI, install packages, or emit
 per-person data in reports.
 
 ## Commands
@@ -96,20 +96,19 @@ catalog baseline; other labels can be absent from baseline predictions.
 
 Adapters implement task-specific `predict(inputs)` contracts documented by
 `ParserAdapter`, `MatcherAdapter`, and `EvaluatorAdapter`. `CallableAdapter`
-supports injected implementations and mocks. Current exact-span Gemini,
-Gemini embeddings, HireLabs evaluator, and guaranteed HireLabs matcher
-adapters are unavailable: existing app interfaces do not provide the
-required compatible response contract or cannot be selected without starting
-services. Their status is reported by the runner. No model is silently
-substituted. Gemini parser profile extraction is not scored as spans.
+supports injected implementations and mocks. Without an adapter factory, the
+HireLabs parser, matcher and evaluator adapters are unavailable: they need the
+model files or running services. Their status is reported by the runner. No
+model is silently substituted. Only the keyword baselines and the team's own
+models are compared; no external AI model is evaluated.
 
-- `spacy_parser` / `gemini_parser`: `predict({document_id, text})` returns a
+- `spacy_parser`: `predict({document_id, text})` returns a
   list of `{start, end, label}` spans measured in the original `text`.
-- `gemini_embeddings` / `hirelabs_matcher`:
+- `hirelabs_matcher`:
   `predict({query_id, job_description, candidates})` returns an ordered list
   of candidate IDs. Candidates contain only explicitly judged IDs for that
   query; returning an unjudged ID is rejected.
-- `gemini_evaluator` / `hirelabs_evaluator`:
+- `hirelabs_evaluator`:
   `predict({pair_id, resume_text, job_description})` should return the original
   raw candidate evaluator JSON string. A parsed object remains usable for
   schema-valid verdict/score metrics but cannot count toward strict valid-JSON
@@ -136,7 +135,7 @@ each JSON file before atomic replacement; two output files are not a single
 filesystem transaction. The report directory receives a comparison table,
 exactly three chart groups (parser, matching, evaluator), aggregate error
 counts, and a report-ready evaluation section. System kinds distinguish the
-baseline, Gemini, and HireLabs entries; unavailable values remain `null`.
+baseline and HireLabs entries; unavailable values remain `null`.
 Error analysis describes the keyword baseline only. Per-example error details
 are intentionally not published because they could contain personal
 information.

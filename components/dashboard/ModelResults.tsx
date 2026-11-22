@@ -16,7 +16,6 @@ const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
 
 const KIND_LABELS: Record<string, string> = {
   ours: "Our model",
-  gemini: "Gemini",
   baseline: "Baseline",
 };
 
@@ -243,8 +242,8 @@ export default function ModelResults() {
             <p className="dashboard-eyebrow">EVALUATION</p>
             <h1>Model results</h1>
             <p>
-              How HireLabs&apos; own models compare with a simple keyword baseline and
-              with Gemini, measured on a held-out test set that no model was trained on.
+              How HireLabs&apos; own models compare with a simple keyword baseline,
+              measured on a held-out test set that no model was trained on.
             </p>
           </div>
         </div>
@@ -306,8 +305,8 @@ export default function ModelResults() {
             {state.results.bias && <BiasSection bias={state.results.bias} />}
 
             <p className="resume-note">
-              Bold green values are the best result for each metric. Our models run
-              locally; Gemini is a large paid model shown only for comparison.
+              Bold green values are the best result for each metric. Every model
+              shown is the team&apos;s own and runs on our own machine.
             </p>
           </>
         )}
