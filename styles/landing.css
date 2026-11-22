@@ -113,45 +113,90 @@ body:has(.lp) {
 
 /* ---------- Pill buttons (offset shadow) ---------- */
 .lp-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  min-height: 46px;
-  padding: 12px 22px;
-  border: 1.5px solid var(--oxblood-deep);
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  font: 600 14px/1 var(--lp-font-body), system-ui, sans-serif;
+  font: 600 15px/1 var(--lp-font-body), system-ui, sans-serif;
   letter-spacing: 0.01em;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: 4px 4px 0 var(--oxblood-deep);
-  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.lp-pill__arrow {
+  display: inline-block;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lp-pill:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--oxblood-deep);
+  transform: translateY(-2px);
+}
+
+.lp-pill:hover .lp-pill__arrow {
+  transform: translateX(4px);
 }
 
 .lp-pill:active {
-  transform: translate(4px, 4px);
-  box-shadow: 0 0 0 var(--oxblood-deep);
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
 }
 
-.lp-pill--pill {
+.lp-pill:focus-visible {
+  outline: 2px solid var(--pill);
+  outline-offset: 3px;
+}
+
+.lp-pill:disabled,
+.lp-pill[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Solid white: the main action. Warms to cream with a soft halo on hover. */
+.lp-pill--primary {
   background: var(--pill);
   color: var(--oxblood-deep);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
+.lp-pill--primary:hover {
+  background: var(--cream);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32), 0 0 0 4px rgba(243, 233, 223, 0.14);
+}
+
+/* Outlined: the secondary action. Fills faintly on hover. */
 .lp-pill--ghost {
+  border-color: rgba(243, 233, 223, 0.55);
   background: transparent;
   color: var(--lp-fg);
-  border-color: currentColor;
-  box-shadow: 4px 4px 0 rgba(243, 233, 223, 0.35);
 }
 
 .lp-pill--ghost:hover {
-  box-shadow: 2px 2px 0 rgba(243, 233, 223, 0.35);
+  border-color: var(--cream);
+  background: rgba(243, 233, 223, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-pill:hover,
+  .lp-pill:active,
+  .lp-pill:hover .lp-pill__arrow {
+    transform: none;
+  }
 }
 
 /* ---------- Rotating circular badge ---------- */
@@ -246,10 +291,9 @@ body:has(.lp) {
 }
 
 .lp-nav__actions .lp-pill {
-  min-height: 38px;
-  padding: 9px 16px;
-  font-size: 12px;
-  box-shadow: 3px 3px 0 var(--oxblood-deep);
+  min-height: 40px;
+  padding: 0 18px;
+  font-size: 13px;
 }
 
 .lp-nav__account {
@@ -806,6 +850,7 @@ body:has(.lp) {
 /* Pinned to the bottom, so the links line up across the row. */
 .lp-how__toggle {
   align-self: flex-start;
+  min-height: 32px;
   margin-top: auto;
   padding: 18px 0 0;
   border: 0;
@@ -825,9 +870,28 @@ body:has(.lp) {
   border-radius: inherit;
 }
 
+.lp-how__toggle span {
+  display: inline-block;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .lp-how__toggle:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.lp-how__card:hover .lp-how__front .lp-how__toggle span {
+  transform: translateX(4px);
+}
+
+.lp-how__back .lp-how__toggle:hover span {
+  transform: translateX(-4px);
+}
+
+.lp-how__toggle:focus-visible {
+  outline: 2px solid var(--pill);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 .lp-how__card:has(.lp-how__toggle:focus-visible) {
@@ -1662,23 +1726,53 @@ body:has(.lp) {
   text-decoration: underline;
 }
 
-/* Primary submit button becomes a white pill with the offset shadow. */
+/* Primary submit button matches the landing's white pill. */
 .lp .hl-auth-form .hl-btn-primary {
   min-height: 50px;
-  border: 1.5px solid var(--oxblood-deep);
+  border: 1px solid transparent;
   border-radius: 999px;
   background: var(--pill);
   color: var(--oxblood-deep);
   font: 600 15px var(--lp-font-body), sans-serif;
-  box-shadow: 4px 4px 0 var(--oxblood-deep);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.lp .hl-auth-form .hl-btn-primary::after {
+  display: none;
 }
 
 .lp .hl-auth-form .hl-btn-primary:hover:not(:disabled) {
-  border-color: var(--oxblood-deep);
-  background: var(--pill);
+  border-color: transparent;
+  background: var(--cream);
   color: var(--oxblood-deep);
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--oxblood-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32), 0 0 0 4px rgba(243, 233, 223, 0.14);
+}
+
+.lp .hl-auth-form .hl-btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* Text buttons in the pop-up: underline on hover, clear focus ring. */
+.lp .hl-auth-field button:hover,
+.lp .hl-auth-form > button[type='button']:hover,
+.lp .hl-auth-mode:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  opacity: 1;
+}
+
+.lp .hl-auth-field button:focus-visible,
+.lp .hl-auth-form > button[type='button']:focus-visible,
+.lp .hl-auth-mode:focus-visible {
+  outline: 2px solid var(--pill);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* ==========================================================================
@@ -1718,34 +1812,6 @@ body:has(.lp) {
   vertical-align: middle;
   background: currentColor;
   opacity: 0.7;
-}
-
-/* Pills: solid white primary, thin cream outline secondary, no offset shadow. */
-.lp .lp-pill {
-  border-width: 1px;
-  box-shadow: none;
-  font-weight: 500;
-}
-
-.lp .lp-pill:hover,
-.lp .lp-pill:active {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-}
-
-.lp .lp-pill--pill {
-  border-color: #FFFFFF;
-  background: #FFFFFF;
-  color: #2A0304;
-}
-
-.lp .lp-pill--ghost {
-  border-color: rgba(243, 233, 223, 0.6);
-  box-shadow: none;
-}
-
-.lp .lp-nav__actions .lp-pill {
-  box-shadow: none;
 }
 
 /* Sticker icons keep their shape but switch to champagne / cream. */

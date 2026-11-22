@@ -53,7 +53,9 @@ export function ThresholdHero({ onTrySample, onSignIn }) {
           score, so your team decides with confidence.
         </p>
         <div className="lp-hero__actions">
-          <PillButton onClick={onTrySample}>Try the sample →</PillButton>
+          <PillButton onClick={onTrySample} arrow>
+            Try the sample
+          </PillButton>
           <PillButton variant="ghost" onClick={onSignIn}>
             Sign in
           </PillButton>

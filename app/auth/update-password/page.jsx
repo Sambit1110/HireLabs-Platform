@@ -342,19 +342,7 @@ export default function UpdatePasswordPage() {
                     (current) => !current
                   )
                 }
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform:
-                    'translateY(-50%)',
-                  border: 'none',
-                  background:
-                    'transparent',
-                  cursor: 'pointer',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                }}
+                className="auth-reveal"
               >
                 {showPassword
                   ? 'Hide'
@@ -417,22 +405,7 @@ export default function UpdatePasswordPage() {
               isLoading ||
               !hasSession
             }
-            style={{
-              minHeight: '48px',
-              border: 0,
-              borderRadius: '13px',
-              cursor:
-                isLoading ||
-                !hasSession
-                  ? 'not-allowed'
-                  : 'pointer',
-              fontWeight: 800,
-              opacity:
-                isLoading ||
-                !hasSession
-                  ? 0.6
-                  : 1,
-            }}
+            className="auth-submit"
           >
             {isLoading
               ? 'Updating…'

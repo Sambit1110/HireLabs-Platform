@@ -6,7 +6,9 @@ export function ClosingCta({ onGetStarted }) {
     <section id="cta" data-lp-theme="deep" className="lp-section lp-cta">
       <div className="lp-container lp-cta__inner">
         <FocusText as="h2" className="lp-display" text="Ready to read between the lines?" />
-        <PillButton onClick={onGetStarted}>Get started →</PillButton>
+        <PillButton onClick={onGetStarted} arrow>
+          Get started
+        </PillButton>
       </div>
     </section>
   );

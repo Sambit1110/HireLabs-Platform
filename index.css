@@ -2692,8 +2692,75 @@ textarea {
 .dashboard-header nav a, .dashboard-section-heading a { color: #625d56; text-decoration: none; }
 .dashboard-header nav a[aria-current="page"] { color: #23211e; font-weight: 700; }
 .dashboard-account { display: flex; align-items: center; gap: 16px; color: #625d56; font-size: 13px; }
-.dashboard-logout, .dashboard-secondary, .dashboard-danger { border: 1px solid #d8d3ca; background: #fff; border-radius: 8px; padding: 9px 13px; color: inherit; cursor: pointer; }
+.dashboard-logout,
+.dashboard-secondary,
+.dashboard-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d8d3ca;
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(37, 34, 31, 0.06);
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.dashboard-logout:hover:not(:disabled),
+.dashboard-secondary:hover:not(:disabled) { background: #faf8f4; border-color: #bfb8ac; box-shadow: 0 3px 10px rgba(37, 34, 31, 0.08); }
+.dashboard-logout:active:not(:disabled),
+.dashboard-secondary:active:not(:disabled),
+.dashboard-danger:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.dashboard-logout:disabled,
+.dashboard-secondary:disabled,
+.dashboard-danger:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 .dashboard-danger { color: #a52a24; border-color: #e6c6c2; }
+.dashboard-danger:hover:not(:disabled) { background: #fbefed; border-color: #d9a39d; box-shadow: 0 3px 10px rgba(165, 42, 36, 0.1); }
+.dashboard-shell .btn-primary { min-height: 42px; padding: 0 18px; border-radius: 10px; font-weight: 600; }
+.dashboard-shell .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.dashboard-shell .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Update password page */
+.auth-submit {
+  min-height: 48px;
+  border: 1px solid #211C18;
+  border-radius: 13px;
+  background: #211C18;
+  color: #F5F1E8;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(33, 28, 24, 0.12);
+  transition: background-color 160ms ease, box-shadow 200ms ease, transform 160ms ease;
+}
+.auth-submit:hover:not(:disabled) { background: #3A322B; transform: translateY(-1px); box-shadow: 0 14px 30px rgba(33, 28, 24, 0.18); }
+.auth-submit:active:not(:disabled) { transform: translateY(0) scale(0.98); box-shadow: 0 6px 14px rgba(33, 28, 24, 0.12); }
+.auth-submit:focus-visible,
+.auth-reveal:focus-visible { outline: 3px solid #477fe5; outline-offset: 3px; }
+.auth-submit:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.auth-reveal {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.auth-reveal:hover { background: rgba(33, 28, 24, 0.07); }
 .dashboard-content { max-width: 1180px; margin: 0 auto; padding: 44px 24px 80px; }
 .dashboard-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
 .dashboard-heading h1 { margin: 4px 0 8px; font-size: clamp(28px, 4vw, 38px); }
