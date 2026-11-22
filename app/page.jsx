@@ -24,6 +24,8 @@ import {
 import { LandingNav } from '@/components/landing/LandingNav';
 import { ScrollBackground } from '@/components/landing/ScrollBackground';
 import { ThresholdHero } from '@/components/landing/ThresholdHero';
+import { WordWheel } from '@/components/landing/WordWheel';
+import { Statement } from '@/components/landing/Statement';
 import '@/styles/landing.css';
 import { Footer } from '../components/layout/Footer';
 
@@ -1817,6 +1819,12 @@ export default function LandingPage() {
            ==================================================== */}
 
         <ThresholdHero onTrySample={scrollToDemo} onSignIn={openAuth} />
+
+        <WordWheel
+          words={['Skills', 'Experience', 'Projects', 'Education', 'Evidence', 'Gaps', 'Fit', 'Interview focus']}
+        />
+
+        <Statement lines={['Stop filtering for keywords.', 'Start reading for evidence.']} />
 
 
         {/* ====================================================
