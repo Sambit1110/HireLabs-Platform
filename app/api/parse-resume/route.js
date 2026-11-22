@@ -6,7 +6,7 @@ import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { parseAIJson } from '@/lib/ai/parse-json';
 import { normalizePythonProfile } from '@/lib/resume/model-parser';
-import { callModelServer, useLocalModels } from '@/lib/ai/model-server';
+import { callModelServer, geminiFallbackAllowed, useLocalModels } from '@/lib/ai/model-server';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
 import { embedText } from '@/lib/resume/embedding';
 
@@ -345,7 +345,8 @@ async function enrichResume(text, filename) {
     }
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  // DISABLE_GEMINI_FALLBACK=true keeps resume text off Gemini.
+  if (!geminiFallbackAllowed()) {
     return {
       value: null,
       error:

@@ -90,8 +90,8 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    curl http://127.0.0.1:8000/health
    ```
 
-4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template.
-5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Stop FastAPI to demonstrate parser fallback or stop Ollama to demonstrate evaluator fallback. Both responses report `gemini-fallback`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
+4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template. The app requests a 16384-token context (`OLLAMA_NUM_CTX`) and refuses any prompt that would not fit, because Ollama would otherwise cut it silently.
+5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Stop FastAPI to demonstrate parser fallback or stop Ollama to demonstrate evaluator fallback. Both responses report `gemini-fallback`. Set `DISABLE_GEMINI_FALLBACK=true` to keep resume data off Gemini: candidate analysis then returns 503 and parsing saves the text without enrichment. Candidate analysis also drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
 
 For interface development, set `MODEL_PLACEHOLDERS=true` in the Python service environment and `EVALUATOR_PLACEHOLDER=true` in `.env.local`. Responses identify placeholders explicitly. Disable these options for the live demo. Keep both model services bound to loopback for local use.
 

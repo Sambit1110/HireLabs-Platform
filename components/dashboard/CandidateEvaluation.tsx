@@ -139,7 +139,18 @@ export default function CandidateEvaluation({ data }: { data: unknown }) {
             ))}
           </ul>
         ) : (
-          <p className="eval-empty">The model did not cite resume evidence.</p>
+          <p className="eval-empty">
+            {evaluation.evidenceRemoved > 0
+              ? "No quote the model gave could be found in the resume."
+              : "The model did not cite resume evidence."}
+          </p>
+        )}
+        {evaluation.evidenceRemoved > 0 && evaluation.evidence.length > 0 && (
+          <p className="eval-muted">
+            {evaluation.evidenceRemoved === 1
+              ? "1 quote was left out because it is not in the resume."
+              : `${evaluation.evidenceRemoved} quotes were left out because they are not in the resume.`}
+          </p>
         )}
       </section>
 
