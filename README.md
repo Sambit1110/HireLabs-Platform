@@ -47,9 +47,9 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
 ## Local Setup
 
-1. **Create a Supabase project.** Under **Authentication → URL Configuration**, set the Site URL to your current environment (`http://localhost:3000` locally, your production domain otherwise) and add `http://localhost:3000/auth/callback` as a redirect URL. Enable email magic links.
+1. **Create a Supabase project.** Under **Authentication → URL Configuration**, set the Site URL to your current environment (`http://localhost:3000` locally, your production domain otherwise) and add `http://localhost:3000/auth/callback` (plus `https://YOUR-DOMAIN/auth/callback` in production) as redirect URLs. Then apply the recommended settings in [Authentication](#authentication).
 
-2. **Run the migration.** Open the Supabase SQL Editor and execute the file in [`supabase/migrations/`](supabase/migrations/) in filename order. Alternatively, link the Supabase CLI and run `supabase db push`.
+2. **Run the migrations.** Open the Supabase SQL Editor and execute **every** file in [`supabase/migrations/`](supabase/migrations/) in filename order (`001` … `006`). Alternatively, link the Supabase CLI and run `supabase db push`. `005` (pgvector, `job_descriptions`, `match_resumes`) is required for **Rank candidates**, and `006` must follow `003`, or every successful parse is rejected by the status check. `GET /api/health` reports which parts of the schema are present.
 
 3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your project URL, anon key, and a Gemini API key. `SUPABASE_SERVICE_ROLE_KEY` is reserved for future privileged background jobs and must never be exposed to the browser.
 
@@ -60,9 +60,21 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    npm run dev
    ```
 
-   Sign in with a magic link, upload a PDF or DOCX, then submit a job description to test the full flow.
+   Create an account or sign in with email and password, upload a PDF or DOCX, then submit a job description to test the full flow.
 
-5. **Check your changes** before opening a pull request:
+5. **Start the matching service** (needed for **Rank candidates**). It serves `POST /embed` with the `hirelabs-matcher` model:
+
+   ```bash
+   python3 -m venv .venv-matcher
+   .venv-matcher/bin/pip install -r scripts/python/requirements-matcher.txt
+   .venv-matcher/bin/python scripts/python/embed_service.py
+   ```
+
+   It listens on `http://localhost:8000` (change with `PORT`) and loads the fine-tuned model from `models/hirelabs-matcher` (change with `MATCHER_MODEL_PATH`). If that folder is missing, it falls back to the base `BAAI/bge-small-en-v1.5` and reports `bge-small-en-v1.5-baseline`. Point the app at it with `EMBED_SERVICE_URL` (default `http://localhost:8000/embed`).
+
+   If the service isn't running in development, the app silently switches to hash-based placeholder vectors (`hirelabs-matcher-fallback`) so the flow stays clickable. The dashboard labels those results **"Offline placeholder, not a real model"** and warns that the scores are meaningless. Never demo with the placeholder. In production the request fails instead.
+
+6. **Check your changes** before opening a pull request:
 
    ```bash
    npm run check
@@ -97,13 +109,33 @@ The script writes aggregate metrics. Keep the manifest and weights outside Git. 
 
 ### Development Without Outbound Email
 
-The login screen supports both magic-link and email/password sign-in. To create a local account without configuring SMTP:
+The login screen uses email and password. To create a local account without configuring SMTP:
 
 1. Go to **Supabase → Authentication → Providers → Email** and temporarily disable **Confirm email**.
 2. Use **Create an account** with a password of at least eight characters.
 3. Re-enable confirmation and configure a transactional email provider before deploying to production.
 
-Add `http://localhost:3000/reset-password` and `https://YOUR-DOMAIN/reset-password` to Supabase Auth redirect URLs to support password resets.
+Password reset emails link to `/auth/callback?next=/auth/update-password`, so the `/auth/callback` redirect URLs above are all that's needed.
+
+## Authentication
+
+- **Sessions live in cookies** (`@supabase/ssr`), not localStorage. `proxy.js` (Next.js 16's replacement for middleware) refreshes the session on each page request and redirects signed-out visitors from `/dashboard` and `/dashboard/resumes` to the sign-in dialog, then back to the page they wanted. `/dashboard/results` stays public.
+- **API routes** still verify the bearer token on the server (`lib/supabase/server-auth.js`), and row-level security protects the data. The proxy check is a convenience layer, not the only protection.
+- **Redirects after sign-in** only go to same-site paths (`lib/auth/redirect.js`).
+- **Error messages** are mapped to plain language, and sign-up and password reset never reveal whether an email is registered (`lib/auth/messages.js`).
+- **Passwords** need at least 8 characters with letters and numbers, at most 72, and must not contain the email name (`lib/auth/password.js`).
+
+Recommended Supabase dashboard settings (enforced on the server, so they can't be bypassed):
+
+| Where | Setting |
+|---|---|
+| Authentication → Providers → Email | **Confirm email**: on. **Minimum password length**: 8. **Password requirements**: letters and digits. |
+| Authentication → Attack Protection | **Leaked password protection**: on (if your plan includes it). Optionally enable **CAPTCHA** (hCaptcha or Turnstile); the sign-in form needs a CAPTCHA widget added before you turn this on. |
+| Authentication → Rate Limits | Keep the defaults, or lower the sign-in/sign-up limits for the demo. |
+| Authentication → URL Configuration | Site URL set to your real domain; redirect URLs limited to your own `/auth/callback` URLs. |
+| Authentication → Emails → SMTP | Use your own SMTP provider before real users sign up (the built-in sender is heavily rate limited). |
+
+Existing users are signed out once after this change, because sessions moved from localStorage to cookies.
 
 ## Deploying with GitHub and Vercel
 

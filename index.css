@@ -2738,6 +2738,8 @@ textarea {
 .model-badge--ours { background: #e9f5ec; border-color: #b9dcc2; color: #1e6b35; }
 .model-badge--ours .model-badge__dot { background: #2e9a4d; }
 .model-badge--fallback { background: #f1f0ed; color: #59544d; }
+.model-badge--placeholder { background: #fff6dc; border-color: #f0d98c; color: #6d5410; }
+.model-badge--placeholder .model-badge__dot { background: #c99a1a; }
 .sample-banner { margin: 14px 0; padding: 10px 14px; border-radius: 8px; background: #fff6dc; border: 1px solid #f0d98c; color: #6d5410; font-size: 13px; font-weight: 600; }
 
 .eval { display: grid; gap: 16px; margin-top: 20px; }

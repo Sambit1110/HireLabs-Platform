@@ -1,0 +1,4 @@
+<View><Labels name="entities" toName="resume">
+  <Label value="NAME"/><Label value="TITLE"/><Label value="SKILL"/>
+  <Label value="YEARS_EXPERIENCE"/><Label value="DEGREE"/><Label value="COMPANY"/>
+</Labels><Text name="resume" value="$text"/></View>

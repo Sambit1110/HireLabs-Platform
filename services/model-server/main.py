@@ -21,12 +21,12 @@ async def lifespan(app: FastAPI):
         from sentence_transformers import SentenceTransformer
 
         try:
-            app.state.parser = spacy.load(os.getenv("PARSER_MODEL", "hirelabs_parser"))
+            app.state.parser = spacy.load(os.getenv("PARSER_MODEL") or os.getenv("HIRELABS_PARSER_MODEL", "hirelabs_parser"))
         except (OSError, ImportError):
             print("HireLabs parser unavailable.", file=sys.stderr)
         try:
             app.state.matcher = SentenceTransformer(
-                os.getenv("MATCHER_MODEL", "hirelabs-matcher"), local_files_only=True
+                os.getenv("MATCHER_MODEL") or os.getenv("MATCHER_MODEL_PATH", "models/hirelabs-matcher"), local_files_only=True
             )
         except (OSError, ValueError):
             print("HireLabs matcher unavailable.", file=sys.stderr)

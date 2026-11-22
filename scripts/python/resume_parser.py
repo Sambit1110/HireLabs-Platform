@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import sys
 
@@ -67,12 +68,17 @@ def parse_profile(text, nlp):
 
 
 def main():
-    import en_Resume_Parser_pipeline
-
     text = json.load(sys.stdin).get("text", "")
     if not isinstance(text, str) or not text.strip():
         raise ValueError("Resume text is required.")
-    json.dump(parse_profile(text, en_Resume_Parser_pipeline.load()), sys.stdout)
+    model = os.environ.get("HIRELABS_PARSER_MODEL")
+    if model:
+        import spacy
+        nlp = spacy.load(model)
+    else:
+        import en_Resume_Parser_pipeline
+        nlp = en_Resume_Parser_pipeline.load()
+    json.dump(parse_profile(text, nlp), sys.stdout, ensure_ascii=False)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,11 @@ import AIAnalysisPanel, {
   type AnalysisPreset,
 } from "@/components/dashboard/AIAnalysisPanel";
 import CandidateRanking from "@/components/dashboard/CandidateRanking";
+import {
+  isParsedStatus,
+  isPendingStatus,
+  statusLabel,
+} from "@/lib/resume/status";
 
 type Resume = {
   id: string;
@@ -64,21 +69,6 @@ function formatSize(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "parsed":
-      return "Parsed";
-    case "processing":
-      return "Processing";
-    case "failed":
-      return "Failed";
-    case "uploaded":
-      return "Pending";
-    default:
-      return status || "Unknown";
-  }
 }
 
 function candidateName(resume: Resume) {
@@ -400,7 +390,7 @@ export default function DashboardApp() {
         throw queryError;
       }
 
-      const records = (data || []) as Resume[];
+      const records = (data || []) as unknown as Resume[];
 
       setResumes(records);
 
@@ -408,7 +398,7 @@ export default function DashboardApp() {
         records
           .filter(
             (resume) =>
-              resume.processing_status === "parsed"
+              isParsedStatus(resume.processing_status)
           )
           .map((resume) => resume.id)
       );
@@ -478,15 +468,12 @@ export default function DashboardApp() {
     return {
       total: resumes.length,
 
-      parsed: resumes.filter(
-        (resume) =>
-          resume.processing_status === "parsed"
+      parsed: resumes.filter((resume) =>
+        isParsedStatus(resume.processing_status)
       ).length,
 
-      pending: resumes.filter(
-        (resume) =>
-          resume.processing_status === "uploaded" ||
-          resume.processing_status === "processing"
+      pending: resumes.filter((resume) =>
+        isPendingStatus(resume.processing_status)
       ).length,
 
       failed: resumes.filter(
@@ -514,10 +501,10 @@ export default function DashboardApp() {
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "processing"
-          ? ["uploaded", "processing"].includes(
-              resume.processing_status
-            )
-          : resume.processing_status === statusFilter);
+          ? isPendingStatus(resume.processing_status)
+          : statusFilter === "parsed"
+            ? isParsedStatus(resume.processing_status)
+            : resume.processing_status === statusFilter);
 
       return matchesSearch && matchesStatus;
     });
@@ -533,7 +520,7 @@ export default function DashboardApp() {
     return resumes
       .filter(
         (resume) =>
-          resume.processing_status === "parsed" &&
+          isParsedStatus(resume.processing_status) &&
           Boolean(resume.parsed_text)
       )
       .map((resume) => ({
@@ -926,7 +913,7 @@ export default function DashboardApp() {
               );
 
               const canCompare =
-                resume.processing_status === "parsed";
+                isParsedStatus(resume.processing_status);
 
               return (
                 <article
@@ -1013,13 +1000,10 @@ export default function DashboardApp() {
                   </div>
 
                   <div className="resume-actions">
-                    {[
-                      "failed",
-                      "uploaded",
-                      "processing",
-                    ].includes(
-                      resume.processing_status
-                    ) && (
+                    {(resume.processing_status === "failed" ||
+                      isPendingStatus(
+                        resume.processing_status
+                      )) && (
                       <button
                         type="button"
                         className="dashboard-secondary"
