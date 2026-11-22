@@ -34,9 +34,24 @@ describe('paper rose hero', () => {
     expect(html).not.toContain('lp-badge');
   });
 
-  it('keeps the readability shade over the buttons and the description inside the glass', () => {
+  it('keeps the readability shade over the buttons', () => {
     expect(css).toMatch(/\.lp-roses__shade\s*{[^}]*ellipse 48% 54% at 24% 60%/);
-    expect(css).toMatch(/\.lp-hero__lede\s*{[^}]*max-width:\s*min\(520px, 42vw\)/);
+  });
+
+  it('measures the room left on the glass from the hero\'s own width', () => {
+    expect(css).toMatch(/\.lp-hero\s*{[^}]*container-type:\s*inline-size/);
+    expect(css).toMatch(/--lp-glass-room:\s*calc\(52cqw - var\(--lp-text-left\) - 32px\)/);
+  });
+
+  it('sizes the headline so its longest line ("people behind", 6.17em) fits inside the glass', () => {
+    expect(css).toMatch(
+      /\.lp \.lp-hero \.lp-hero__title\s*{[^}]*font-size:\s*min\(clamp\(46px, 7\.2vw, 104px\), calc\(var\(--lp-glass-room\) \/ 6\.5\)\)/
+    );
+  });
+
+  it('keeps the label and description inside the glass too', () => {
+    expect(css).toMatch(/\.lp-hero__lede\s*{[^}]*max-width:\s*min\(520px, var\(--lp-glass-room\)\)/);
+    expect(css).toMatch(/\.lp-hero__eyebrow\s*{[^}]*max-width:\s*var\(--lp-glass-room\)/);
   });
 
   it('keeps the headline and drops the old ribbed texture and glow', async () => {
