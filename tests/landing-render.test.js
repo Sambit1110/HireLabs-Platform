@@ -62,3 +62,43 @@ describe('landing page canvas and pop-up colours', () => {
     expect(css).toMatch(/@media \(max-width: 720px\) and \(max-height: 760px\)\s*{\s*\.lp-hero__badge\s*{\s*display:\s*none/);
   });
 });
+
+describe('word wheel server HTML', () => {
+  const items = [
+    { word: 'Skills', caption: 'Tools and abilities, matched by meaning.' },
+    { word: 'Evidence', caption: 'Every claim linked to the line that shows it.' },
+  ];
+
+  it('reads as a sentence: a visible "We read for" heading names the section', async () => {
+    const { WordWheel } = await import('../components/landing/WordWheel.jsx');
+    const html = renderToStaticMarkup(createElement(WordWheel, { items }));
+    const id = html.match(/aria-labelledby="([^"]+)"/)?.[1];
+    expect(id).toBeTruthy();
+    expect(html).toMatch(new RegExp(`<h2[^>]*id="${id}"[^>]*>We read for</h2>`));
+  });
+
+  it('renders the drum in the server HTML, starting on the first word', async () => {
+    const { WordWheel } = await import('../components/landing/WordWheel.jsx');
+    const html = renderToStaticMarkup(createElement(WordWheel, { items }));
+    expect(html).toContain('class="lp-wheel__drum"');
+    expect(html).toContain('01 / 02');
+  });
+
+  it('keeps every word and its caption in a list for screen readers and phones', async () => {
+    const { WordWheel } = await import('../components/landing/WordWheel.jsx');
+    const html = renderToStaticMarkup(createElement(WordWheel, { items }));
+    const list = html.match(/<ul class="lp-wheel__list">[\s\S]*?<\/ul>/)?.[0] ?? '';
+    for (const { word, caption } of items) {
+      expect(list).toContain(word);
+      expect(list).toContain(caption);
+    }
+  });
+
+  it('only makes the section tall and sticky where the drum runs, so the page never jumps after loading', () => {
+    expect(css).not.toMatch(/\.lp-wheel\.is-spinning/);
+    expect(css).not.toMatch(/rotateZ\(-18deg\)/);
+    const drumMedia = css.match(/@media \(min-width: 768px\) and \(prefers-reduced-motion: no-preference\)\s*{[\s\S]*?\n}/)?.[0] ?? '';
+    expect(drumMedia).toMatch(/\.lp-wheel\s*{[^}]*height:\s*\d+vh/);
+  });
+});
+
