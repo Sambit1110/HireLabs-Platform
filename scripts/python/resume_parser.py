@@ -40,19 +40,7 @@ def experience_from_text(text, entities):
     return None
 
 
-def main():
-    payload = json.load(sys.stdin)
-    text = payload.get("text", "")
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError("Resume text is required.")
-
-    model = os.environ.get("HIRELABS_PARSER_MODEL")
-    if model:
-        import spacy
-        nlp = spacy.load(model)
-    else:
-        import en_Resume_Parser_pipeline
-        nlp = en_Resume_Parser_pipeline.load()
+def parse_profile(text, nlp):
     doc = nlp(text[:50000])
     entities = [
         {"text": entity.text, "label": entity.label_}
@@ -66,27 +54,36 @@ def main():
 
     name = unique(by_label.get("NAME", []))[0:1]
     title = unique(
-        by_label.get("TITLE", [])
-        + by_label.get("WORKED AS", [])
+        by_label.get("TITLE", []) + by_label.get("WORKED AS", [])
         + by_label.get("DESIGNATION", [])
     )[0:1]
     skills = unique(by_label.get("SKILL", []) + by_label.get("SKILLS", []))
 
-    json.dump(
-        {
-            "candidateName": name[0] if name else None,
-            "candidateTitle": title[0] if title else None,
-            "extractedSkills": skills,
-            "yearsExperience": experience_from_text(text, entities),
-        },
-        sys.stdout,
-        ensure_ascii=False,
-    )
+    return {
+        "candidateName": name[0] if name else None,
+        "candidateTitle": title[0] if title else None,
+        "extractedSkills": skills,
+        "yearsExperience": experience_from_text(text, entities),
+    }
+
+
+def main():
+    text = json.load(sys.stdin).get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Resume text is required.")
+    model = os.environ.get("HIRELABS_PARSER_MODEL")
+    if model:
+        import spacy
+        nlp = spacy.load(model)
+    else:
+        import en_Resume_Parser_pipeline
+        nlp = en_Resume_Parser_pipeline.load()
+    json.dump(parse_profile(text, nlp), sys.stdout, ensure_ascii=False)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as error:
-        json.dump({"error": str(error)}, sys.stdout)
+    except Exception:
+        json.dump({"error": "Resume parser failed."}, sys.stdout)
         sys.exit(1)

@@ -5,7 +5,9 @@ import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { parseAIJson } from '@/lib/ai/parse-json';
-import { parseResumeWithModel } from '@/lib/resume/model-parser';
+import { normalizePythonProfile } from '@/lib/resume/model-parser';
+import { callModelServer, useLocalModels } from '@/lib/ai/model-server';
+import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
 import { embedText } from '@/lib/resume/embedding';
 
 export const runtime = 'nodejs';
@@ -321,27 +323,26 @@ function validateEnrichmentResult(value) {
 }
 
 async function enrichResume(text, filename) {
-  try {
-    const modelProfile = await parseResumeWithModel(text);
+  if (useLocalModels()) {
+    try {
+      const { value, placeholder } = await callModelServer('/parse', { text });
+      const modelProfile = normalizePythonProfile(value);
 
-    if (
-      modelProfile.candidateName
-      || modelProfile.candidateTitle
-      || modelProfile.extractedSkills.length > 0
-      || modelProfile.yearsExperience !== null
-    ) {
-      return {
-        value: modelProfile,
-        error: null,
-      };
+      if (
+        modelProfile.candidateName ||
+        modelProfile.candidateTitle ||
+        modelProfile.extractedSkills.length > 0 ||
+        modelProfile.yearsExperience !== null
+      ) {
+        return {
+          value: modelProfile,
+          modelUsed: placeholder ? 'parser-placeholder' : 'hirelabs-parser',
+          error: null,
+        };
+      }
+    } catch {
+      // If the service is down or returns invalid output, use Gemini.
     }
-  } catch (error) {
-    console.error('Resume trained model enrichment failed:', {
-      name:
-        error instanceof Error
-          ? error.name
-          : 'UnknownError',
-    });
   }
 
   if (!process.env.GEMINI_API_KEY) {
@@ -359,6 +360,7 @@ async function enrichResume(text, filename) {
 
     const ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: { timeout: 18_000, retryOptions: { attempts: 1 } },
     });
 
     const response = await ai.models.generateContent({
@@ -403,6 +405,7 @@ async function enrichResume(text, filename) {
 
     return {
       value: validateEnrichmentResult(parsed),
+      modelUsed: 'gemini-fallback',
       error: null,
     };
   } catch (error) {
@@ -441,6 +444,9 @@ export async function POST(request) {
   if (auth.response) {
     return auth.response;
   }
+
+  const limited = checkAIRateLimit(auth.user.id);
+  if (limited) return limited;
 
   let resume = null;
 
@@ -628,7 +634,7 @@ export async function POST(request) {
     if (saveError) {
       throw saveError;
     }
-    return apiSuccess(saved);
+    return apiSuccess({ ...saved, model_used: enrichment.modelUsed || null });
   } catch (error) {
     console.error('Resume processing failed:', {
       name:
