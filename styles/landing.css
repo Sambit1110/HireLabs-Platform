@@ -754,10 +754,25 @@ body:has(.lp) {
 }
 
 .lp-how__card {
+  position: relative;
+  min-height: 300px;
+  transition: border-color 200ms ease;
+}
+
+/* Both sides share one grid cell, so the card is as tall as its taller side. */
+.lp-how__inner {
+  display: grid;
+  height: 100%;
+}
+
+.lp-how__face {
+  position: relative;
+  z-index: 1;
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
-  min-height: 300px;
   padding: 26px;
+  border-radius: inherit;
 }
 
 .lp-how__top {
@@ -774,8 +789,7 @@ body:has(.lp) {
 }
 
 .lp-how__title {
-  margin: auto 0 12px;
-  padding-top: 48px;
+  margin: 52px 0 12px;
   font-family: var(--lp-font-display), Georgia, serif;
   font-weight: 300;
   font-size: 34px;
@@ -785,7 +799,272 @@ body:has(.lp) {
 .lp-how__body {
   margin: 0;
   font-size: 15px;
+  line-height: 1.55;
   opacity: 0.82;
+}
+
+/* Pinned to the bottom, so the links line up across the row. */
+.lp-how__toggle {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 18px 0 0;
+  border: 0;
+  background: none;
+  color: var(--champagne);
+  font: 600 11px var(--lp-font-body), sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* The whole front of the card is clickable. */
+.lp-how__front .lp-how__toggle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.lp-how__toggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lp-how__card:has(.lp-how__toggle:focus-visible) {
+  border-color: var(--champagne);
+}
+
+/* ---- Card backs: sample output ---- */
+.lp-demo {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.lp-demo__chip {
+  justify-self: start;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.lp-demo__fields {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.lp-demo__fields dt {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.lp-demo__fields dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.lp-demo__bars,
+.lp-demo__versions,
+.lp-demo__chips {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-demo__bar-label,
+.lp-demo__versions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lp-demo__score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--champagne);
+}
+
+.lp-demo__bar {
+  display: block;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(243, 233, 223, 0.12);
+  overflow: hidden;
+}
+
+.lp-demo__bar-fill {
+  display: block;
+  width: var(--w);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--champagne);
+  transform-origin: left center;
+}
+
+.lp-demo__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lp-demo__skill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.lp-demo__skill.is-match {
+  background: rgba(232, 203, 168, 0.18);
+  color: var(--cream);
+}
+
+.lp-demo__skill.is-match::before {
+  content: '✓ ';
+}
+
+.lp-demo__skill.is-missing {
+  border: 1px dashed rgba(243, 233, 223, 0.45);
+  opacity: 0.85;
+}
+
+.lp-demo__skill.is-missing::before {
+  content: '✗ ';
+}
+
+.lp-demo__quote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--champagne);
+  font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+.lp-demo__versions li {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-demo__verdict {
+  justify-self: start;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--champagne);
+  color: var(--oxblood-deep);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- Turning the card over ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-how__inner {
+    transform-style: preserve-3d;
+    transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .lp-how__face {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  .lp-how__back {
+    transform: rotateY(180deg);
+  }
+
+  .lp-how__card.is-flipped .lp-how__inner {
+    transform: rotateY(180deg);
+  }
+
+  /* The sample rows arrive one by one once the card has turned. */
+  .lp-how__card.is-flipped .lp-demo__row {
+    animation: lp-demo-in 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(380ms + var(--d, 0) * 110ms);
+  }
+
+  .lp-how__card.is-flipped .lp-demo__bar-fill {
+    animation: lp-bar-grow 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(480ms + var(--d, 0) * 140ms);
+  }
+}
+
+@keyframes lp-demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes lp-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Reduced motion: the sides swap without spinning. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-how__back {
+    visibility: hidden;
+  }
+
+  .lp-how__card.is-flipped .lp-how__front {
+    visibility: hidden;
+  }
+
+  .lp-how__card.is-flipped .lp-how__back {
+    visibility: visible;
+  }
+}
+
+/* ---- Mouse hover: spotlight, gentle tilt, sticker hop ---- */
+.lp-how__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(232, 203, 168, 0.14), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+@media (hover: hover) {
+  .lp-how__card:hover::before {
+    opacity: 1;
+  }
+
+  .lp-how__card:hover {
+    border-color: rgba(232, 203, 168, 0.5);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lp-how__card {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 250ms ease-out, border-color 200ms ease;
+  }
+
+  .lp-how__card .lp-sticker {
+    transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .lp-how__card:hover .lp-sticker {
+    transform: rotate(5deg) translateY(-4px);
+  }
 }
 
 /* ---------- Sample preview ---------- */
