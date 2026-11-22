@@ -16,6 +16,8 @@ export function ScrollBackground() {
     const { bg, fg } = themeFor(activeSection.current);
     root.style.setProperty('--lp-bg', bg);
     root.style.setProperty('--lp-fg', fg);
+    // Lets other parts (like the menu bar) adapt to light or dark sections.
+    root.dataset.lpActive = activeSection.current;
   };
 
   useEffect(() => {
