@@ -1752,7 +1752,7 @@ body:has(.lp) {
 
 }
 
-/* ---------- Principles (cream band with floating slabs) ---------- */
+/* ---------- Principles (cream band with floating resume pages) ---------- */
 .lp-principles {
   overflow: hidden;
   min-height: 100vh;
@@ -1760,18 +1760,24 @@ body:has(.lp) {
   align-items: center;
 }
 
-.lp-principles__slabs {
+.lp-principles__sheets {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.lp-slab {
+/* Paper resume pages: a name line, a role line and faint text lines. */
+.lp-sheet {
   position: absolute;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 18px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12));
-  box-shadow: 0 30px 60px rgba(26, 1, 2, 0.08);
+  aspect-ratio: 8.5 / 11;
+  border: 1px solid rgba(58, 5, 6, 0.08);
+  border-radius: 3px;
+  background:
+    linear-gradient(#5a463a, #5a463a) 14% 12% / 46% 6px no-repeat,
+    linear-gradient(rgba(90, 70, 58, 0.5), rgba(90, 70, 58, 0.5)) 14% 19% / 30% 3px no-repeat,
+    repeating-linear-gradient(180deg, transparent 0 10px, rgba(58, 42, 32, 0.18) 10px 11.5px) 14% 66% / 72% 52% no-repeat,
+    linear-gradient(160deg, #fffdf8, #f2e8da);
+  box-shadow: 0 24px 50px rgba(58, 5, 6, 0.14);
 }
 
 .lp-principles__inner {
@@ -1779,10 +1785,18 @@ body:has(.lp) {
   text-align: center;
 }
 
-.lp-principles__lines {
+.lp-principles__list {
   display: grid;
-  gap: 10px;
-  margin-top: 40px;
+  gap: 28px;
+  max-width: 820px;
+  margin: 44px auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-principles__item {
+  display: grid;
+  gap: 8px;
 }
 
 .lp-principles__line {
@@ -1793,11 +1807,28 @@ body:has(.lp) {
   line-height: 1.2;
 }
 
-.lp-principles__note {
+/* A short, muted line that backs each principle with how HireLabs does it. */
+.lp-principles__proof {
   max-width: 520px;
-  margin: 36px auto 0;
+  margin: 0 auto;
   font-size: 15px;
-  opacity: 0.75;
+  line-height: 1.55;
+  opacity: 0.72;
+}
+
+/* Narrower screens: only the pages right at the edges. */
+@media (max-width: 1100px) {
+  .lp-sheet:nth-child(2),
+  .lp-sheet:nth-child(4) {
+    display: none;
+  }
+}
+
+/* Narrow screens have no clear space beside the text: no pages there. */
+@media (max-width: 900px) {
+  .lp-sheet {
+    display: none;
+  }
 }
 
 /* ---------- Keyword filters vs HireLabs ---------- */
@@ -1955,9 +1986,6 @@ body:has(.lp) {
     justify-content: flex-start;
   }
 
-  .lp-slab:nth-child(n + 4) {
-    display: none;
-  }
 }
 
 /* ---------- Sign-in pop-up (dark) ---------- */
@@ -2227,20 +2255,29 @@ body:has(.lp) {
   background: rgba(42, 3, 4, 0.78);
 }
 
+/* Over the ivory band the scrolled menu bar turns light, with dark text and
+   a dark pill, so it never sits as a muddy brown bar over cream. */
+.lp[data-lp-active='cream'] .lp-nav.is-scrolled {
+  border-bottom: 1px solid rgba(58, 5, 6, 0.1);
+  background: rgba(243, 233, 223, 0.82);
+  color: #3A0506;
+}
+
+.lp[data-lp-active='cream'] .lp-nav .lp-pill--primary {
+  background: #3A0506;
+  color: #F3E9DF;
+}
+
+.lp[data-lp-active='cream'] .lp-nav .lp-pill--primary:hover {
+  background: #4A0608;
+}
+
 .lp .lp-footer {
   background: #1C0203;
 }
 
 /* ---- Code-made textures (no photos) ---- */
 
-
-/* Principles band: cream with ribbed-glass slabs. */
-.lp .lp-slab {
-  border-color: rgba(58, 5, 6, 0.18);
-  background:
-    repeating-linear-gradient(90deg, rgba(58, 5, 6, 0.07) 0 2px, rgba(255, 255, 255, 0.0) 2px 9px),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(232, 203, 168, 0.25));
-}
 
 /* ---- Scrolling strip ---- */
 .lp-marquee {
