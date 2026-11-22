@@ -527,79 +527,185 @@ body:has(.lp) {
   padding-block: 96px;
 }
 
-.lp-wheel.is-spinning {
-  height: 250vh;
-  padding-block: 0;
+.lp-wheel__lead {
+  margin: 0 0 28px;
+  font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(30px, 3.4vw, 52px);
+  line-height: 1.1;
+  opacity: 0.8;
 }
 
-.lp-wheel__stage {
-  position: relative;
-}
-
-.lp-wheel.is-spinning .lp-wheel__stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  display: grid;
-  align-items: center;
-}
-
-.lp-wheel__label {
-  margin: 0 0 32px;
-  opacity: 0.7;
-}
-
-.lp-wheel.is-spinning .lp-wheel__label {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  margin: 0;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: left center;
-}
-
-.lp-wheel__viewport {
-  --lp-wheel-radius: 230px;
-  height: 100vh;
-  display: grid;
-  place-items: center;
-  perspective: 1400px;
-  transform: rotateZ(-18deg);
-  -webkit-mask-image: linear-gradient(180deg, transparent 6%, #000 32%, #000 68%, transparent 94%);
-  mask-image: linear-gradient(180deg, transparent 6%, #000 32%, #000 68%, transparent 94%);
-}
-
-.lp-wheel__cylinder {
-  position: relative;
-  width: min(760px, 80vw);
-  height: 1px;
-  transform-style: preserve-3d;
-}
-
-.lp-wheel__word {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transform-origin: center center;
-  backface-visibility: hidden;
-  font-family: var(--lp-font-display), Georgia, serif;
-  font-weight: 200;
-  font-size: clamp(44px, 6vw, 84px);
-  line-height: 1;
-  white-space: nowrap;
-  translate: 0 -50%;
+/* Phones and reduced motion: a numbered list. The drum stays hidden. */
+.lp-wheel__drum,
+.lp-wheel__meta,
+.lp-wheel__progress {
+  display: none;
 }
 
 .lp-wheel__list {
   display: grid;
-  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-family: var(--lp-font-display), Georgia, serif;
-  font-weight: 200;
-  font-size: clamp(34px, 9vw, 56px);
-  line-height: 1.1;
+  border-top: 1px solid var(--line);
+}
+
+.lp-wheel__list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  row-gap: 6px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-wheel__list-num {
+  grid-row: span 2;
+  padding-top: 0.9em;
+  font: 600 11px var(--lp-font-body), sans-serif;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+
+.lp-wheel__list-word {
+  font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+  font-size: clamp(32px, 8vw, 52px);
+  line-height: 1.05;
+}
+
+.lp-wheel__list-caption {
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+/* Wide screens that allow motion: the sticky drum. The height comes from
+   CSS (not JavaScript), so the page is the same height before and after
+   it loads. */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .lp-wheel {
+    height: 320vh;
+    padding-block: 0;
+  }
+
+  .lp-wheel__stage {
+    --lp-wheel-size: clamp(48px, 6.4vw, 100px);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.5fr);
+    grid-template-rows: 1fr auto auto 1fr;
+    column-gap: clamp(24px, 4vw, 64px);
+    align-items: center;
+  }
+
+  .lp-wheel__lead {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+    text-align: right;
+  }
+
+  .lp-wheel__drum {
+    position: relative;
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    height: 4.4em;
+    font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+    font-size: var(--lp-wheel-size);
+    line-height: 1;
+    perspective: 900px;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+  }
+
+  .lp-wheel__word {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    margin-top: -0.5em;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    backface-visibility: hidden;
+    will-change: transform, opacity, filter;
+  }
+
+  /* Two hairlines frame the current word. */
+  .lp-wheel__band {
+    position: absolute;
+    left: -0.25em;
+    right: 0;
+    top: 50%;
+    height: 1.3em;
+    transform: translateY(-50%);
+    border-block: 1px solid var(--line);
+    pointer-events: none;
+  }
+
+  .lp-wheel__meta {
+    display: grid;
+    grid-column: 2;
+    grid-row: 3;
+    align-self: start;
+    grid-template-columns: auto 1fr;
+    column-gap: 24px;
+    align-items: start;
+    /* Sit just below the faded next word, not at the bottom of the drum. */
+    margin-top: calc(var(--lp-wheel-size) * -0.15);
+  }
+
+  .lp-wheel__count {
+    padding-top: 5px;
+    font: 600 11px var(--lp-font-body), sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.14em;
+    opacity: 0.7;
+  }
+
+  .lp-wheel__captions {
+    position: relative;
+    max-width: 46ch;
+    min-height: 3.2em;
+  }
+
+  .lp-wheel__caption {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .lp-wheel__progress {
+    position: absolute;
+    right: 0;
+    bottom: 7vh;
+    left: 0;
+    display: block;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.4;
+    transform-origin: 0 50%;
+  }
+
+  /* The list stays for screen readers only. */
+  .lp-wheel__list {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 /* ---------- Statements ---------- */
@@ -1152,8 +1258,6 @@ body:has(.lp) {
 
 .lp .lp-display,
 .lp .lp-heading,
-.lp .lp-wheel__word,
-.lp .lp-wheel__list,
 .lp .lp-how__title,
 .lp .lp-sample__name,
 .lp .lp-principles__line,
@@ -1182,10 +1286,6 @@ body:has(.lp) {
   vertical-align: middle;
   background: currentColor;
   opacity: 0.7;
-}
-
-.lp .lp-wheel.is-spinning .lp-wheel__label::before {
-  display: none;
 }
 
 /* Pills: solid white primary, thin cream outline secondary, no offset shadow. */

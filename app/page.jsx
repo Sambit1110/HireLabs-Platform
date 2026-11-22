@@ -371,7 +371,16 @@ export default function LandingPage() {
         <Marquee />
 
         <WordWheel
-          words={['Skills', 'Experience', 'Projects', 'Education', 'Evidence', 'Gaps', 'Fit', 'Interview focus']}
+          items={[
+            { word: 'Skills', caption: 'Tools and abilities, matched by meaning rather than exact keywords.' },
+            { word: 'Experience', caption: 'Roles, years and responsibilities, read in context.' },
+            { word: 'Projects', caption: 'What was actually built, and the part this person played.' },
+            { word: 'Education', caption: 'Degrees and courses, weighed against what the role needs.' },
+            { word: 'Evidence', caption: 'Every claim linked back to the line of the resume that shows it.' },
+            { word: 'Gaps', caption: 'Requirements the resume does not show yet, called out plainly.' },
+            { word: 'Fit', caption: 'A score with its reasons, never an unexplained number.' },
+            { word: 'Interview focus', caption: 'Questions worth asking to confirm what the resume cannot.' },
+          ]}
         />
 
         <Statement lines={['Stop filtering for keywords.', 'Start reading for evidence.']} />
