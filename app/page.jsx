@@ -26,10 +26,11 @@ import { ScrollBackground } from '@/components/landing/ScrollBackground';
 import { ThresholdHero } from '@/components/landing/ThresholdHero';
 import { WordWheel } from '@/components/landing/WordWheel';
 import { Statement } from '@/components/landing/Statement';
+import { HowItWorks } from '@/components/landing/HowItWorks';
+import { SamplePreview } from '@/components/landing/SamplePreview';
 import '@/styles/landing.css';
 import { Footer } from '../components/layout/Footer';
 
-import { InteractiveDemo } from '../components/landing/InteractiveDemo';
 import { FeaturesGrid } from '../components/landing/FeaturesGrid';
 import { ArchitectureFlow } from '../components/landing/ArchitectureFlow';
 import { ComparisonTable } from '../components/landing/ComparisonTable';
@@ -1831,11 +1832,9 @@ export default function LandingPage() {
             INTERACTIVE DEMO
            ==================================================== */}
 
-        <InteractiveDemo
-          onAuthRequired={
-            openAuth
-          }
-        />
+        <HowItWorks />
+
+        <SamplePreview />
 
 
         {/* ====================================================
