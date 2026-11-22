@@ -8,6 +8,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const landingCss = read('styles/landing.css');
 const appCss = read('index.css');
+const dashboardCss = read('styles/dashboard.css');
 
 /** All declarations for one exact selector list, joined. */
 function rulesFor(css, selector) {
@@ -55,15 +56,15 @@ describe('dashboard buttons', () => {
   const group = '.dashboard-logout,\n.dashboard-secondary,\n.dashboard-danger';
 
   it('show hover, press and disabled states', () => {
-    expect(appCss).toMatch(/\.dashboard-secondary:hover:not\(:disabled\)/);
-    expect(appCss).toMatch(/\.dashboard-secondary:active:not\(:disabled\)[^{]*{[^}]*translateY\(1px\)/);
-    expect(appCss).toMatch(/\.dashboard-secondary:disabled[^{]*{[^}]*cursor:\s*not-allowed/);
-    expect(appCss).toMatch(/\.dashboard-danger:hover:not\(:disabled\)/);
-    expect(rulesFor(appCss, group)).toMatch(/min-height:\s*38px/);
+    expect(dashboardCss).toMatch(/\.dashboard-secondary:hover:not\(:disabled\)/);
+    expect(dashboardCss).toMatch(/\.dashboard-secondary:active:not\(:disabled\)[^{]*{[^}]*scale\(0\.97\)/);
+    expect(dashboardCss).toMatch(/\.dashboard-secondary:disabled[^{]*{[^}]*cursor:\s*not-allowed/);
+    expect(dashboardCss).toMatch(/\.dashboard-danger:hover:not\(:disabled\)/);
+    expect(rulesFor(dashboardCss, group)).toMatch(/min-height:\s*40px/);
   });
 
   it('dim the upload button while it cannot be used', () => {
-    expect(appCss).toMatch(/\.dashboard-shell \.btn-primary:disabled[^{]*{[^}]*cursor:\s*not-allowed/);
+    expect(dashboardCss).toMatch(/\.dashboard-shell \.btn-primary:disabled[^{]*{[^}]*cursor:\s*not-allowed/);
   });
 });
 
