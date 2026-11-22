@@ -692,3 +692,211 @@
     transform: none;
   }
 }
+
+/* ---------- Principles (lavender band with floating slabs) ---------- */
+.lp-principles {
+  overflow: hidden;
+  min-height: 100vh;
+  display: grid;
+  align-items: center;
+}
+
+.lp-principles__slabs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lp-slab {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12));
+  box-shadow: 0 30px 60px rgba(15, 15, 15, 0.08);
+}
+
+.lp-principles__inner {
+  position: relative;
+  text-align: center;
+}
+
+.lp-principles__lines {
+  display: grid;
+  gap: 10px;
+  margin-top: 40px;
+}
+
+.lp-principles__line {
+  margin: 0;
+  font-family: var(--lp-font-display), Georgia, serif;
+  font-weight: 300;
+  font-size: clamp(26px, 3.2vw, 40px);
+  line-height: 1.2;
+}
+
+.lp-principles__note {
+  max-width: 520px;
+  margin: 36px auto 0;
+  font-size: 15px;
+  opacity: 0.75;
+}
+
+/* ---------- Keyword filters vs HireLabs ---------- */
+.lp-compare__table {
+  width: 100%;
+  margin-top: 48px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.lp-compare__table th {
+  padding: 0 0 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.lp-compare__table td {
+  padding: 22px 24px 22px 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--lp-font-display), Georgia, serif;
+  font-weight: 200;
+  font-size: clamp(20px, 2.2vw, 28px);
+  vertical-align: top;
+}
+
+.lp-compare__table td:first-child {
+  width: 50%;
+  opacity: 0.5;
+}
+
+/* ---------- Two paths ---------- */
+.lp-paths__heading {
+  max-width: 16ch;
+}
+
+.lp-paths__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 48px;
+}
+
+.lp-paths__card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  min-height: 240px;
+  padding: 32px;
+  text-decoration: none;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+
+.lp-paths__card:hover {
+  border-color: var(--mint);
+  background: rgba(156, 255, 230, 0.05);
+}
+
+.lp-paths__title {
+  font-family: var(--lp-font-display), Georgia, serif;
+  font-weight: 300;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.1;
+}
+
+.lp-paths__body {
+  max-width: 380px;
+  opacity: 0.78;
+}
+
+.lp-paths__arrow {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  font-size: 28px;
+  color: var(--mint);
+}
+
+/* ---------- Closing call to action ---------- */
+.lp-cta__inner {
+  display: grid;
+  justify-items: start;
+  gap: 40px;
+}
+
+.lp-cta .lp-display {
+  max-width: 14ch;
+}
+
+/* ---------- Footer (dark rounded panel) ---------- */
+.lp-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 40px;
+  padding: 56px 0 48px;
+  border-radius: 32px 32px 0 0;
+  background: #1A1A1F;
+  color: var(--lavender);
+}
+
+.lp-footer__inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px 48px;
+  align-items: center;
+}
+
+.lp-footer__brand {
+  font-family: var(--lp-font-display), Georgia, serif;
+  font-weight: 300;
+  font-size: 32px;
+}
+
+.lp-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 24px;
+}
+
+.lp-footer__links a {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.lp-footer__note {
+  grid-column: 1 / -1;
+  margin: 24px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+  .lp-paths__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-compare__table td {
+    padding-right: 12px;
+  }
+
+  .lp-footer__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-footer__links {
+    justify-content: flex-start;
+  }
+
+  .lp-slab:nth-child(n + 4) {
+    display: none;
+  }
+}

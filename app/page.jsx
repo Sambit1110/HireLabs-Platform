@@ -28,13 +28,13 @@ import { WordWheel } from '@/components/landing/WordWheel';
 import { Statement } from '@/components/landing/Statement';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { SamplePreview } from '@/components/landing/SamplePreview';
+import { Principles } from '@/components/landing/Principles';
+import { KeywordsVsEvidence } from '@/components/landing/KeywordsVsEvidence';
+import { TwoPaths } from '@/components/landing/TwoPaths';
+import { ClosingCta } from '@/components/landing/ClosingCta';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 import '@/styles/landing.css';
-import { Footer } from '../components/layout/Footer';
 
-import { FeaturesGrid } from '../components/landing/FeaturesGrid';
-import { ArchitectureFlow } from '../components/landing/ArchitectureFlow';
-import { ComparisonTable } from '../components/landing/ComparisonTable';
-import { SecuritySection } from '../components/landing/SecuritySection';
 
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -183,6 +183,11 @@ export default function LandingPage() {
     setShowPassword(false);
     setAuthMessage('');
     setIsAuthModalOpen(true);
+  };
+
+  const openSignUp = () => {
+    openAuth();
+    setAuthMode('signup');
   };
 
 
@@ -1837,154 +1842,15 @@ export default function LandingPage() {
         <SamplePreview />
 
 
-        {/* ====================================================
-            FEATURES
-           ==================================================== */}
+        <Principles />
 
-        <FeaturesGrid />
+        <KeywordsVsEvidence />
 
+        <TwoPaths />
 
-        {/* ====================================================
-            ARCHITECTURE
-           ==================================================== */}
+        <ClosingCta onGetStarted={openSignUp} />
 
-        <ArchitectureFlow />
-
-
-        {/* ====================================================
-            COMPARISON
-           ==================================================== */}
-
-        <ComparisonTable />
-
-
-        {/* ====================================================
-            SECURITY
-           ==================================================== */}
-
-        <SecuritySection />
-
-
-        {/* ====================================================
-            FINAL CTA
-           ==================================================== */}
-
-        <section
-          ref={ctaRef}
-          className={`hl-final-cta ${
-            ctaVisible
-              ? 'is-visible'
-              : ''
-          }`}
-          id="cta"
-        >
-
-          <div className="hl-final-shell">
-
-            <div className="hl-final-card">
-
-              <div className="hl-final-content">
-
-                <div className="hl-final-kicker">
-                  <span className="hl-final-kicker-dot" />
-
-                  The next step
-                </div>
-
-
-                <h2 className="hl-final-title">
-                  Find the people
-                  <br />
-                  behind the{' '}
-                  <em>
-                    resume.
-                  </em>
-                </h2>
-
-
-                <p className="hl-final-description">
-                  Move beyond keyword filters. Give your team
-                  a clearer way to discover, compare, and
-                  understand candidates using semantic matching
-                  and evidence-backed signals.
-                </p>
-
-
-                <div className="hl-final-actions">
-
-                  <Button
-                    variant="success"
-                    size="lg"
-                    onClick={
-                      openAuth
-                    }
-                  >
-                    <span>
-                      Launch HireLabs
-                    </span>
-
-                    <svg
-                      width="17"
-                      height="17"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </Button>
-
-
-                  <button
-                    type="button"
-                    className="hl-final-secondary"
-                    onClick={
-                      scrollToArchitecture
-                    }
-                  >
-                    Explore the architecture
-                  </button>
-
-                </div>
-
-
-                <div className="hl-final-meta">
-
-                  <span className="hl-final-meta-item">
-                    <span className="hl-final-meta-dot" />
-                    Semantic matching
-                  </span>
-
-
-                  <span className="hl-final-meta-item">
-                    <span className="hl-final-meta-dot" />
-                    PostgreSQL + pgvector
-                  </span>
-
-
-                  <span className="hl-final-meta-item">
-                    <span className="hl-final-meta-dot" />
-                    Private Supabase storage
-                  </span>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ====================================================
-            FOOTER
-           ==================================================== */}
-
-        <Footer />
+        <LandingFooter />
 
 
         {/* ====================================================
