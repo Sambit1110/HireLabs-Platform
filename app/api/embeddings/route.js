@@ -18,8 +18,8 @@ export async function POST(request) {
     return apiError('INVALID_JSON', 'Invalid JSON request body.', 400);
   }
   if (!Array.isArray(texts) || texts.length < 1 || texts.length > 16 ||
-      texts.some((item) => typeof item !== 'string' || !item.trim() || item.length > 12000)) {
-    return apiError('INVALID_INPUT', 'Provide 1 to 16 nonempty texts of up to 12000 characters.', 400);
+      texts.some((item) => typeof item !== 'string' || !item.trim() || item.length > 50000)) {
+    return apiError('INVALID_INPUT', 'Provide 1 to 16 nonempty texts of up to 50000 characters.', 400);
   }
   if (!useLocalModels()) return apiError('MATCHER_UNAVAILABLE', 'Local matcher is disabled.', 503);
   try {
@@ -29,7 +29,7 @@ export async function POST(request) {
           vector.some((number) => !Number.isFinite(number)))) {
       return apiError('INVALID_MODEL_RESPONSE', 'Invalid matcher output.', 502);
     }
-    return apiSuccess({ ...value, model_used: placeholder ? 'matcher-placeholder' : 'hirelabs-matcher' });
+    return apiSuccess({ ...value, model_used: placeholder ? 'matcher-placeholder' : (value.model_used || 'hirelabs-matcher') });
   } catch {
     return apiError('MATCHER_UNAVAILABLE', 'Local matcher is unavailable.', 503);
   }

@@ -17,18 +17,19 @@ async def lifespan(app: FastAPI):
     app.state.parser = None
     app.state.matcher = None
     if not app.state.placeholder:
-        import spacy
-        from sentence_transformers import SentenceTransformer
-
         try:
+            import spacy
+
             app.state.parser = spacy.load(os.getenv("PARSER_MODEL") or os.getenv("HIRELABS_PARSER_MODEL", "hirelabs_parser"))
         except (OSError, ImportError):
             print("HireLabs parser unavailable.", file=sys.stderr)
         try:
+            from sentence_transformers import SentenceTransformer
+
             app.state.matcher = SentenceTransformer(
                 os.getenv("MATCHER_MODEL") or os.getenv("MATCHER_MODEL_PATH", "models/hirelabs-matcher"), local_files_only=True
             )
-        except (OSError, ValueError):
+        except (ImportError, OSError, ValueError):
             print("HireLabs matcher unavailable.", file=sys.stderr)
     yield
 
@@ -40,11 +41,11 @@ class ParseInput(BaseModel):
     text: str = Field(min_length=1, max_length=50000)
 
 
-EmbeddingText = Annotated[str, StringConstraints(min_length=1, max_length=12000)]
+EmbeddingText = Annotated[str, StringConstraints(min_length=1, max_length=50000)]
 
 
 class EmbedInput(BaseModel):
-    texts: list[EmbeddingText] = Field(min_length=1, max_length=16)
+    texts: list[EmbeddingText] = Field(min_length=1, max_length=128)
 
 
 @app.get("/health")
@@ -76,8 +77,21 @@ def embed(body: EmbedInput, request: Request, response: Response):
     state = request.app.state
     if state.placeholder:
         response.headers["X-HireLabs-Placeholder"] = "true"
-        return {"vectors": [[0.0] * 384 for _ in body.texts], "dim": 384}
-    if state.matcher is None or state.matcher.get_sentence_embedding_dimension() != 384:
+        return {
+            "vectors": [[0.0] * 384 for _ in body.texts],
+            "dim": 384,
+            "model_used": "matcher-placeholder",
+        }
+
+    matcher = state.matcher
+    if matcher is None or matcher.get_sentence_embedding_dimension() != 384:
         raise HTTPException(503, "384-dimensional matcher unavailable.")
-    vectors = state.matcher.encode(body.texts, normalize_embeddings=True)
-    return {"vectors": vectors.tolist(), "dim": 384}
+
+    vectors = matcher.encode(
+        body.texts, normalize_embeddings=True, show_progress_bar=False
+    )
+    return {
+        "vectors": vectors.tolist(),
+        "dim": 384,
+        "model_used": "hirelabs-matcher",
+    }
