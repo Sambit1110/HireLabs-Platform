@@ -1,0 +1,87 @@
+/* ==========================================================================
+   HireLabs landing page: dark, cinematic, scroll-driven.
+   All landing rules are scoped under .lp (the page root).
+   ========================================================================== */
+
+.lp {
+  --ink: #0F0F0F;
+  --slate: #262632;
+  --lavender: #BCBBFF;
+  --mint: #9CFFE6;
+  --sun: #F1E044;
+  --line: rgba(188, 187, 255, 0.22);
+
+  /* Set by ScrollBackground from the section in view. */
+  --lp-bg: var(--ink);
+  --lp-fg: var(--lavender);
+
+  position: relative;
+  min-height: 100vh;
+  color: var(--lp-fg);
+  background: var(--ink);
+  font-family: var(--font-body), 'Libre Franklin', system-ui, sans-serif;
+  font-weight: 300;
+  line-height: 1.55;
+  transition: color 700ms ease;
+  overflow-x: clip;
+}
+
+.lp *,
+.lp *::before,
+.lp *::after {
+  box-sizing: border-box;
+}
+
+.lp a {
+  color: inherit;
+}
+
+.lp-display {
+  margin: 0;
+  font-family: var(--font-display), 'Fraunces', Georgia, serif;
+  font-weight: 200;
+  font-size: clamp(48px, 8vw, 112px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.lp-heading {
+  margin: 0;
+  font-family: var(--font-display), 'Fraunces', Georgia, serif;
+  font-weight: 200;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+
+.lp-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lp-container {
+  width: min(1180px, 100% - 32px);
+  margin-inline: auto;
+}
+
+.lp-section {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(96px, 14vh, 160px);
+}
+
+.lp :focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp *,
+  .lp *::before,
+  .lp *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

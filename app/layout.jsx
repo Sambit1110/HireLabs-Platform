@@ -1,4 +1,20 @@
+import { Fraunces, Libre_Franklin } from 'next/font/google';
+
 import '../index.css';
+
+const displayFont = Fraunces({
+  subsets: ['latin'],
+  weight: ['200', '300'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const bodyFont = Libre_Franklin({
+  subsets: ['latin'],
+  weight: ['300', '400', '600'],
+  variable: '--font-body',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'HireLabs - AI Resume Parser & Resume Workspace',
@@ -7,7 +23,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
