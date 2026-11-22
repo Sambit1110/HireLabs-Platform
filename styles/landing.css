@@ -1030,7 +1030,8 @@ body:has(.lp) {
 }
 
 /* ---- Mouse hover: spotlight, gentle tilt, sticker hop ---- */
-.lp-how__card::before {
+.lp-how__card::before,
+.lp-sample__card::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1043,17 +1044,20 @@ body:has(.lp) {
 }
 
 @media (hover: hover) {
-  .lp-how__card:hover::before {
+  .lp-how__card:hover::before,
+  .lp-sample__card:hover::before {
     opacity: 1;
   }
 
-  .lp-how__card:hover {
+  .lp-how__card:hover,
+  .lp-sample__card:hover {
     border-color: rgba(232, 203, 168, 0.5);
   }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .lp-how__card {
+  .lp-how__card,
+  .lp-sample__card {
     transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
     transition: transform 250ms ease-out, border-color 200ms ease;
   }
@@ -1074,26 +1078,155 @@ body:has(.lp) {
   opacity: 0.8;
 }
 
+/* Role picker: real radio buttons styled as pills. */
+.lp-sample__roles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 36px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.lp-sample__roles-label {
+  float: left;
+  margin-right: 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.lp-sample__role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lp-sample__role {
+  position: relative;
+  cursor: pointer;
+}
+
+.lp-sample__role-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.lp-sample__role span {
+  display: inline-block;
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 14px;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.lp-sample__role:hover span {
+  border-color: rgba(243, 233, 223, 0.6);
+}
+
+.lp-sample__role-input:checked + span {
+  border-color: var(--pill);
+  background: var(--pill);
+  color: var(--oxblood-deep);
+  font-weight: 600;
+}
+
+.lp-sample__role-input:focus-visible + span {
+  outline: 2px solid var(--pill);
+  outline-offset: 3px;
+}
+
 .lp-sample__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  margin: 52px 0 0;
+  margin: 32px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.lp-sample__card {
-  padding: 26px;
+.lp-sample__item {
+  display: flex;
 }
 
-.lp-sample__card:nth-child(2) {
-  transform: rotate(2deg);
-  border-color: rgba(232, 203, 168, 0.45);
+.lp-sample__card {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 26px;
+  transition: border-color 200ms ease;
+}
+
+.lp-sample__card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lp-sample__card.is-top {
+  border-color: rgba(232, 203, 168, 0.55);
+}
+
+.lp-sample__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .lp-sample__tag {
-  color: var(--pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--champagne);
+}
+
+/* Score ring: the arc length comes from --p (0-1). */
+.lp-sample__score {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: none;
+}
+
+.lp-sample__score svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.lp-sample__score circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.lp-sample__ring-track {
+  stroke: rgba(243, 233, 223, 0.14);
+}
+
+.lp-sample__ring-fill {
+  stroke: var(--champagne);
+  stroke-linecap: round;
+  stroke-dasharray: 138.23;
+  stroke-dashoffset: calc(138.23 * (1 - var(--p, 0)));
+  transition: stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-sample__score-num {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .lp-sample__name {
@@ -1117,11 +1250,34 @@ body:has(.lp) {
   list-style: none;
 }
 
-.lp-sample__skills li {
+.lp-sample__skill {
   padding: 6px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 13px;
+  opacity: 0.6;
+  transition: background-color 250ms ease, opacity 250ms ease, border-color 250ms ease;
+}
+
+.lp-sample__skill.is-match {
+  border-color: transparent;
+  background: rgba(232, 203, 168, 0.2);
+  opacity: 1;
+}
+
+.lp-sample__skill.is-match::before {
+  content: '✓ ';
+  color: var(--champagne);
+}
+
+.lp-sample__reason {
+  margin: auto 0 0;
+  padding-top: 20px;
+  font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.35;
+  opacity: 0.9;
 }
 
 @media (max-width: 1000px) {
@@ -1143,9 +1299,6 @@ body:has(.lp) {
     min-height: 0;
   }
 
-  .lp-sample__card:nth-child(2) {
-    transform: none;
-  }
 }
 
 /* ---------- Principles (cream band with floating slabs) ---------- */
@@ -1615,10 +1768,6 @@ body:has(.lp) {
 .lp .lp-paths__card:hover {
   border-color: var(--champagne);
   background: rgba(232, 203, 168, 0.06);
-}
-
-.lp .lp-sample__card:nth-child(2) {
-  border-color: rgba(232, 203, 168, 0.5);
 }
 
 .lp .lp-nav.is-scrolled {
