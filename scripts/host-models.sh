@@ -41,7 +41,9 @@ for _ in $(seq 1 90); do
   kill -0 "$server" 2>/dev/null || { echo "The model server stopped while starting." >&2; exit 1; }
   sleep 1
 done
-echo "Model server health: $(curl -sf http://127.0.0.1:8000/health || echo unreachable)"
+health="$(curl -sf http://127.0.0.1:8000/health || echo unreachable)"
+echo "Model server health: $health"
+grep -q '"evaluator_ready":true' <<<"$health" || echo "Warning: the evaluator is not ready, so analysis requests will fail." >&2
 
 cat <<MSG
 

@@ -90,6 +90,8 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    curl http://127.0.0.1:8000/health
    ```
 
+   `/health` reports `parser_ready`, `matcher_ready` and `evaluator_ready` (Ollama is running and has `OLLAMA_MODEL` loaded).
+
 4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template. The app requests a 16384-token context (`OLLAMA_NUM_CTX`) and refuses any prompt that would not fit, because Ollama would otherwise cut it silently.
 5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Run the role brief to verify it also reports `hirelabs-evaluator`. Stop Ollama and the analysis returns 503 `LOCAL_EVALUATOR_UNAVAILABLE`. Stop FastAPI and parsing saves the text without profile fields. Candidate analysis drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
 

@@ -4,7 +4,7 @@ import sys
 import unittest
 import urllib.error
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -56,7 +56,41 @@ class TokenRequired(unittest.TestCase):
     def test_health_stays_open_and_reports_readiness_only(self):
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.json()), {"parser_ready", "matcher_ready", "placeholder", "evaluator_proxy"})
+        self.assertEqual(set(response.json()), {"parser_ready", "matcher_ready", "placeholder", "evaluator_ready"})
+
+
+class EvaluatorHealth(unittest.TestCase):
+    def setUp(self):
+        self.client, stop = client(MODEL_API_TOKEN=TOKEN)
+        self.addCleanup(stop)
+
+    def ready(self, **patch_kwargs):
+        with patch.object(main, "fetch_ollama_models", **patch_kwargs):
+            return self.client.get("/health").json()["evaluator_ready"]
+
+    def test_ready_when_ollama_has_the_evaluator(self):
+        self.assertIs(self.ready(return_value=["llama3:latest", "hirelabs-evaluator:latest"]), True)
+        self.assertIs(self.ready(return_value=["hirelabs-evaluator"]), True)
+
+    def test_not_ready_when_the_evaluator_is_missing(self):
+        self.assertIs(self.ready(return_value=["hirelabs-evaluator-old:latest", "llama3:latest"]), False)
+
+    def test_not_ready_when_ollama_is_down(self):
+        self.assertIs(self.ready(side_effect=urllib.error.URLError("refused")), False)
+
+    def test_follows_ollama_model_setting(self):
+        with patch.dict(os.environ, {"OLLAMA_MODEL": "hirelabs-evaluator-v2"}):
+            self.assertIs(self.ready(return_value=["hirelabs-evaluator-v2:latest"]), True)
+            self.assertIs(self.ready(return_value=["hirelabs-evaluator:latest"]), False)
+
+    def test_asks_ollama_with_a_short_timeout(self):
+        reply = MagicMock()
+        reply.__enter__.return_value.read.return_value = b'{"models": [{"name": "hirelabs-evaluator:latest"}]}'
+        with patch.object(main.urllib.request, "urlopen", return_value=reply) as urlopen:
+            self.assertEqual(main.fetch_ollama_models(), ["hirelabs-evaluator:latest"])
+        request, = urlopen.call_args.args
+        self.assertTrue(request.full_url.endswith("/api/tags"))
+        self.assertLessEqual(urlopen.call_args.kwargs["timeout"], 3)
 
 
 class ShortToken(unittest.TestCase):
