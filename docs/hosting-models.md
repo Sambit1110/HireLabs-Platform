@@ -70,7 +70,7 @@ Vercel (website) ──HTTPS + Bearer token──► Cloudflare tunnel ──►
 
    The matcher URL follows `MODEL_SERVER_URL` automatically. Leave `EMBED_SERVICE_URL` unset on Vercel.
 
-4. **Check it.** Open `https://<tunnel>/health`, which should show `parser_ready` and `matcher_ready`. Then, on the website:
+4. **Check it.** Open `https://<tunnel>/health`. All three of `parser_ready`, `matcher_ready` and `evaluator_ready` should be `true`. `evaluator_ready` is `false` when Ollama isn't running or doesn't have `OLLAMA_MODEL` loaded. Then, on the website:
    - Upload a resume. The badge shows `hirelabs-parser`.
    - Rank candidates.
    - Run an evaluation and a role brief. Both show `hirelabs-evaluator`.

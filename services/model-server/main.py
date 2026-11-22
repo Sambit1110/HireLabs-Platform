@@ -72,6 +72,26 @@ class EmbedInput(BaseModel):
     texts: list[EmbeddingText] = Field(min_length=1, max_length=128)
 
 
+def ollama_base():
+    return os.getenv("OLLAMA_UPSTREAM", "http://127.0.0.1:11434").rstrip("/")
+
+
+def fetch_ollama_models():
+    """Names of the models loaded in the local Ollama, e.g. ["hirelabs-evaluator:latest"]."""
+    with urllib.request.urlopen(urllib.request.Request(f"{ollama_base()}/api/tags"), timeout=2) as reply:
+        return [model.get("name", "") for model in json.loads(reply.read()).get("models", [])]
+
+
+def evaluator_ready():
+    """True when Ollama answers and has OLLAMA_MODEL (any tag) loaded."""
+    model = os.getenv("OLLAMA_MODEL", "hirelabs-evaluator")
+    try:
+        names = fetch_ollama_models()
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        return False
+    return any(name == model or name.startswith(f"{model}:") for name in names)
+
+
 @app.get("/health")
 def health(request: Request):
     state = request.app.state
@@ -81,7 +101,7 @@ def health(request: Request):
         "parser_ready": parser_ready,
         "matcher_ready": matcher_ready,
         "placeholder": state.placeholder,
-        "evaluator_proxy": True,
+        "evaluator_ready": evaluator_ready(),
     }
 
 
@@ -149,9 +169,8 @@ class ChatInput(BaseModel):
 
 def forward_to_ollama(payload):
     """POST to the local Ollama chat API and return its JSON reply."""
-    base = os.getenv("OLLAMA_UPSTREAM", "http://127.0.0.1:11434").rstrip("/")
     request = urllib.request.Request(
-        f"{base}/api/chat",
+        f"{ollama_base()}/api/chat",
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
         method="POST",
