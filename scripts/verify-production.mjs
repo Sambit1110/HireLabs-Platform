@@ -35,11 +35,11 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.
 const deploymentUrl = (option('url') || process.env.HIRELABS_URL || '').replace(/\/$/, '');
 
 console.log('Environment (presence only):');
-for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'USE_LOCAL_MODELS', 'OLLAMA_MODEL', 'AI_FEATURES_ENABLED']) {
+for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'USE_LOCAL_MODELS', 'MODEL_SERVER_URL', 'OLLAMA_URL', 'MODEL_API_TOKEN', 'AI_FEATURES_ENABLED']) {
   console.log(`  ${name} = ${present(name) ? 'PRESENT' : 'MISSING'}`);
 }
 // Secrets exposed to the browser bundle are always a failure.
-for (const name of ['NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY']) {
+for (const name of ['NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY', 'NEXT_PUBLIC_MODEL_API_TOKEN']) {
   if (present(name)) report('FAIL', `${name} must never be public`, 'remove it and rotate the key');
 }
 console.log('');

@@ -1,11 +1,16 @@
+import hmac
+import json
 import os
+import sys
+import urllib.error
+import urllib.request
 from contextlib import asynccontextmanager
 from pathlib import Path
-import sys
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, StringConstraints
-from typing import Annotated
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "python"))
 from resume_parser import parse_profile
@@ -13,6 +18,11 @@ from resume_parser import parse_profile
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    token = os.getenv("MODEL_API_TOKEN", "")
+    if token and len(token) < 32:
+        raise RuntimeError("MODEL_API_TOKEN must be at least 32 characters.")
+    if not token:
+        print("MODEL_API_TOKEN is not set: keep this server on 127.0.0.1 and never expose it.", file=sys.stderr)
     app.state.placeholder = os.getenv("MODEL_PLACEHOLDERS") == "true"
     app.state.parser = None
     app.state.matcher = None
@@ -36,6 +46,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Reachable without the token: readiness booleans only, for tunnel checks.
+OPEN_PATHS = {"/health"}
+
+
+@app.middleware("http")
+async def require_token(request: Request, call_next):
+    """With MODEL_API_TOKEN set, every request but /health needs `Authorization: Bearer <token>`."""
+    token = os.getenv("MODEL_API_TOKEN", "")
+    if token and request.url.path not in OPEN_PATHS:
+        supplied = request.headers.get("authorization", "")
+        if not hmac.compare_digest(supplied.encode(), f"Bearer {token}".encode()):
+            return JSONResponse({"detail": "Unauthorized."}, status_code=401)
+    return await call_next(request)
+
 
 class ParseInput(BaseModel):
     text: str = Field(min_length=1, max_length=50000)
@@ -53,7 +77,12 @@ def health(request: Request):
     state = request.app.state
     parser_ready = state.parser is not None
     matcher_ready = state.matcher is not None and state.matcher.get_sentence_embedding_dimension() == 384
-    return {"parser_ready": parser_ready, "matcher_ready": matcher_ready, "placeholder": state.placeholder}
+    return {
+        "parser_ready": parser_ready,
+        "matcher_ready": matcher_ready,
+        "placeholder": state.placeholder,
+        "evaluator_proxy": True,
+    }
 
 
 @app.post("/parse")
@@ -95,3 +124,65 @@ def embed(body: EmbedInput, request: Request, response: Response):
         "dim": 384,
         "model_used": "hirelabs-matcher",
     }
+
+
+# ---------------------------------------------------------------- evaluator proxy
+# Ollama has no authentication, so it stays on 127.0.0.1 and the app reaches it
+# through this route: same token, one tunnel, and only the HireLabs evaluator.
+
+ALLOWED_OPTIONS = {"temperature", "seed", "num_ctx"}
+MAX_PROMPT_CHARS = 200_000
+
+
+class ChatMessage(BaseModel):
+    role: Literal["system", "user", "assistant"]
+    content: str = Field(max_length=MAX_PROMPT_CHARS)
+
+
+class ChatInput(BaseModel):
+    model: str = Field(max_length=200)
+    messages: List[ChatMessage] = Field(min_length=1, max_length=8)
+    format: Optional[Union[Dict[str, Any], str]] = None
+    options: Dict[str, Any] = Field(default_factory=dict)
+    stream: bool = False
+
+
+def forward_to_ollama(payload):
+    """POST to the local Ollama chat API and return its JSON reply."""
+    base = os.getenv("OLLAMA_UPSTREAM", "http://127.0.0.1:11434").rstrip("/")
+    request = urllib.request.Request(
+        f"{base}/api/chat",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=float(os.getenv("OLLAMA_UPSTREAM_TIMEOUT", "58"))) as reply:
+        return json.loads(reply.read())
+
+
+@app.post("/api/chat")
+def chat(body: ChatInput):
+    model = os.getenv("OLLAMA_MODEL", "hirelabs-evaluator")
+    if body.model != model:
+        raise HTTPException(403, "Only the HireLabs evaluator can be used.")
+    if sum(len(message.content) for message in body.messages) > MAX_PROMPT_CHARS:
+        raise HTTPException(413, "Prompt too long.")
+    options = {key: value for key, value in body.options.items() if key in ALLOWED_OPTIONS}
+    max_ctx = int(os.getenv("OLLAMA_MAX_CTX", "32768"))
+    num_ctx = options.get("num_ctx")
+    if num_ctx is not None and (not isinstance(num_ctx, int) or not 512 <= num_ctx <= max_ctx):
+        raise HTTPException(422, f"num_ctx must be between 512 and {max_ctx}.")
+
+    payload = {
+        "model": model,
+        "messages": [message.model_dump() for message in body.messages],
+        "stream": False,
+        "options": options,
+    }
+    if body.format is not None:
+        payload["format"] = body.format
+    try:
+        reply = forward_to_ollama(payload)
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        raise HTTPException(503, "Evaluator unavailable.")
+    return {"model": reply.get("model", model), "message": reply.get("message"), "done": reply.get("done", True)}
