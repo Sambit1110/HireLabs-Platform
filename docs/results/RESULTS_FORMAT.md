@@ -59,7 +59,7 @@ recall and is not that binary hit rate.
 | `tasks[].metrics[].key` | **yes** | Must match the keys in each system's `values`. |
 | `tasks[].metrics[].higher_is_better` | no | Default `true`. Set `false` for error, MAE and latency. Decides which value is highlighted as best. |
 | `tasks[].metrics[].unit` | no | `ratio` (0–1, shown as `0.84`), `percent` (0–100, shown as `96.3%`), `points` (shown as `4.1`) or `seconds` (shown as `1.8 s`). Default `ratio`. |
-| `tasks[].systems[].kind` | no | `baseline`, `gemini` or `ours`. Controls bar colour and the "Our model" label. |
+| `tasks[].systems[].kind` | no | `baseline` or `ours`. Controls bar colour and the "Our model" label. The page never shows a system named or kinded `gemini`. |
 | `tasks[].systems[].values` | **yes** | Use `null` for a metric a system wasn't measured on. It shows as `—`. |
 | `bias_check` | no | Omit until the fairness check has run. |
 | `bias_check.systems[].mean_abs_delta`, `max_abs_delta` | no | Change in `fit_score` points between name/gender variants. |

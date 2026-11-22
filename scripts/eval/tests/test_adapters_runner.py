@@ -61,8 +61,8 @@ class AdapterAndRunnerTests(unittest.TestCase):
                 "spacy_parser": UnavailableAdapter("not-loaded", "model handoff pending"),
                 "hirelabs_evaluator": UnavailableAdapter("evaluator", "pending"),
             }).tasks
-            self.assertIsNone(unavailable[0]["systems"][2]["values"]["f1_micro"])
-            self.assertIsNone(unavailable[2]["systems"][2]["values"]["valid_json_percentage"])
+            self.assertIsNone(unavailable[0]["systems"][1]["values"]["f1_micro"])
+            self.assertIsNone(unavailable[2]["systems"][1]["values"]["valid_json_percentage"])
 
     def test_runner_injects_mock_task_adapters_and_reuses_cached_predictions(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -100,12 +100,12 @@ class AdapterAndRunnerTests(unittest.TestCase):
         self.assertEqual(calls, after_first)
         self.assertEqual(calls, {"parser": 1, "matcher": 1, "evaluator": 1})
         for tasks in (first, second):
-            self.assertEqual(tasks[0]["systems"][2]["values"]["f1_micro"], 1.0)
-            self.assertEqual(tasks[1]["systems"][2]["values"]["recall_at_5"], 1.0)
-            self.assertEqual(tasks[2]["systems"][2]["values"]["valid_json_percentage"], 100.0)
+            self.assertEqual(tasks[0]["systems"][1]["values"]["f1_micro"], 1.0)
+            self.assertEqual(tasks[1]["systems"][1]["values"]["recall_at_5"], 1.0)
+            self.assertEqual(tasks[2]["systems"][1]["values"]["valid_json_percentage"], 100.0)
         self.assertEqual(
-            first[2]["systems"][2]["values"]["average_response_time_seconds"],
-            second[2]["systems"][2]["values"]["average_response_time_seconds"],
+            first[2]["systems"][1]["values"]["average_response_time_seconds"],
+            second[2]["systems"][1]["values"]["average_response_time_seconds"],
         )
 
     def test_cli_rejects_test_split_and_final_public_output_before_loading_data(self):

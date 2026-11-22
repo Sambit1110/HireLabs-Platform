@@ -194,7 +194,7 @@ class DatasetLoaderTests(unittest.TestCase):
     def test_model_availability_does_not_substitute_silently(self):
         require_models_available(["keyword-baseline"], ["keyword-baseline"])
         with self.assertRaises(ModelUnavailableError):
-            require_models_available(["hirelabs-evaluator"], ["gemini"])
+            require_models_available(["hirelabs-evaluator"], ["keyword-baseline"])
 
 
 if __name__ == "__main__":

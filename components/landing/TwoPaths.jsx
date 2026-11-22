@@ -9,7 +9,7 @@ const PATHS = [
   {
     href: '/dashboard/results',
     title: 'See how our models perform',
-    body: 'Our models compared with keyword matching and Gemini, on resumes they were never trained on.',
+    body: 'Our own models compared with keyword matching, on resumes they were never trained on.',
   },
 ];
 

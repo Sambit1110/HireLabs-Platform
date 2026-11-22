@@ -17,7 +17,7 @@ An AI-assisted resume workspace built with the Next.js App Router, Supabase (Aut
 - **Model badge:** every AI result shows which model answered: green "Our model" for `hirelabs-*` models, amber for an offline placeholder.
 - **Explained evaluations:** fit score and verdict, matched vs missing skills, quoted resume evidence, risk flags and interview questions. "Insufficient evidence" is never turned into a score.
 - **Rank candidates for a job:** paste a job description to rank your parsed resumes, then use **Explain score** to open the full evaluation.
-- **Model results** (`/dashboard/results`): keyword baseline vs Gemini vs our models on a held-out test set, plus the fairness check.
+- **Model results** (`/dashboard/results`): keyword baseline vs our models on a held-out test set, plus the fairness check.
 - In development (`npm run dev`), **Preview sample** buttons show clearly labelled fictional data, so the UI can be built and demoed before the models are ready. They are hidden in production builds.
 
 ## Project Structure
@@ -97,7 +97,7 @@ For interface development, set `MODEL_PLACEHOLDERS=true` in the Python service e
 
 ### Run the fairness audit
 
-Use 20 authorized dev resumes. Mayukh controls the locked test set. Create a private JSONL manifest with fields `id`, `split`, `role`, `jobDescription`, `candidate`, and `variants`. Candidate fields follow the analysis API and include `name`, `parsedText`, and optional `title`, `skills`, and `yearsExperience`. Each variant has a distinct `name` and an optional `gender_terms` object mapping exact, case-sensitive terms to replacements. Review each edit to preserve job evidence. Use resumes cleared for both providers.
+Use 20 authorized dev resumes. Mayukh controls the locked test set. Create a private JSONL manifest with fields `id`, `split`, `role`, `jobDescription`, `candidate`, and `variants`. Candidate fields follow the analysis API and include `name`, `parsedText`, and optional `title`, `skills`, and `yearsExperience`. Each variant has a distinct `name` and an optional `gender_terms` object mapping exact, case-sensitive terms to replacements. Review each edit to preserve job evidence. Use resumes cleared for evaluation.
 
 Set `USE_LOCAL_MODELS=true` and `ENABLE_BIAS_CHECK=true` in the local Next.js environment and restart it. Set `HIRELABS_ACCESS_TOKEN` in your shell to a current Supabase access token for the test user. If using a different Ollama model name, also set `BIAS_EXPECTED_LOCAL_MODEL` to that name.
 

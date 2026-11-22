@@ -30,9 +30,9 @@ from scripts.eval.results_writer import build_task, create_results_artifact, wri
 
 
 _ADAPTER_SYSTEMS = {
-    "parser": {"gemini_parser": "Gemini", "spacy_parser": "hirelabs-parser"},
-    "matching": {"gemini_embeddings": "Gemini embeddings", "hirelabs_matcher": "hirelabs-matcher"},
-    "evaluator": {"gemini_evaluator": "Gemini", "hirelabs_evaluator": "hirelabs-evaluator"},
+    "parser": {"spacy_parser": "hirelabs-parser"},
+    "matching": {"hirelabs_matcher": "hirelabs-matcher"},
+    "evaluator": {"hirelabs_evaluator": "hirelabs-evaluator"},
 }
 _ADAPTER_KEYS = {key for task_adapters in _ADAPTER_SYSTEMS.values() for key in task_adapters}
 

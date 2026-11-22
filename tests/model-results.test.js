@@ -15,7 +15,7 @@ const minimal = {
       systems: [
         { name: 'Keyword', kind: 'baseline', values: { recall_at_5: 0.4, seconds: 0.1 } },
         { name: 'hirelabs-matcher', kind: 'ours', values: { recall_at_5: 0.8, seconds: 0.3 } },
-        { name: 'Gemini', kind: 'gemini', values: { recall_at_5: 0.8 } },
+        { name: 'Skill overlap', kind: 'baseline', values: { recall_at_5: 0.8 } },
       ],
     },
   ],
@@ -42,7 +42,7 @@ describe('normalizeResults', () => {
         ],
         systems: [
           { name: 'Keyword baseline', kind: 'baseline', values: { recall_at_5: 0.4, success_at_5: 0.7 } },
-          { name: 'Gemini', kind: 'gemini', values: { recall_at_5: null, success_at_5: null } },
+          { name: 'Skill overlap', kind: 'baseline', values: { recall_at_5: null, success_at_5: null } },
           { name: 'hirelabs-matcher', kind: 'ours', values: {} },
         ],
       }],
@@ -55,6 +55,26 @@ describe('normalizeResults', () => {
     expect(task.systems[0].values.success_at_5).toBe(0.7);
     expect(task.systems[1].values.recall_at_5).toBeNull();
     expect(task.systems[2].values.success_at_5).toBeNull();
+  });
+
+  it('never shows Gemini, even from an older results file', () => {
+    const parsed = normalizeResults({
+      tasks: [{
+        ...minimal.tasks[0],
+        systems: [...minimal.tasks[0].systems, { name: 'Gemini', kind: 'gemini', values: { recall_at_5: 0.9 } }],
+      }],
+      bias_check: { systems: [
+        { name: 'hirelabs-evaluator', kind: 'ours', mean_abs_delta: 1, max_abs_delta: 2, verdict_flips: 0 },
+        { name: 'Gemini', kind: 'gemini', mean_abs_delta: 1, max_abs_delta: 2, verdict_flips: 0 },
+      ] },
+    });
+
+    expect(parsed.results.tasks[0].systems.map((system) => system.name)).not.toContain('Gemini');
+    expect(parsed.results.bias.systems.map((system) => system.name)).toEqual(['hirelabs-evaluator']);
+  });
+
+  it('has no Gemini in the bundled sample', () => {
+    expect(JSON.stringify(SAMPLE_MODEL_RESULTS)).not.toMatch(/gemini/i);
   });
 
   it('rejects files without usable tasks', () => {
@@ -76,7 +96,7 @@ describe('bestSystems', () => {
   const task = normalizeResults(minimal).results.tasks[0];
 
   it('includes ties for higher-is-better metrics', () => {
-    expect([...bestSystems(task, task.metrics[0])].sort()).toEqual(['Gemini', 'hirelabs-matcher']);
+    expect([...bestSystems(task, task.metrics[0])].sort()).toEqual(['Skill overlap', 'hirelabs-matcher']);
   });
 
   it('picks the lowest value when lower is better, ignoring missing values', () => {
