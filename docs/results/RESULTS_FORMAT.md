@@ -25,7 +25,7 @@ In development, the page has a **"Preview with sample numbers"** button that loa
           "label": "Recall@5",
           "higher_is_better": true,
           "unit": "ratio",
-          "description": "Share of jobs where a strong-fit resume appears in the top 5."
+          "description": "Relevant results in the top five divided by all judged relevant results for the query; macro-averaged by query."
         }
       ],
       "systems": [
@@ -45,6 +45,11 @@ In development, the page has a **"Preview with sample numbers"** button that loa
 ```
 
 ## Field reference
+
+The evaluator-generated dashboard artifact has an additional `success_at_5`
+metric for the binary share of eligible queries with at least one relevant
+candidate in the top five. `recall_at_5` is conventional information-retrieval
+recall and is not that binary hit rate.
 
 | Field | Required | Notes |
 |---|---|---|

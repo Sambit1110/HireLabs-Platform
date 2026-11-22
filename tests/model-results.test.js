@@ -31,6 +31,32 @@ describe('normalizeResults', () => {
     expect(parsed.results.bias).toBeNull();
   });
 
+  it('keeps conventional Recall@5 separate from Success@5 and unavailable systems null', () => {
+    const parsed = normalizeResults({
+      tasks: [{
+        id: 'matching',
+        title: 'Matching',
+        metrics: [
+          { key: 'recall_at_5', label: 'Recall@5', unit: 'ratio' },
+          { key: 'success_at_5', label: 'Success@5', unit: 'ratio' },
+        ],
+        systems: [
+          { name: 'Keyword baseline', kind: 'baseline', values: { recall_at_5: 0.4, success_at_5: 0.7 } },
+          { name: 'Gemini', kind: 'gemini', values: { recall_at_5: null, success_at_5: null } },
+          { name: 'hirelabs-matcher', kind: 'ours', values: {} },
+        ],
+      }],
+    });
+
+    expect(parsed.ok).toBe(true);
+    const task = parsed.results.tasks[0];
+    expect(task.metrics.map((metric) => metric.key)).toEqual(['recall_at_5', 'success_at_5']);
+    expect(task.systems[0].values.recall_at_5).toBe(0.4);
+    expect(task.systems[0].values.success_at_5).toBe(0.7);
+    expect(task.systems[1].values.recall_at_5).toBeNull();
+    expect(task.systems[2].values.success_at_5).toBeNull();
+  });
+
   it('rejects files without usable tasks', () => {
     expect(normalizeResults(null).ok).toBe(false);
     expect(normalizeResults({ tasks: [] }).ok).toBe(false);
