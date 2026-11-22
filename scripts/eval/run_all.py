@@ -320,7 +320,10 @@ def main(argv=None):
         from scripts.eval.bias_check import load_cases
 
         cases_path = Path(args.fairness_cases).resolve()
+        manifest = json.loads((Path(args.dataset_root).expanduser() / "splits.json").read_text(encoding="utf-8"))
         for case in load_cases(cases_path):
+            if manifest.get(case["id"]) != "dev":
+                parser.error("Fairness cases must belong to the frozen development split.")
             if dataset.resumes.get(case["id"]) != case["candidate"]["parsedText"]:
                 parser.error("Every fairness case must match the selected dev resume ID and text.")
         fairness_output = output_dir / "fairness-results.json"
