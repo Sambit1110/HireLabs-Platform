@@ -11,40 +11,41 @@ Training Strategy:
 """
 
 import argparse
+from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime, timezone
 import json
 import os
 import sys
 from typing import Dict, List
-import torch
 from sentence_transformers import InputExample, SentenceTransformer, losses
 from torch.utils.data import DataLoader
+from matcher_data import DatasetValidationError, load_texts, validate_dataset
 
-SAMPLE_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "samples")
-DEFAULT_OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "models", "hirelabs-matcher")
-
-
-def load_pairs(pairs_path: str) -> List[Dict]:
-    pairs = []
-    if not os.path.exists(pairs_path):
-        return pairs
-    with open(pairs_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                pairs.append(json.loads(line))
-    return pairs
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "models", "hirelabs-matcher-candidate")
 
 
-def load_texts(raw_dir: str) -> Dict[str, str]:
-    texts = {}
-    if not os.path.exists(raw_dir):
-        return texts
-    for fname in os.listdir(raw_dir):
-        if fname.endswith(".txt"):
-            doc_id = os.path.splitext(fname)[0]
-            with open(os.path.join(raw_dir, fname), "r", encoding="utf-8") as f:
-                texts[doc_id] = f.read().strip()
-    return texts
+class TeeStream:
+    """Mirror Python output to the terminal and a persistent training log."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, value):
+        for stream in self.streams:
+            stream.write(value)
+        return len(value)
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+    def isatty(self):
+        return any(getattr(stream, "isatty", lambda: False)() for stream in self.streams)
+
+    @property
+    def encoding(self):
+        return self.streams[0].encoding
 
 
 def build_training_examples(train_pairs: List[Dict], resumes: Dict[str, str], jds: Dict[str, str]) -> List[InputExample]:
@@ -58,11 +59,10 @@ def build_training_examples(train_pairs: List[Dict], resumes: Dict[str, str], jd
     for p in train_pairs:
         jd_id = p["jd_id"]
         res_id = p["resume_id"]
-        score = p.get("fit_score", 0)
-
-        if score >= 75 or p.get("fit_verdict") == "strong":
+        verdict = p["fit_verdict"]
+        if verdict == "strong":
             positives_by_jd.setdefault(jd_id, []).append(res_id)
-        elif score < 50 or p.get("fit_verdict") == "weak":
+        elif verdict == "weak":
             negatives_by_jd.setdefault(jd_id, []).append(res_id)
 
     examples = []
@@ -97,15 +97,48 @@ def train(
     batch_size: int = 16,
     learning_rate: float = 2e-5,
 ):
-    if data_dir is None:
-        data_dir = SAMPLE_DATA_DIR
+    if not data_dir:
+        raise DatasetValidationError("Pass --data-dir pointing to the approved dataset directory")
     if output_dir is None:
         output_dir = DEFAULT_OUTPUT_DIR
 
-    os.makedirs(output_dir, exist_ok=True)
+    train_pairs, _dev_pairs, data_manifest = validate_dataset(data_dir)
+    if os.path.exists(output_dir) and not os.path.isdir(output_dir):
+        raise DatasetValidationError(f"Output path is not a directory: {output_dir}")
+    if os.path.isdir(output_dir) and os.listdir(output_dir):
+        raise DatasetValidationError(
+            f"Output directory already contains files: {output_dir}. Choose a fresh path to preserve prior artifacts."
+        )
 
+    os.makedirs(output_dir, exist_ok=True)
+    log_path = os.path.join(output_dir, "training.log")
+    with open(log_path, "w", encoding="utf-8") as training_log:
+        output_stream = TeeStream(sys.stdout, training_log)
+        error_stream = TeeStream(sys.stderr, training_log)
+        with redirect_stdout(output_stream), redirect_stderr(error_stream):
+            _run_training(
+                train_pairs=train_pairs,
+                data_manifest=data_manifest,
+                data_dir=data_dir,
+                output_dir=output_dir,
+                base_model_name=base_model_name,
+                epochs=epochs,
+                batch_size=batch_size,
+                learning_rate=learning_rate,
+            )
+
+
+def _run_training(
+    train_pairs: List[Dict],
+    data_manifest: Dict,
+    data_dir: str,
+    output_dir: str,
+    base_model_name: str,
+    epochs: int,
+    batch_size: int,
+    learning_rate: float,
+) -> None:
     print(f"Loading data from: {data_dir}")
-    train_pairs = load_pairs(os.path.join(data_dir, "pairs", "train.jsonl"))
     resumes = load_texts(os.path.join(data_dir, "raw", "resumes"))
     jds = load_texts(os.path.join(data_dir, "raw", "jds"))
 
@@ -114,8 +147,7 @@ def train(
     print(f"Generated {len(examples)} training examples (with hard negatives).")
 
     if not examples:
-        print("Warning: No valid training examples generated. Check pairs/train.jsonl!")
-        return
+        raise DatasetValidationError("No training examples generated from the validated train split")
 
     print(f"Initializing base model: {base_model_name}")
     model = SentenceTransformer(base_model_name)
@@ -136,24 +168,41 @@ def train(
 
     print(f"Saving fine-tuned model to: {output_dir}")
     model.save(output_dir)
+    run_metadata = {
+        "trained_at_utc": datetime.now(timezone.utc).isoformat(),
+        "base_model": base_model_name,
+        "data": data_manifest,
+        "parameters": {
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "training_examples": len(examples),
+        },
+    }
+    with open(os.path.join(output_dir, "training_run.json"), "w", encoding="utf-8") as metadata_file:
+        json.dump(run_metadata, metadata_file, indent=2)
+        metadata_file.write("\n")
     print("Training complete! Model saved successfully as hirelabs-matcher.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train hirelabs-matcher using Sentence-Transformers.")
     parser.add_argument("--base-model", type=str, default="BAAI/bge-small-en-v1.5", help="Base model identifier")
-    parser.add_argument("--data-dir", type=str, default=None, help="Path to data folder")
+    parser.add_argument("--data-dir", type=str, required=True, help="Approved dataset directory (contains pairs/ and raw/)")
     parser.add_argument("--output-dir", type=str, default=None, help="Where to save fine-tuned model")
     parser.add_argument("--epochs", type=int, default=3, help="Training epochs")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
     parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate")
     args = parser.parse_args()
 
-    train(
-        base_model_name=args.base_model,
-        data_dir=args.data_dir,
-        output_dir=args.output_dir,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.lr,
-    )
+    try:
+        train(
+            base_model_name=args.base_model,
+            data_dir=args.data_dir,
+            output_dir=args.output_dir,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+        )
+    except DatasetValidationError as error:
+        parser.error(str(error))
