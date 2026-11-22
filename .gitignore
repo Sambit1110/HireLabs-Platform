@@ -9,6 +9,8 @@ models/
 *.safetensors
 *.gguf
 *.bin
+*.zip
+*.tar.gz
 HireLabs-Data/
 *.tsbuildinfo
 __pycache__/
