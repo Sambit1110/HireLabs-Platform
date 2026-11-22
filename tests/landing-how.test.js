@@ -75,7 +75,7 @@ describe('how it works card styles', () => {
 
   it('tilts and lights up cards only for mouse users who allow motion', () => {
     expect(block('(hover: hover) and (prefers-reduced-motion: no-preference)')).toMatch(
-      /\.lp-how__card\s*{[^}]*rotateX\(var\(--rx/
+      /\.lp-how__card[^{]*{[^}]*rotateX\(var\(--rx/
     );
   });
 });

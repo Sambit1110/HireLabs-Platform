@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { FocusText } from '@/components/landing/FocusText';
 import { HowDemo } from '@/components/landing/HowDemo';
 import { StickerIcon } from '@/components/landing/StickerIcon';
+import { onTiltLeave, onTiltMove } from '@/components/landing/tilt';
 
 const STEPS = [
   {
@@ -34,7 +35,7 @@ const STEPS = [
  * small sample of that step's output; "Back" (or Escape) turns it back.
  * The hidden side is `inert`, and focus follows the visible side.
  * Mouse users who allow motion also get a gentle tilt and a spotlight that
- * follows the pointer (set as CSS variables, so React doesn't re-render).
+ * follows the pointer (see tilt.js).
  */
 function HowCard({ step, number }) {
   const [flipped, setFlipped] = useState(false);
@@ -53,23 +54,6 @@ function HowCard({ step, number }) {
     setFlipped(next);
   };
 
-  const onPointerMove = (event) => {
-    if (event.pointerType !== 'mouse') return;
-    const card = event.currentTarget;
-    const box = card.getBoundingClientRect();
-    const x = (event.clientX - box.left) / box.width;
-    const y = (event.clientY - box.top) / box.height;
-    card.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
-    card.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
-    card.style.setProperty('--rx', `${((0.5 - y) * 6).toFixed(2)}deg`);
-    card.style.setProperty('--ry', `${((x - 0.5) * 8).toFixed(2)}deg`);
-  };
-
-  const onPointerLeave = (event) => {
-    event.currentTarget.style.setProperty('--rx', '0deg');
-    event.currentTarget.style.setProperty('--ry', '0deg');
-  };
-
   const onKeyDown = (event) => {
     if (event.key === 'Escape' && flipped) turn(false);
   };
@@ -77,8 +61,8 @@ function HowCard({ step, number }) {
   return (
     <li
       className={`lp-card lp-how__card${flipped ? ' is-flipped' : ''}`}
-      onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
+      onPointerMove={onTiltMove}
+      onPointerLeave={onTiltLeave}
       onKeyDown={onKeyDown}
     >
       <div className="lp-how__inner">

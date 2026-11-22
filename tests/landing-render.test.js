@@ -46,9 +46,9 @@ describe('landing page canvas and pop-up colours', () => {
     expect(css).toMatch(/body:has\(\.lp\)[^{]*{[^}]*background(-color)?:\s*#2A0304/i);
   });
 
-  it('keeps the white submit pill white on hover', () => {
+  it('keeps the submit pill light (white or warm cream, never olive) on hover', () => {
     const hover = css.match(/\.lp \.hl-auth-form \.hl-btn-primary:hover:not\(:disabled\)\s*{[^}]*}/)?.[0] ?? '';
-    expect(hover).toMatch(/background:\s*var\(--pill\)/);
+    expect(hover).toMatch(/background:\s*var\(--(pill|cream)\)/);
     expect(hover).toMatch(/color:\s*var\(--oxblood-deep\)/);
   });
 
