@@ -21,10 +21,12 @@ import {
   validatePassword,
 } from '@/lib/auth/password';
 
-import { Navbar } from '../components/layout/Navbar';
+import { LandingNav } from '@/components/landing/LandingNav';
+import { ScrollBackground } from '@/components/landing/ScrollBackground';
+import { ThresholdHero } from '@/components/landing/ThresholdHero';
+import '@/styles/landing.css';
 import { Footer } from '../components/layout/Footer';
 
-import { HeroSection } from '../components/landing/HeroSection';
 import { InteractiveDemo } from '../components/landing/InteractiveDemo';
 import { FeaturesGrid } from '../components/landing/FeaturesGrid';
 import { ArchitectureFlow } from '../components/landing/ArchitectureFlow';
@@ -1792,7 +1794,9 @@ export default function LandingPage() {
       `}</style>
 
 
-      <main className="hl-page">
+      <main className="hl-page lp">
+
+        <ScrollBackground />
 
         {/* ====================================================
             GLOBAL SCROLL MOTION
@@ -1805,26 +1809,14 @@ export default function LandingPage() {
             NAVBAR
            ==================================================== */}
 
-        <Navbar
-          onOpenAuthModal={
-            openAuth
-          }
-        />
+        <LandingNav onSignIn={openAuth} />
 
 
         {/* ====================================================
             HERO
            ==================================================== */}
 
-        <HeroSection
-          onExploreClick={
-            scrollToDemo
-          }
-
-          onViewArchClick={
-            scrollToArchitecture
-          }
-        />
+        <ThresholdHero onTrySample={scrollToDemo} onSignIn={openAuth} />
 
 
         {/* ====================================================

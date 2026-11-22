@@ -5,14 +5,14 @@ import '../index.css';
 const displayFont = Fraunces({
   subsets: ['latin'],
   weight: ['200', '300'],
-  variable: '--font-display',
+  variable: '--lp-font-display',
   display: 'swap',
 });
 
 const bodyFont = Libre_Franklin({
   subsets: ['latin'],
   weight: ['300', '400', '600'],
-  variable: '--font-body',
+  variable: '--lp-font-body',
   display: 'swap',
 });
 
