@@ -56,11 +56,6 @@ describe('landing page canvas and pop-up colours', () => {
     expect(css).toMatch(/\.lp \.hl-modal-close:hover\s*{[^}]*color:\s*var\(--cream\)/);
     expect(css).toMatch(/\.lp \.hl-modal-close:focus-visible[^{]*{[^}]*outline-color:\s*var\(--pill\)/);
   });
-
-  it('never lets the decorative badge take taps meant for the hero buttons', () => {
-    expect(css).toMatch(/\.lp-hero__badge\s*{[^}]*pointer-events:\s*none/);
-    expect(css).toMatch(/@media \(max-width: 720px\) and \(max-height: 760px\)\s*{\s*\.lp-hero__badge\s*{\s*display:\s*none/);
-  });
 });
 
 describe('word wheel server HTML', () => {

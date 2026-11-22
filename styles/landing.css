@@ -199,46 +199,6 @@ body:has(.lp) {
   }
 }
 
-/* ---------- Rotating circular badge ---------- */
-.lp-badge {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  flex: none;
-}
-
-.lp-badge__ring {
-  width: 100%;
-  height: 100%;
-  animation: lp-spin 20s linear infinite;
-}
-
-.lp-badge__disc {
-  fill: var(--champagne);
-  stroke: var(--oxblood-deep);
-  stroke-width: 1.5;
-}
-
-.lp-badge__text {
-  fill: var(--oxblood-deep);
-  font: 600 10.5px var(--lp-font-body), system-ui, sans-serif;
-  letter-spacing: 0.08em;
-}
-
-.lp-badge__dot {
-  position: absolute;
-  inset: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border-radius: 50%;
-  background: var(--oxblood-deep);
-}
-
-@keyframes lp-spin {
-  to { transform: rotate(360deg); }
-}
-
 /* ---------- Navigation ---------- */
 .lp-nav {
   position: fixed;
@@ -405,15 +365,160 @@ body:has(.lp) {
   overflow: hidden;
 }
 
-.lp-hero__glow {
+/* ---- Paper roses behind a glass-brick wall ---- */
+.lp-roses {
   position: absolute;
-  left: 50%;
-  top: 46%;
-  width: min(900px, 120vw);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(243, 233, 223, 0.16) 0%, rgba(243, 233, 223, 0) 62%);
+  inset: 0;
+  z-index: 0;
   pointer-events: none;
+}
+
+/* Warm light behind the bouquet. */
+.lp-roses::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 72% 38%, #6A0D10 0%, #4A0608 34%, rgba(42, 3, 4, 0) 78%);
+}
+
+.lp-roses__defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.lp-roses__sharp,
+.lp-roses__glass {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sharp roses only to the right of the glass. */
+.lp-roses__sharp {
+  clip-path: inset(0 0 0 52%);
+}
+
+/* Behind the glass: the same roses, bent by the refraction filter and brightened. */
+.lp-roses__glass {
+  clip-path: inset(0 48% 0 0);
+  filter: url(#lp-glassy) brightness(1.18) saturate(0.95);
+}
+
+/* Glass bricks: light, see-through blocks with bevelled edges and bright joints. */
+.lp-glass {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 52%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 3px;
+  background: rgba(255, 245, 235, 0.1);
+}
+
+.lp-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.lp-glass__brick {
+  position: relative;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 42%, rgba(255, 255, 255, 0.07) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 28px rgba(255, 255, 255, 0.07),
+    inset -8px -10px 18px rgba(40, 4, 4, 0.22);
+}
+
+/* A soft curved highlight in each brick, like light on a convex face. */
+.lp-glass__brick::before {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 10%;
+  width: 55%;
+  height: 30%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.14), transparent 70%);
+}
+
+/* Keeps the words readable: a soft shade behind the text block and the menu. */
+.lp-roses__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 48% 54% at 24% 60%, rgba(42, 3, 4, 0.64), rgba(42, 3, 4, 0) 100%),
+    linear-gradient(180deg, rgba(42, 3, 4, 0.55), rgba(42, 3, 4, 0) 140px);
+}
+
+/* The bouquet blooms in as the door opens (motion allowed only). */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-roses {
+    animation: lp-roses-in 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
+  }
+
+  .lp-hero--no-intro .lp-roses {
+    animation-delay: 0s;
+  }
+}
+
+@keyframes lp-roses-in {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+/* Phones: the whole screen sits behind glass, with the text on top. */
+@media (max-width: 720px) {
+  .lp-roses__sharp {
+    display: none;
+  }
+
+  .lp-roses__glass {
+    clip-path: none;
+    object-position: 62% 50%;
+    filter: url(#lp-glassy) brightness(0.98) saturate(0.9);
+  }
+
+  .lp-glass {
+    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .lp-glass::after {
+    display: none;
+  }
+
+  .lp-glass__brick:nth-child(n + 16) {
+    display: none;
+  }
+
+  .lp-hero .lp-hero__lede {
+    max-width: none;
+  }
+
+  .lp-roses__shade {
+    background:
+      radial-gradient(ellipse 95% 60% at 40% 56%, rgba(42, 3, 4, 0.78), rgba(42, 3, 4, 0.15) 100%),
+      linear-gradient(180deg, rgba(42, 3, 4, 0.55), rgba(42, 3, 4, 0) 140px);
+  }
 }
 
 .lp-hero__inner {
@@ -431,7 +536,7 @@ body:has(.lp) {
 }
 
 .lp-hero__lede {
-  max-width: 560px;
+  max-width: min(520px, 42vw);
   margin: 32px 0 0;
   font-size: clamp(17px, 1.6vw, 20px);
   opacity: 0.85;
@@ -442,23 +547,6 @@ body:has(.lp) {
   flex-wrap: wrap;
   gap: 18px;
   margin-top: 40px;
-}
-
-.lp-hero__badge {
-  position: absolute;
-  right: max(24px, calc((100vw - 1180px) / 2));
-  bottom: 72px;
-  z-index: 2;
-  /* Decorative only: taps pass through to the buttons underneath. */
-  pointer-events: none;
-}
-
-/* Short phones: the hero fills the screen, so the badge would sit on the
-   buttons. Hide it there. */
-@media (max-width: 720px) and (max-height: 760px) {
-  .lp-hero__badge {
-    display: none;
-  }
 }
 
 /* The door: a glowing slab that swings open on its left hinge.
@@ -540,15 +628,6 @@ body:has(.lp) {
   background: linear-gradient(90deg, #6E0E12, #8C1A1F 60%, #A42A2F);
   transform-origin: left center;
   box-shadow: inset -8px 0 18px rgba(26, 1, 2, 0.25);
-}
-
-@media (max-width: 720px) {
-  .lp-hero__badge {
-    width: 92px;
-    height: 92px;
-    right: 16px;
-    bottom: 24px;
-  }
 }
 
 /* ---------- Visually hidden (still read by screen readers) ---------- */
@@ -1846,40 +1925,6 @@ body:has(.lp) {
 
 /* ---- Code-made textures (no photos) ---- */
 
-/* Warm light leaks behind the hero. */
-.lp .lp-hero__glow {
-  background:
-    radial-gradient(circle at 70% 40%, rgba(232, 203, 168, 0.22) 0%, rgba(232, 203, 168, 0) 45%),
-    radial-gradient(circle at 30% 70%, rgba(160, 20, 28, 0.35) 0%, rgba(160, 20, 28, 0) 55%);
-}
-
-/* Ribbed-glass panel on the right of the hero. */
-.lp-hero__ribs {
-  display: none;
-}
-
-.lp .lp-hero__ribs {
-  display: block;
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(44vw, 620px);
-  z-index: 1;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 240, 230, 0.10) 0px,
-      rgba(255, 240, 230, 0.02) 6px,
-      rgba(0, 0, 0, 0.18) 11px,
-      rgba(255, 240, 230, 0.06) 14px
-    ),
-    radial-gradient(ellipse at 55% 45%, rgba(243, 233, 223, 0.55) 0%, rgba(232, 203, 168, 0.25) 22%, rgba(74, 6, 8, 0) 60%),
-    linear-gradient(180deg, #5A0A0C, #2A0304);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
-  filter: saturate(1.05);
-}
 
 /* The door glows cream. */
 .lp .lp-door__frame {
@@ -1937,9 +1982,3 @@ body:has(.lp) {
   to { transform: translateX(-50%); }
 }
 
-@media (max-width: 720px) {
-  .lp .lp-hero__ribs {
-    width: 70vw;
-    opacity: 0.55;
-  }
-}

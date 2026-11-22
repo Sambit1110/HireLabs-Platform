@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { CircularBadge } from '@/components/landing/CircularBadge';
 import { FocusText } from '@/components/landing/FocusText';
 import { PillButton } from '@/components/landing/PillButton';
+import { RoseGlass } from '@/components/landing/RoseGlass';
 
 /**
- * Opening scene: a glowing slab swings open like a door, then the
- * headline comes into focus. Both are in the server HTML and run as CSS
+ * Opening scene: a glowing slab swings open like a door, the paper-rose
+ * bouquet blooms in behind a glass-brick wall, and the headline comes into
+ * focus on the glass. Both are in the server HTML and run as CSS
  * animations (only when the visitor allows motion), so the finished hero
  * never flashes before the door appears.
  */
@@ -29,8 +30,7 @@ export function ThresholdHero({ onTrySample, onSignIn }) {
 
   return (
     <section id="product" data-lp-theme="deep" className={`lp-hero${skipIntro ? ' lp-hero--no-intro' : ''}`}>
-      <div className="lp-hero__glow" aria-hidden="true" />
-      <div className="lp-hero__ribs" aria-hidden="true" />
+      <RoseGlass />
 
       {skipIntro ? null : (
         <div className="lp-door" aria-hidden="true">
@@ -62,7 +62,6 @@ export function ThresholdHero({ onTrySample, onSignIn }) {
         </div>
       </div>
 
-      <CircularBadge className="lp-hero__badge" />
     </section>
   );
 }
