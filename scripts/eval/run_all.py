@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 import platform
 import sys
+import subprocess
 import time
 from collections.abc import Mapping
 
@@ -285,7 +286,10 @@ def main(argv=None):
     parser.add_argument("--reports-dir", help="Optional comparison, chart, error, and report-section directory.")
     parser.add_argument("--adapter-factory", help="Optional explicit module.path:callable returning adapter instances.")
     parser.add_argument("--cache-dir", help="Optional private local directory for adapter responses.")
+    parser.add_argument("--fairness-cases", help="Private 20-resume dev manifest for the live API audit.")
     args = parser.parse_args(argv)
+    if args.fairness_cases and (args.split != "dev" or not args.reports_dir):
+        parser.error("--fairness-cases requires --split dev and --reports-dir.")
     output_path = Path(args.output).expanduser().resolve()
     repository_root = Path(__file__).resolve().parents[2]
     protected_paths = {
@@ -312,6 +316,22 @@ def main(argv=None):
         parser.error("Adapter cache and report outputs must use separate directories.")
 
     dataset = load_dataset(args.dataset_root, args.split)
+    if args.fairness_cases:
+        from scripts.eval.bias_check import load_cases
+
+        cases_path = Path(args.fairness_cases).resolve()
+        manifest = json.loads((Path(args.dataset_root).expanduser() / "splits.json").read_text(encoding="utf-8"))
+        for case in load_cases(cases_path):
+            if manifest.get(case["id"]) != "dev":
+                parser.error("Fairness cases must belong to the frozen development split.")
+            if dataset.resumes.get(case["id"]) != case["candidate"]["parsedText"]:
+                parser.error("Every fairness case must match the selected dev resume ID and text.")
+        fairness_output = output_dir / "fairness-results.json"
+        if fairness_output.exists() or fairness_output == output_path:
+            parser.error("Choose a fresh reports directory and a separate canonical output path.")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run([sys.executable, str(Path(__file__).with_name("bias_check.py")),
+                        str(cases_path), "--output", str(fairness_output)], check=True)
     adapters = _load_adapter_factory(args.adapter_factory) if args.adapter_factory else {}
     cache = ResponseCache(cache_dir) if cache_dir else None
     evaluation_result = evaluate_dataset(dataset, adapters=adapters, cache=cache)

@@ -17,8 +17,8 @@ def load_cases(path):
     if len(cases) != 20 or len({case["id"] for case in cases}) != 20:
         raise ValueError("Supply exactly 20 distinct held-out cases.")
     for case in cases:
-        if case["split"] not in {"dev", "test"}:
-            raise ValueError("Use dev, or team-authorized held-out test data.")
+        if case["split"] != "dev":
+            raise ValueError("Use the development split for this audit.")
         variants = case["variants"]
         if len(variants) < 2 or len({variant["name"] for variant in variants}) != len(variants):
             raise ValueError("Supply at least two variants with distinct names per resume.")
@@ -45,7 +45,7 @@ def changed_candidate(case, variant):
     return candidate
 
 
-def request_analysis(url, token, provider, case, candidate):
+def request_analysis_result(url, token, provider, case, candidate):
     request = Request(
         url, method="POST",
         data=json.dumps({
@@ -70,7 +70,11 @@ def request_analysis(url, token, provider, case, candidate):
     expected = os.getenv("BIAS_EXPECTED_LOCAL_MODEL", "hirelabs-evaluator") if provider == "local" else "gemini-fallback"
     if data["model_used"] != expected:
         raise ValueError(f"The API did not use the requested {provider} model.")
-    result = data["result"]
+    return data["result"]
+
+
+def request_analysis(url, token, provider, case, candidate):
+    result = request_analysis_result(url, token, provider, case, candidate)
     return result["fit_score"], result["fit_verdict"]
 
 
