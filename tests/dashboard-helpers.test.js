@@ -15,7 +15,7 @@ describe('describeModel', () => {
 
   it('prefers model_used over the legacy model field', () => {
     expect(
-      describeModel({ model_used: 'hirelabs-parser', model: 'gemini-3.5-flash' }).kind
+      describeModel({ model_used: 'hirelabs-parser', model: 'older-model-name' }).kind
     ).toBe('ours');
   });
 
@@ -27,9 +27,10 @@ describe('describeModel', () => {
     }
   });
 
-  it('treats Gemini as the fallback', () => {
-    expect(describeModel({ model: 'gemini-3.5-flash' }).kind).toBe('fallback');
-    expect(describeModel({ model_used: 'gemini-fallback' }).kind).toBe('fallback');
+  it('shows any model that is not ours by its own name, never as our model', () => {
+    expect(describeModel({ model_used: 'some-other-model' })).toEqual({
+      id: 'some-other-model', kind: 'unknown', label: 'some-other-model',
+    });
   });
 
   it('handles missing or malformed data', () => {

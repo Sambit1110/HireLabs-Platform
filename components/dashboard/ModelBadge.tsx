@@ -2,7 +2,7 @@ import type { ModelInfo } from "@/lib/ai/model-info";
 
 /**
  * Shows which model produced a result: green for HireLabs' own models,
- * grey for the Gemini fallback.
+ * amber for an offline placeholder.
  */
 export default function ModelBadge({ model }: { model: ModelInfo }) {
   return (

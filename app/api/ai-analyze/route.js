@@ -2,14 +2,12 @@
 import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
-import { evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
+import { PromptTooLongError, evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
 import { checkEvidence } from '@/lib/ai/evidence';
-import { geminiFallbackAllowed, useLocalModels } from '@/lib/ai/model-server';
-import { parseAIJson } from '@/lib/ai/parse-json';
+import { useLocalModels } from '@/lib/ai/model-server';
 import {
   CANDIDATE_LIMITS as LIMITS,
   buildCandidateMessages,
-  buildCandidatePrompt,
   candidateSchema,
   clip,
   validateAnalysis,
@@ -18,7 +16,6 @@ import {
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
 
 const stringField = { type: 'string' };
@@ -237,138 +234,53 @@ export async function POST(request) {
   }
 
   const mode = body.mode;
+  // The bias check may ask for the real evaluator explicitly (skipping the placeholder).
   const provider = process.env.ENABLE_BIAS_CHECK === 'true'
     ? request.headers.get('x-hirelabs-eval-provider')
     : null;
-  if (provider !== null && (mode !== 'candidate' || !['local', 'gemini'].includes(provider))) {
+  if (provider !== null && (mode !== 'candidate' || provider !== 'local')) {
     return apiError('INVALID_INPUT', 'Invalid evaluation provider.', 400);
   }
   const schema =
     mode === 'candidate' ? candidateSchema : roleSchema;
-
-  const prompt =
-    mode === 'candidate'
-      ? buildCandidatePrompt(body)
-      : buildRolePrompt(body);
 
   if (mode === 'candidate' && provider === null && process.env.EVALUATOR_PLACEHOLDER === 'true') {
     const model = 'evaluator-placeholder';
     return apiSuccess({ result: placeholderValue(schema), model, model_used: model });
   }
 
-  if (mode === 'candidate' && provider !== 'gemini' && useLocalModels()) {
-    try {
-      const result = await evaluateLocally(buildCandidateMessages(body), schema);
-      if (validateAnalysis(result, schema, mode)) {
-        return candidateSuccess(result, body, evaluatorModel, evaluatorModel);
-      }
-    } catch {
-      // Provider errors can contain candidate information.
-    }
-  }
-
-  if (provider === 'local') {
-    return apiError('LOCAL_EVALUATOR_UNAVAILABLE', 'Local evaluator returned no valid result.', 503);
-  }
-  // Candidate mode sends resume data, so DISABLE_GEMINI_FALLBACK applies to it.
-  // Role mode sends only the job description and needs just the key.
-  const geminiAllowed = mode === 'candidate' ? geminiFallbackAllowed() : Boolean(process.env.GEMINI_API_KEY);
-  if (!geminiAllowed) {
-    return apiError('AI_UNAVAILABLE', 'Gemini fallback is unavailable.', 503);
+  // Every analysis runs on the team's own evaluator; there is no external fallback.
+  if (!useLocalModels()) {
+    return apiError('AI_UNAVAILABLE', 'The HireLabs evaluator is turned off (set USE_LOCAL_MODELS=true).', 503);
   }
 
   try {
-    const { GoogleGenAI } = await import('@google/genai');
-
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: { timeout: 18_000, retryOptions: { attempts: 1 } },
-    });
-
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseJsonSchema: schema,
-        temperature: 0,
-      },
-    });
-
-    const outputText = response.text;
-
-    if (!outputText || !outputText.trim()) {
-      return apiError(
-        'EMPTY_AI_RESPONSE',
-        'The AI service returned no analysis.',
-        502
-      );
-    }
-
-    let result;
-
-    try {
-      result = parseAIJson(outputText);
-    } catch {
-      return apiError(
-        'INVALID_AI_RESPONSE',
-        'The AI service returned invalid JSON.',
-        502
-      );
-    }
+    const input = mode === 'candidate' ? buildCandidateMessages(body) : buildRolePrompt(body);
+    const result = await evaluateLocally(input, schema);
 
     if (!validateAnalysis(result, schema, mode)) {
       return apiError(
         'INVALID_AI_RESPONSE',
-        'The AI service returned an incomplete or invalid analysis.',
+        'The HireLabs evaluator returned an incomplete or invalid analysis.',
         502
       );
     }
-
     if (mode === 'candidate') {
-      return candidateSuccess(result, body, MODEL, 'gemini-fallback');
+      return candidateSuccess(result, body, evaluatorModel, evaluatorModel);
     }
-    return apiSuccess({ result, model: MODEL, model_used: 'gemini' });
+    return apiSuccess({ result, model: evaluatorModel, model_used: evaluatorModel });
   } catch (error) {
-    // Avoid logging prompts, resume text, or API secrets.
-    const status = Number(error?.status || error?.code);
-
-    if (status === 429) {
-      return apiError(
-        'AI_RATE_LIMITED',
-        'AI service is currently rate limited. Please retry later.',
-        429
-      );
+    if (error instanceof PromptTooLongError) {
+      return apiError('REQUEST_TOO_LARGE', 'The resume and job description are too long for the evaluator.', 413);
     }
-
-    if (status === 401 || status === 403) {
-      return apiError(
-        'AI_CONFIGURATION_ERROR',
-        'The AI service is not configured correctly.',
-        503
-      );
-    }
-
-    if (status === 404) {
-      return apiError(
-        'AI_MODEL_UNAVAILABLE',
-        'The configured AI model is unavailable.',
-        503
-      );
-    }
-
-    console.error('HireLabs AI analysis failed', {
-      status: Number.isFinite(status) ? status : null,
-      name:
-        error instanceof Error
-          ? error.name
-          : 'UnknownError',
+    // Errors can contain candidate information: log the error type only.
+    console.error('HireLabs evaluator failed', {
+      name: error instanceof Error ? error.name : 'UnknownError',
     });
-
     return apiError(
-      'ANALYSIS_FAILED',
-      'Unable to generate AI analysis.',
-      500
+      'LOCAL_EVALUATOR_UNAVAILABLE',
+      'The HireLabs evaluator is not responding. Check that Ollama is running.',
+      503
     );
   }
 }
