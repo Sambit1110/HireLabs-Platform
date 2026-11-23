@@ -624,8 +624,9 @@ export default function AIAnalysisPanel({
 
           <p>
             Generate recruiter screening briefs and
-            evidence-based candidate evaluations using
-            your existing AI service.
+            evidence-based candidate evaluations from
+            HireLabs&apos; own models. Every quote is checked
+            against the resume.
           </p>
         </div>
       </div>
