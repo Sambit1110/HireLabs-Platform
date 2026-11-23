@@ -112,6 +112,29 @@ and adds `llm_fit: { score, verdict, missing_skills }` to each. The dashboard sh
 the list. If the model server or model is missing, or a request fails, the remaining resumes
 get `llm_fit: null` and ranking carries on normally.
 
+### Explain score and role briefs (hirelabs-explainer)
+
+**Explain score** and **Generate role brief** (`/api/ai-analyze`) are answered by
+hirelabs-explainer ([lib/ai/own-analysis.js](../lib/ai/own-analysis.js)) by default. It uses
+the team's own models and transparent rules, with no external, fine-tuned or Ollama model,
+so it works without anyone's laptop:
+
+- **Skills the job asks for** come from its "Required/Preferred skills" lines, or from the
+  skill list in [skill-lexicon.js](../lib/ai/skill-lexicon.js) found in the job text.
+- **Evidence per skill:** a use in a work or project line is *demonstrated* and quoted word
+  for word, a mention only in a skills list is *unverified*, a related term (PostgreSQL for
+  SQL) is *partial*, and no mention is *missing*. Quotes still pass the usual evidence check.
+- **Fit score:** skill coverage 55%, hirelabs-matcher similarity 30% and hirelabs-llm fit
+  15%, re-weighted over whichever signals the model server returns. The LLM gets the least
+  weight because it learned from template resumes. Strong disagreement between the skill
+  check and the LLM appears as a risk flag.
+- **Role brief:** seniority, must-have and nice-to-have skills, duties, screening signals and
+  interview focus, read from the job text alone.
+
+The text is built from templates, so it is plainer than an LLM's, but every claim comes
+from the resume. `EVALUATOR_PROVIDER=ollama` switches back to the Ollama evaluator at
+`OLLAMA_URL`. The bias check's explicit `local` provider always uses Ollama.
+
 ## Hosting on a Hugging Face Space (needs PRO)
 
 This replaces the laptop + ngrok setup. Since November 2026, Hugging Face runs Docker Spaces on
@@ -149,9 +172,9 @@ Things to know:
 
 - A Space **sleeps after a while with no visits** (the idle time is in the Space's settings). The
   first request after that takes a minute or two. Open `/health` before a demo.
-- **Ollama does not run on the Space**, so `/api/chat` (the evaluator) answers 503 there. That
-  is why `OLLAMA_URL` stays on the hosting machine. **Explain score** keeps working only while
-  that machine is on.
+- **Ollama does not run on the Space**, so `/api/chat` answers 503 there. Explain score and
+  role briefs don't need it any more (hirelabs-explainer). `OLLAMA_URL` is now only used to
+  fill in profile fields the parser misses, plus the bias check and `EVALUATOR_PROVIDER=ollama`.
 - **Private Space and tokens.** A private Space only accepts requests carrying a Hugging Face
   token (`Authorization: Bearer hf_...`). That header is then taken, so the server also accepts
   its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. When `HF_SPACE_TOKEN` is set, the site

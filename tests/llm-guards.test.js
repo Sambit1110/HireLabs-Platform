@@ -11,12 +11,14 @@ vi.mock('@/lib/supabase/server-auth', () => ({
 }));
 vi.mock('@/lib/api/ai-rate-limit', () => ({ checkAIRateLimit: () => null }));
 
-const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX', 'OLLAMA_MODEL', 'OLLAMA_URL', 'OLLAMA_KEY', 'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK'];
+const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX', 'OLLAMA_MODEL', 'OLLAMA_URL', 'OLLAMA_KEY', 'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK', 'EVALUATOR_PROVIDER', 'MODEL_SERVER_URL'];
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 const realFetch = globalThis.fetch;
 
 beforeEach(() => {
   for (const key of ENV_KEYS) delete process.env[key];
+  // These tests cover the Ollama evaluator; the explainer default has its own tests below.
+  process.env.EVALUATOR_PROVIDER = 'ollama';
 });
 afterEach(() => {
   for (const key of ENV_KEYS) {
@@ -216,5 +218,54 @@ describe('local evaluator context', () => {
     });
     globalThis.fetch = ollamaReply({ ok: true });
     await expect(evaluateLocally(messages, {})).resolves.toEqual({ ok: true });
+  });
+});
+
+describe('hirelabs-explainer (default provider)', () => {
+  const modelServer = () => vi.fn(async (url) => (String(url).endsWith('/embed')
+    ? Response.json({ vectors: [Array(384).fill(0.05), Array(384).fill(0.05)], dim: 384, model_used: 'hirelabs-matcher' })
+    : Response.json({ score: 80, verdict: 'strong', missingSkills: [] })));
+
+  beforeEach(() => {
+    delete process.env.EVALUATOR_PROVIDER;
+    process.env.MODEL_SERVER_URL = 'https://models.example.test';
+  });
+
+  it('explains a candidate from our own models without calling Ollama', async () => {
+    globalThis.fetch = modelServer();
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+    const response = await POST(candidateRequest());
+    const { data } = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.model_used).toBe('hirelabs-explainer');
+    expect(data.result.skill_gap_analysis.demonstrated_skills).toEqual(expect.arrayContaining(['Node.js', 'PostgreSQL']));
+    expect(data.result.evidence_removed).toBe(0);
+    const urls = globalThis.fetch.mock.calls.map(([url]) => String(url));
+    expect(urls.some((url) => url.includes('/api/chat'))).toBe(false);
+    expect(urls).toEqual(expect.arrayContaining(['https://models.example.test/embed', 'https://models.example.test/match']));
+  });
+
+  it('builds a role brief without any model call', async () => {
+    globalThis.fetch = vi.fn();
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+    const response = await POST(analyzeRequest({ mode: 'role' }));
+    const { data } = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.model_used).toBe('hirelabs-explainer');
+    expect(data.result.must_have_skills).toEqual(['Node.js', 'PostgreSQL']);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('still explains from skills alone when the model server is down', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('down', { status: 503 }));
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+    const response = await POST(candidateRequest());
+    const { data } = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.result.fit_verdict).not.toBe('insufficient_evidence');
+    expect(data.result.recruiter_insights.overall_assessment).toContain('skill coverage');
   });
 });

@@ -6,6 +6,7 @@ import { containsEmbeddedResume } from '@/lib/ai/input-validation';
 import { PromptTooLongError, evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
 import { checkEvidence } from '@/lib/ai/evidence';
 import { useLocalModels } from '@/lib/ai/model-server';
+import { EXPLAINER_MODEL, analyzeCandidate, buildRoleBrief, evaluatorProvider, modelSignals } from '@/lib/ai/own-analysis';
 import {
   CANDIDATE_LIMITS as LIMITS,
   buildCandidateMessages,
@@ -257,7 +258,29 @@ export async function POST(request) {
     return apiSuccess({ result: placeholderValue(schema), model, model_used: model });
   }
 
-  // Every analysis runs on the team's own evaluator; there is no external fallback.
+  // By default the team's own models and rules answer (hirelabs-explainer): no external or
+  // fine-tuned LLM, and nothing that depends on one team member's laptop.
+  // EVALUATOR_PROVIDER=ollama, or the bias check's explicit `local` provider, uses Ollama.
+  if (provider === null && evaluatorProvider() === 'hirelabs') {
+    try {
+      const result = mode === 'candidate'
+        ? analyzeCandidate(body, await modelSignals(body.jobDescription, body.candidate.parsedText))
+        : buildRoleBrief(body);
+      if (!validateAnalysis(result, schema, mode)) {
+        return apiError('INVALID_AI_RESPONSE', 'The HireLabs explainer returned an incomplete analysis.', 502);
+      }
+      if (mode === 'candidate') {
+        return candidateSuccess(result, body, EXPLAINER_MODEL, EXPLAINER_MODEL);
+      }
+      return apiSuccess({ result, model: EXPLAINER_MODEL, model_used: EXPLAINER_MODEL });
+    } catch (error) {
+      // Errors can contain candidate information: log the error type only.
+      console.error('HireLabs explainer failed', { name: error instanceof Error ? error.name : 'UnknownError' });
+      return apiError('EXPLAINER_FAILED', 'The HireLabs explainer could not analyse this request. Please retry.', 500);
+    }
+  }
+
+  // The Ollama evaluator runs on the team's own machine; there is no external fallback.
   if (!useLocalModels()) {
     return apiError('AI_UNAVAILABLE', 'The HireLabs evaluator is turned off (set USE_LOCAL_MODELS=true).', 503);
   }
