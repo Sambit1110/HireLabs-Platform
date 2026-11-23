@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { importReviews } from '../lib/evaluator/dataset.js';
+import { blindReviewSheet, importReviews } from '../lib/evaluator/dataset.js';
 import { runImport } from '../scripts/evaluator/import_reviews.mjs';
 
 const header = 'pair_id,resume_id,jd_id,proposed_score,proposed_verdict,reason,reviewer_score,reviewer_verdict,reviewer_name';
@@ -55,5 +55,29 @@ describe('import_reviews script', () => {
     expect(JSON.parse(fs.readFileSync(path.join(root, 'evaluator', 'import-held.json'), 'utf8'))).toHaveLength(4);
     expect(() => runImport(file, root)).toThrow(/already exists/);
     expect(runImport(file, root, { force: true })).toEqual(counts);
+  });
+});
+
+describe('blindReviewSheet', () => {
+  const header = 'pair_id,resume_id,jd_id,proposed_score,proposed_verdict,reason,reviewer_score,reviewer_verdict,reviewer_name';
+  const csv = [
+    header,
+    'p_train_j_0001_r_0001,r_0001,j_0001,88,strong,"Strong Python match, 5 years",85,strong,Pushpita',
+    'p_dev_j_0002_r_0400,r_0400,j_0002,40,weak,Few skills,,,',
+    'p_test_j_0003_r_0900,r_0900,j_0003,70,moderate,Locked,,,',
+  ].join('\n');
+
+  it('removes the proposal and any earlier review, and drops locked test rows', () => {
+    const { csv: blind, rows } = blindReviewSheet(csv);
+    expect(rows).toBe(2);
+    expect(blind.split('\n')[0]).toBe(header);
+    expect(blind).not.toMatch(/88|Strong Python|Few skills|Pushpita|p_test_/);
+    expect(blind).toContain('p_train_j_0001_r_0001,r_0001,j_0001,,,,,,');
+  });
+
+  it('imports a completed blind review as a human label', () => {
+    const filled = blindReviewSheet(csv).csv.replace('p_train_j_0001_r_0001,r_0001,j_0001,,,,,,', 'p_train_j_0001_r_0001,r_0001,j_0001,,,,80,strong,Mayukh');
+    const { train } = importReviews(filled);
+    expect(train).toEqual([{ pair_id: 'p_train_j_0001_r_0001', resume_id: 'r_0001', jd_id: 'j_0001', fit_score: 80, fit_verdict: 'strong', label_source: 'human' }]);
   });
 });

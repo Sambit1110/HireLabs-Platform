@@ -1,0 +1,5 @@
+# Extra packages for training and evaluating hirelabs-matcher (scripts/python/train_matcher.py,
+# scripts/python/evaluate_matcher.py). Install on top of requirements-matcher.txt.
+-r requirements-matcher.txt
+datasets>=2.19,<5
+accelerate>=0.26,<2

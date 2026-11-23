@@ -34,7 +34,9 @@ The Next.js API uses `pdf-parse` first and calls the authenticated `/extract-pdf
    .venv/bin/python -m pip install <path to the hirelabs-parser wheel>
    ```
 
-   Put the `hirelabs-matcher` model folder at `models/hirelabs-matcher`, or set `MATCHER_MODEL` to its path.
+   Put the `hirelabs-matcher` model folder at `models/hirelabs-matcher`, or set `MATCHER_MODEL` to its path. The folder is private and shared outside git (for example `hirelabs-matcher.zip`): unzip it so that `models/hirelabs-matcher/model.safetensors` exists. The matcher needs `sentence-transformers` (with PyTorch) in the same environment, which the requirements file installs. After restarting the model server, `/health` shows `matcher_ready: true`.
+
+   Resumes uploaded before the matcher was running have no embedding, so **Rank candidates** skips them. Re-upload them, or run `node --env-file=.env.local scripts/backfill-embeddings.mjs` with `MODEL_SERVER_URL`, `MODEL_API_TOKEN` and the Supabase service-role key (`SUPABASE_SERVICE_ROLE_KEY`, never `NEXT_PUBLIC_`) in that file; row-level security hides other users' resumes from the public key.
 3. **Load the evaluator into Ollama.** The Modelfile should contain `PARAMETER num_ctx 16384`. In the folder with the evaluator GGUF and Modelfile, run:
 
    ```sh

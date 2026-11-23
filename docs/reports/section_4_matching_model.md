@@ -1,6 +1,7 @@
 # Section 4: Semantic Matching Model (`hirelabs-matcher`) & Vector Infrastructure
 
-**Author:** Sagnik Dam  
+**Author:** Sagnik Dam (database, match API and first training scripts)  
+**Training and evaluation on the team dataset (Nov 23):** Sambit Biswas, with AI coding assistance (Claude Code)  
 **Role:** Matching Model, pgvector Database Infrastructure, and Match API  
 **Project:** HireLabs ATS Platform  
 
@@ -33,86 +34,90 @@ By fixing our embedding dimension to **384**, we achieve a 4x reduction in Postg
 
 ---
 
-## 3. Dataset & Contrastive Training Methodology
+## 3. Dataset & Training Method
 
-### 3.1 Pair Construction & Hard Negatives
-Contrastive fine-tuning requires discriminative signals: teaching the encoder that resumes matching the specific technical domain and seniority of a job description should occupy neighboring regions in vector space, while superficially similar profiles must be separated.
-
-Data formatting adheres strictly to the team's shared contract (`pairs/*.jsonl`):
+### 3.1 Data used
+Training and evaluation use the team dataset (`HireLabs-Data/`, kept out of git) and the shared pair format:
 ```json
-{"pair_id": "p_0001", "resume_id": "r_0001", "jd_id": "j_0001", "fit_score": 94, "fit_verdict": "strong", "label_source": "human"}
+{"pair_id": "p_train_j_0001_r_0492", "resume_id": "r_0492", "jd_id": "j_0001", "fit_score": 83, "fit_verdict": "strong", "label_source": "gemini_checked"}
 ```
 
-- **Positive Pairs:** (Job Description, Resume) where $\text{fit\_score} \ge 75$ (verdict `strong`).
-- **In-Batch Negatives:** Other resumes within the training batch serve as random negative samples.
-- **Hard Negatives:** Resumes from the *same broad technical category* (e.g., software engineering) but lacking the target specialisation or seniority, with $\text{fit\_score} < 50$ (verdict `weak`). For example, pairing a Senior Backend role with a Junior Web Developer resume forces the encoder to attend to distributed systems and architectural depth rather than broad programming terms.
+| | Train | Dev |
+|---|---:|---:|
+| Labelled resume–job pairs | 24 | 24 |
+| Job descriptions covered | 5 | 5 (the same 5) |
+| Strong pairs (fit ≥ 75) | 13 | 9 |
+| Weak pairs (fit < 50) | 10 | 10 |
+| Resumes in the split (all are candidates at evaluation) | 700 | 150 |
 
-### 3.2 Loss Function & Hyperparameters
-We trained using **`MultipleNegativesRankingLoss`** (MNRL), which computes cross-entropy over symmetric cosine similarity scores:
+Splits are by resume (`splits.json`): no resume appears in both train and dev, and the locked test split is never read. Every labelled pair has `label_source: gemini_checked`, meaning a person reviewed a score that Gemini first proposed (see 5.2).
 
-$$\mathcal{L} = -\sum_{i=1}^B \log \frac{e^{\text{sim}(q_i, d_i^+) / \tau}}{e^{\text{sim}(q_i, d_i^+) / \tau} + \sum_{j \neq i} e^{\text{sim}(q_i, d_j) / \tau} + \sum_{k} e^{\text{sim}(q_i, d_{i,k}^-) / \tau}}$$
+### 3.2 Training examples
+- **Positive:** (job description, resume) with verdict `strong`.
+- **Hard negative:** a resume the reviewers marked `weak` for the same job.
+- Each strong resume is paired with each weak resume of its job, giving **26 (job, good resume, weak resume) examples**.
 
-- **Learning Rate:** $2 \times 10^{-5}$ with AdamW optimizer and linear warmup (10% of steps).
-- **Batch Size:** 16 (effective contrastive pool of 32 candidates per step).
-- **Epochs:** 3 epochs with early checkpointing.
-- **Normalization:** L2 unit norm applied to all output vectors ($||\mathbf{v}||_2 = 1.0$), ensuring that cosine similarity equals standard dot product.
-
----
-
-## 4. Quantitative Results & Evaluation
-
-### 4.1 Retrieval Metrics on Dev Set
-Evaluated on held-out validation pairs across target job roles:
-- **Recall@5:** Percentage of job queries where at least one ground-truth positive resume ($\text{fit\_score} \ge 75$) is retrieved in the top 5 candidates.
-- **MRR (Mean Reciprocal Rank):** $\frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i}$, measuring how close the first relevant resume is to the top rank.
-
-| Model | Dev Recall@5 | Dev MRR | Status |
-|---|---|---|---|
-| **Baseline:** `BAAI/bge-small-en-v1.5` | 100.0% (top 5 pool) | 1.0000 | Baseline |
-| **`hirelabs-matcher` (Ours)** | **100.0%** | **1.0000** | **+4.6% Avg Score Margin** |
-
-*Note on held-out test evaluation:* In accordance with Ground Rule 1, the official test set (`HireLabs-Data/test/`) remains locked. The final benchmark on the test partition is executed independently by Mayukh using `scripts/python/rank_resumes.py`.
+### 3.3 Loss and settings
+- **Loss:** `MultipleNegativesRankingLoss` (MNRL), the cross-entropy over similarities that rewards ranking the good resume above the others.
+- **One example per step.** With only 5 job descriptions, a larger batch would mostly contain the same job, and MNRL would treat that job's other good resumes as wrong answers. Each step therefore compares one good resume with its hard negative. The script uses in-batch negatives automatically once there are at least twice as many job descriptions as the batch size (`scripts/python/train_matcher.py`).
+- **Settings:** learning rate 2×10⁻⁵ (AdamW, 10% linear warm-up), 3 epochs, 384-dimensional output with L2 normalization, so cosine similarity equals the dot product.
+- **Hardware:** a MacBook (Apple MPS). Training takes under 10 seconds.
+- **Saved model:** `hirelabs-matcher/` with `training_run.json` (base model, settings, SHA-256 of every input file). The automatic model card is turned off because it would copy resume text into the model folder.
 
 ---
 
-## 5. Qualitative Ranking Comparison (Before vs. After)
+## 4. Quantitative Results
 
-To illustrate the concrete benefit of domain fine-tuning to faculty and recruiters, we benchmarked 5 candidate resumes across 3 distinct technical job openings:
+### 4.1 How it is measured (`scripts/python/evaluate_matcher.py`)
+The test copies how the app ranks:
+- For each of the 5 dev job descriptions, the model ranks **all 150 dev resumes**, not just the judged ones.
+- A resume counts as relevant when the dev labels mark it `strong` for that job (9 relevant pairs). Unjudged resumes count as not relevant, which can only lower the scores.
+- Texts are embedded exactly as the model server's `/embed` receives them, with no query prefix.
 
-### Job 1: Senior Backend Engineer (Node.js, PostgreSQL, AWS, Distributed Systems)
-| Rank | Baseline (`bge-small-en-v1.5`) | Fine-Tuned (`hirelabs-matcher`) | Margin Change |
-|---|---|---|---|
-| **#1** | **`r_0001` (0.8199) Priya Raman [Sr. Backend]** | **`r_0001` (0.8655) Priya Raman [Sr. Backend]** | **+0.0456 (Confidence Boost)** |
-| #2 | `r_0002` (0.7351) Alex Chen [Sr. Frontend] | `r_0002` (0.7121) Alex Chen [Sr. Frontend] | -0.0230 (Suppressed) |
-| #3 | `r_0004` (0.6128) Marcus Vance [Mobile Dev] | `r_0004` (0.6134) Marcus Vance [Mobile Dev] | Neutral |
-| #4 | `r_0005` (0.6122) Devon Miller [Jr. Web Dev] | `r_0005` (0.6026) Devon Miller [Jr. Web Dev] | -0.0096 (Suppressed) |
-| #5 | `r_0003` (0.5957) Dr. Elena Rostova [Lead ML] | `r_0003` (0.5889) Dr. Elena Rostova [Lead ML] | -0.0068 (Suppressed) |
+Metrics:
+- **Recall@k:** share of job descriptions with a relevant resume in the top k.
+- **MRR:** mean of 1 ÷ the rank of the first relevant resume.
+- **Score agreement:** for each job, the Spearman correlation between the model's similarity and the human fit score over its judged dev resumes (about 5 per job), then averaged.
 
-> **Key Observation:** The true positive (`r_0001`) increased from 0.8199 to **0.8655**, while cross-domain profiles (Frontend, Junior Web) were suppressed. The separation margin between Rank 1 and Rank 2 widened from **0.0848 to 0.1534 (+80.9% clearer decision boundary)**.
+### 4.2 Dev results
+
+| Model | Recall@5 | Recall@10 | MRR | Score agreement (Spearman) |
+|---|---:|---:|---:|---:|
+| `BAAI/bge-small-en-v1.5` (no fine-tuning) | 100% | 100% | 0.633 | 0.825 |
+| **`hirelabs-matcher` (delivered model)** | **100%** | **100%** | **0.767** | **0.784** |
+| `hirelabs-matcher`, range over 5 training runs | 100% | 100% | 0.767–0.900 | 0.784–0.804 |
+
+Rank of the first relevant resume (out of 150), per job description:
+
+| Job | j_0001 | j_0002 | j_0003 | j_0004 | j_0005 |
+|---|---:|---:|---:|---:|---:|
+| Base model | 3 | 1 | 3 | 2 | 1 |
+| hirelabs-matcher | 3 | 1 | **1** | 2 | 1 |
+
+### 4.3 What the numbers show
+- **First relevant resume ranks higher:** MRR rose from 0.633 to 0.767 in the delivered model, and to between 0.767 and 0.900 across all five runs. Every run beat the base model on MRR.
+- **Recall@5 can't separate them:** both models already put a relevant resume in the top 5 for all 5 jobs.
+- **Agreement with human scores dipped slightly:** 0.825 for the base model vs 0.78–0.80 after fine-tuning. Training only teaches strong vs weak, so it can blur the order among middling resumes.
+- **Runs vary:** results differ between runs because GPU training on the Mac isn't deterministic. The table reports the range, not the best run.
+
+With 5 job descriptions, one job moving changes MRR by up to 0.13, so these are indicative numbers, not a measured improvement. The final comparison on the locked test set is Mayukh's.
 
 ---
 
-### Job 2: Senior Frontend Engineer (React, TypeScript, Next.js, Core Web Vitals)
-| Rank | Baseline (`bge-small-en-v1.5`) | Fine-Tuned (`hirelabs-matcher`) | Key Shift |
-|---|---|---|---|
-| **#1** | **`r_0002` (0.8562) Alex Chen [Sr. Frontend]** | **`r_0002` (0.8715) Alex Chen [Sr. Frontend]** | **+0.0153 (Reinforced Match)** |
-| #2 | `r_0001` (0.7161) Priya Raman [Sr. Backend] | `r_0005` (0.7138) Devon Miller [Jr. Web Dev] | **Rank shift towards Web domain** |
-| #3 | `r_0005` (0.7071) Devon Miller [Jr. Web Dev] | `r_0001` (0.7135) Priya Raman [Sr. Backend] | Backend demoted |
-| #4 | `r_0004` (0.6022) Marcus Vance [Mobile Dev] | `r_0004` (0.5979) Marcus Vance [Mobile Dev] | Negative suppressed |
-| #5 | `r_0003` (0.5491) Dr. Elena Rostova [Lead ML] | `r_0003` (0.5391) Dr. Elena Rostova [Lead ML] | Non-relevant bottom |
+## 5. Limitations
 
----
+### 5.1 Too little labelled data
+- **Small set:** 24 training pairs over 5 job descriptions. The training loss falls close to zero, so the model mostly memorizes these examples.
+- **Untested on new jobs:** dev uses the same 5 job descriptions as training, so the results don't show how it handles job descriptions it hasn't seen.
+- **More data is ready:** the dataset already holds 850 resumes and 300 job descriptions, plus 1,500 candidate pairs per split waiting for labels.
 
-### Job 3: Machine Learning Engineer (NLP, Dense Retrieval, Sentence-Transformers)
-| Rank | Baseline (`bge-small-en-v1.5`) | Fine-Tuned (`hirelabs-matcher`) | Score |
-|---|---|---|---|
-| **#1** | **`r_0003` (0.8072) Dr. Elena Rostova [Lead ML]** | **`r_0003` (0.8261) Dr. Elena Rostova [Lead ML]** | **+0.0189 (Clear Winner)** |
-| #2 | `r_0001` (0.6640) Priya Raman [Sr. Backend] | `r_0001` (0.6665) Priya Raman [Sr. Backend] | Distant runner-up |
-| #3 | `r_0005` (0.6470) Devon Miller [Jr. Web Dev] | `r_0005` (0.6355) Devon Miller [Jr. Web Dev] | Lower similarity |
-| #4 | `r_0002` (0.6442) Alex Chen [Sr. Frontend] | `r_0002` (0.6187) Alex Chen [Sr. Frontend] | Lower similarity |
-| #5 | `r_0004` (0.5874) Marcus Vance [Mobile Dev] | `r_0004` (0.5792) Marcus Vance [Mobile Dev] | Out-of-domain |
+### 5.2 Labels started from Gemini
+- **Where the labels came from:** each labelled pair is `gemini_checked`. Gemini proposed a score, and a team member reviewed and kept or corrected it.
+- **Conflict with the project rule:** the project now uses no Gemini at all, so this model is **interim**.
+- **The replacement:** blind human labels, where reviewers score pairs without seeing a proposal. Retrain on those with the same scripts, and record `label_source: human`.
 
----
+### 5.3 What the qualitative tables in earlier drafts showed
+Earlier drafts of this section reported 100% Recall@5 and an MRR of 1.0, and showed rankings of 5 fictional sample resumes. Those came from ranking 5 sample documents, not from the dev set. They are replaced by the results above.
 
 ## 6. Database Architecture & Multi-Tenant Security
 
@@ -181,7 +186,8 @@ Cross-tenant privacy is enforced at two distinct layers:
 
 - **To Arpan (Model Serving):** `scripts/python/embed_service.py` exposing FastAPI `POST http://localhost:8000/embed` returning `{"vectors": [...], "dim": 384, "model_used": "hirelabs-matcher"}`.
 - **To Sambit (Frontend & UI):** Production-ready `POST /api/match` returning ranked candidates with similarity percentages and full candidate profiles ready for the dashboard.
-- **To Mayukh (Evaluation & Benchmarks):** `scripts/python/rank_resumes.py` and `scripts/python/evaluate_baseline.py` for evaluating the locked test set.
+- **To Mayukh (Evaluation & Benchmarks):** `scripts/python/rank_resumes.py`, `scripts/python/evaluate_baseline.py`, and `scripts/python/evaluate_matcher.py` (dev protocol in 4.1) for evaluating the locked test set.
+- **To the model host:** the trained `hirelabs-matcher/` folder (private, not in git). Unzip it to `models/hirelabs-matcher` beside the model server, or set `MATCHER_MODEL` to its path; `/health` then reports `matcher_ready: true`.
 
 ---
-*Report section completed by Sagnik Dam for the HireLabs Project Submission.*
+*Report section by Sagnik Dam; sections 3–5 updated on Nov 23 with training and evaluation on the team dataset.*

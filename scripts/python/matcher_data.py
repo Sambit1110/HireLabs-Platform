@@ -152,7 +152,8 @@ def validate_dataset(data_dir: str) -> Tuple[List[Dict[str, Any]], List[Dict[str
                     raw_file_hashes[relative_path] = hashlib.sha256(text_file.read()).hexdigest()
 
     metadata = {
-        "data_dir": os.path.abspath(data_dir),
+        # Folder name only: a full path would leak the local user name into shared artifacts.
+        "data_dir": os.path.basename(os.path.abspath(data_dir)),
         "files": {
             "pairs/train.jsonl": {"rows": len(train_rows), "sha256": train_hash},
             "pairs/dev.jsonl": {"rows": len(dev_rows), "sha256": dev_hash},
