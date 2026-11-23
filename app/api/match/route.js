@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { embedText } from '@/lib/resume/embedding';
+import { LLM_MODEL, scoreWithLlm } from '@/lib/ai/llm-match';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -15,6 +16,8 @@ const MAX_MATCH_COUNT = 100;
  *
  * Ranks candidate resumes against a job description using 384-dimensional
  * dense semantic embeddings (hirelabs-matcher) and pgvector cosine distance.
+ * The top resumes also get a fit score from hirelabs-llm (the team's from-scratch
+ * language model) when the model server has it. That score never changes the order.
  *
  * Body:
  * {
@@ -35,10 +38,12 @@ const MAX_MATCH_COUNT = 100;
  *         "candidate_name": "Priya Raman",
  *         "candidate_title": "Senior Backend Engineer",
  *         "years_experience": 7,
- *         "extracted_skills": ["Node.js", "PostgreSQL", ...]
+ *         "extracted_skills": ["Node.js", "PostgreSQL", ...],
+ *         "llm_fit": { "score": 82, "verdict": "strong", "missing_skills": ["Kafka"] }  // or null
  *       }
  *     ],
  *     "model_used": "hirelabs-matcher",
+ *     "llm_model": "hirelabs-llm",   // null when no resume got an LLM score
  *     "dim": 384,
  *     "count": 1
  *   }
@@ -113,16 +118,24 @@ export async function POST(request) {
 
     // 4. Enrich matched resumes with profile fields if matches were found
     let enrichedMatches = matchesList;
+    let llmScored = false;
+    let llmPlaceholder = false;
     if (matchesList.length > 0) {
       const matchIds = matchesList.map((m) => m.id);
       const { data: resumeProfiles, error: profileErr } = await auth.supabase
         .from('resumes')
-        .select('id, candidate_name, candidate_title, years_experience, extracted_skills, profile_completeness')
+        .select('id, candidate_name, candidate_title, years_experience, extracted_skills, profile_completeness, parsed_text')
         .in('id', matchIds)
         .eq('user_id', auth.user.id);
 
       if (!profileErr && Array.isArray(resumeProfiles)) {
         const profileMap = new Map(resumeProfiles.map((p) => [p.id, p]));
+        const llm = await scoreWithLlm(
+          jdText,
+          matchesList.map((m) => ({ id: m.id, text: profileMap.get(m.id)?.parsed_text }))
+        );
+        llmScored = llm.results.size > 0;
+        llmPlaceholder = llm.placeholder;
         enrichedMatches = matchesList.map((m) => {
           const profile = profileMap.get(m.id) || {};
           return {
@@ -134,6 +147,7 @@ export async function POST(request) {
             years_experience: profile.years_experience ?? null,
             extracted_skills: profile.extracted_skills || [],
             profile_completeness: profile.profile_completeness || 0,
+            llm_fit: llm.results.get(m.id) || null,
           };
         });
       }
@@ -142,6 +156,7 @@ export async function POST(request) {
     return apiSuccess({
       matches: enrichedMatches,
       model_used: model_used || 'hirelabs-matcher',
+      llm_model: llmScored ? (llmPlaceholder ? 'llm-placeholder' : LLM_MODEL) : null,
       dim,
       count: enrichedMatches.length,
     });

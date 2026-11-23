@@ -103,6 +103,15 @@ model from `HIRELABS_LLM_DIR` (default `models/hirelabs-llm`) and adds:
 
 The model is about 8 MB and answers in well under a second on a CPU.
 
+### On the website
+
+**Rank candidates** (`/api/match`) still orders resumes by hirelabs-matcher similarity. With
+`USE_LOCAL_MODELS=true`, the route then asks `/match` about the top 20 resumes (4 at a time)
+and adds `llm_fit: { score, verdict, missing_skills }` to each. The dashboard shows it as
+"hirelabs-llm fit" with the missing skills, marked experimental. The LLM score never reorders
+the list. If the model server or model is missing, or a request fails, the remaining resumes
+get `llm_fit: null` and ranking carries on normally.
+
 ## Free hosting on a Hugging Face Space
 
 This replaces the laptop + ngrok setup. A free CPU Space has 2 vCPU and 16 GB RAM and needs no
@@ -123,7 +132,8 @@ credit card.
    The Space builds itself, which takes a few minutes. Then check `/health` on the Space URL
    (`https://<your-name>-<space-name>.hf.space`).
 4. In Vercel, set `MODEL_SERVER_URL` to the Space URL and `MODEL_API_TOKEN` to the same secret.
-   Because the Space is private, the site also has to send a Hugging Face read token. See below.
+   Because the Space is private, also add `HF_SPACE_TOKEN`: a Hugging Face access token with
+   read access (huggingface.co → Settings → Access Tokens). Mark both as secrets and redeploy.
 
 Things to know:
 
@@ -133,10 +143,10 @@ Things to know:
   site's evaluator calls need moving to `/match` first.
 - **Private Space and tokens.** A private Space only accepts requests carrying a Hugging Face
   token (`Authorization: Bearer hf_...`). That header is then taken, so the server also accepts
-  its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. The site currently sends only
-  `Authorization`, so it needs a small change to send both before it can use a private Space.
-  Don't make the Space public to avoid that change: anyone could then download the model, and it
-  was trained on the team's resumes.
+  its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. When `HF_SPACE_TOKEN` is set, the site
+  sends both: the Hugging Face token in `Authorization`, the team token in `X-HireLabs-Token`.
+  Don't make the Space public instead: anyone could then download the model, and it was trained
+  on the team's resumes.
 
 ## Limitations
 
