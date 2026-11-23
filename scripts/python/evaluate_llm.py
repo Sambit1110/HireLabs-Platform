@@ -8,6 +8,8 @@ A resume counts as relevant when it has the job's role. Reported three ways:
   - title-blind: lines naming the resume's role removed, so the model must match on skills
   - shortened: about a third of the lines of every job and resume removed at random, a rough
     stand-in for text that does not follow the dataset's template
+  - relaid: every job and resume re-laid-out by rules (augment.py), another stand-in for
+    other layouts
 Two baselines use the same rankings: required-skill overlap (a text rule) and random order.
 
   python3 scripts/python/evaluate_llm.py --model models/hirelabs-llm --data-dir /path/HireLabs-Data --output llm-dev.json
@@ -21,6 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from hirelabs_llm.augment import relayout  # noqa: E402
 from hirelabs_llm.corpus import Corpus, drop_lines, drop_title  # noqa: E402
 from hirelabs_llm.score import SKILL_LINE, Scorer  # noqa: E402
 from matcher_metrics import ranking_metrics  # noqa: E402
@@ -54,6 +57,9 @@ def evaluate(model_dir, data_dir, device="auto", max_jobs=None, seed=0):
              "title_blind": ({rid: drop_title(dev.resumes[rid]) for rid in resume_ids}, dev.jobs),
              "shortened": ({rid: drop_lines(dev.resumes[rid], 0.35, shorten) for rid in resume_ids},
                            {jid: drop_lines(dev.jobs[jid], 0.35, shorten) for jid in sorted(dev.jobs)})}
+    relaid = random.Random(seed + 2)
+    views["relaid"] = ({rid: relayout(dev.resumes[rid], relaid) for rid in resume_ids},
+                       {jid: relayout(dev.jobs[jid], relaid) for jid in sorted(dev.jobs)})
 
     results = {"model": os.path.basename(os.path.abspath(model_dir)),
                "data_dir": os.path.basename(os.path.abspath(data_dir)),

@@ -132,6 +132,39 @@ class Sampler(unittest.TestCase):
             self.assertEqual({len(row) for row in inputs}, {len(targets[0])})
 
 
+class Relayout(unittest.TestCase):
+    TEXT = "Data Analyst\nData Analyst with 3 years of experience in Retail.\nSkills: SQL, Python, Tableau, Excel"
+
+    def words(self, text):
+        import re
+        return sorted(w.lower() for w in re.findall(r"[A-Za-z]+", text) if w.lower() not in {
+            "skills", "technical", "tech", "stack", "core", "tools", "key", "expertise", "and"})
+
+    def test_keeps_every_word_and_changes_the_shape(self):
+        import random
+        from hirelabs_llm.augment import relayout
+
+        shapes = set()
+        for seed in range(40):
+            out = relayout(self.TEXT, random.Random(seed))
+            self.assertEqual(self.words(out), self.words(self.TEXT))
+            shapes.add(out)
+        self.assertGreater(len(shapes), 10)
+
+    def test_is_reproducible_for_a_seed(self):
+        import random
+        from hirelabs_llm.augment import relayout
+
+        self.assertEqual(relayout(self.TEXT, random.Random(7)), relayout(self.TEXT, random.Random(7)))
+
+    def test_leaves_text_without_lists_alone_apart_from_layout(self):
+        import random
+        from hirelabs_llm.augment import relayout
+
+        out = relayout("Led a team of five.", random.Random(1))
+        self.assertIn("ed a team of five", out)
+
+
 class TextHelpers(unittest.TestCase):
     def test_job_role_prefers_known_roles_over_stripping_levels(self):
         from hirelabs_llm.corpus import job_role
