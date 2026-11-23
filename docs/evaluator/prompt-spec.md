@@ -1,16 +1,16 @@
-# Evaluator prompt specification (`candidate-v2`)
+# Evaluator prompt specification (`candidate-v3`)
 
 Give this file, its repository revision and [`data/samples/evaluator/synthetic-example.json`](../../data/samples/evaluator/synthetic-example.json) to **both** GPT-6 sessions. The trainer (#1) and the evaluator (#2) must build model inputs the same way, so the same source pair always produces the same input.
 
 - **Source of truth:** [`lib/ai/candidate-prompt.js`](../../lib/ai/candidate-prompt.js). The app (Gemini and the local `hirelabs-evaluator`), the dataset scripts and the tests all import it.
-- **Prompt version:** `CANDIDATE_PROMPT_VERSION = 'candidate-v2'`. Every generated target and provenance row records it.
+- **Prompt version:** `CANDIDATE_PROMPT_VERSION = 'candidate-v3'`. Every generated target and provenance row records it.
 - **Repository revision:** use the commit that contains this file. Record it in the handoff as `git rev-parse HEAD` at the time of the data build.
 
 ## Model input: two messages
 
 | Order | Role | Content |
 |---|---|---|
-| 1 | `system` | `CANDIDATE_SYSTEM_PROMPT`: fixed rules 1–13 and analysis requirements A–J. It is identical for every pair. |
+| 1 | `system` | `CANDIDATE_SYSTEM_PROMPT`: fixed rules 1–15 and analysis requirements A–J. It is identical for every pair. |
 | 2 | `user` | `buildCandidateUserMessage(body)`: the formatted job and resume (template below). |
 
 A training record adds the expected output as message 3 (`assistant`): the target JSON, serialised with `JSON.stringify`. Gemini receives the same text as one prompt: `buildCandidatePrompt(body)` = system + blank line + user.
