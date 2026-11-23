@@ -8,7 +8,7 @@ import { consumeDailyQuota } from '../lib/server/quota.js';
 
 const KEYS = [
   'NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'USE_LOCAL_MODELS', 'OLLAMA_MODEL', 'AI_FEATURES_ENABLED',
+  'USE_LOCAL_MODELS', 'OLLAMA_MODEL', 'AI_FEATURES_ENABLED', 'EVALUATOR_PROVIDER',
 ];
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 const setEnv = (values) => {
@@ -74,10 +74,12 @@ describe('AI configuration', () => {
     setEnv({});
     const config = getAiConfig();
     assert.equal(config.localModels, false);
-    assert.equal(config.evaluatorModel, 'hirelabs-evaluator');
+    assert.equal(config.evaluatorModel, 'hirelabs-explainer');
     assert.equal(config.enabled, true);
     setEnv({ USE_LOCAL_MODELS: 'true', OLLAMA_MODEL: 'hirelabs-evaluator-v2' });
     assert.equal(getAiConfig().localModels, true);
+    assert.equal(getAiConfig().evaluatorModel, 'hirelabs-explainer');
+    setEnv({ EVALUATOR_PROVIDER: 'ollama', OLLAMA_MODEL: 'hirelabs-evaluator-v2' });
     assert.equal(getAiConfig().evaluatorModel, 'hirelabs-evaluator-v2');
   });
 

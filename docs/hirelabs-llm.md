@@ -61,33 +61,38 @@ Unit tests: `python3 -m unittest discover -s scripts/python/tests -t scripts/pyt
 
 ## Results (dev split, held-out resumes)
 
-Default settings, one run on an Apple M5 (Mac GPU): 4.6 minutes, best dev loss 0.301 at step
-1,500 of 3,000 (the saved checkpoint). Each of the 300 jobs ranks all 150 dev resumes. A
-resume counts as relevant when its role equals the job's.
+**v2 (live since 2026-11-24)**, trained with rule-based layout variety (`--relayout-prob 0.5`,
+see `augment.py`): 4,000 steps, 8.4 minutes on an Apple M5, best dev loss 0.296. Each of the 300
+jobs ranks all 150 dev resumes. A resume counts as relevant when its role equals the job's.
 
 | View | Method | MRR | Recall@1 | Recall@5 |
 |---|---|---|---|---|
-| Full text | **hirelabs-llm** | **0.998** | **99.7%** | **100%** |
+| Full text | **hirelabs-llm v2** | **1.000** | **100%** | **100%** |
+| | v1 (template only) | 0.998 | 99.7% | 100% |
 | | Required-skill overlap (rule) | 0.577 | 36.3% | 90.3% |
 | | Random | 0.157 | 5.3% | 21.7% |
-| Title lines removed | **hirelabs-llm** | **0.508** | **30.7%** | **86.3%** |
+| Title lines removed | **hirelabs-llm v2** | **0.532** | **32.0%** | **86.3%** |
+| | v1 | 0.508 | 30.7% | 86.3% |
 | | Required-skill overlap (rule) | 0.573 | 35.0% | 92.0% |
-| | Random | 0.133 | 4.0% | 17.7% |
-| ~35% of lines removed | **hirelabs-llm** | **0.874** | **81.0%** | **94.3%** |
+| ~35% of lines removed | **hirelabs-llm v2** | **0.891** | **84.7%** | **93.0%** |
+| | v1 | 0.874 | 81.0% | 94.3% |
 | | Required-skill overlap (rule) | 0.396 | 22.0% | 60.7% |
-| | Random | 0.147 | 4.0% | 23.3% |
+| Re-laid-out text | **hirelabs-llm v2** | **1.000** | **100%** | **100%** |
+| | v1 | 0.234 | 14.3% | 28.7% |
+| | Required-skill overlap (rule) | 0.367 | 19.0% | 58.0% |
 
 What this shows:
 
 - With the full text, the model almost always ranks a same-role resume first. Much of that
   comes from recognising the role title.
-- With the titles removed, it has to match on skills alone. It is far better than chance but
-  slightly behind a plain skill-overlap rule.
-- With shortened text it holds up much better than the rule does.
-- A free-text resume that does not follow the dataset's layout scored 0 against a matching job
-  in a manual check. The model has only ever seen one layout. See Limitations.
+- With the titles removed, it has to match on skills alone: far better than chance, slightly
+  behind a plain skill-overlap rule.
+- v1 fell apart when the layout changed (re-laid-out MRR 0.234); v2 does not. That view uses
+  the same rules as v2's training, so it flatters v2.
+- On three free-text sample resumes against three jobs, v2 is no better than v1. Real
+  free-text resumes still need real, varied training data. See Limitations.
 - Scores cluster near 0 or 100, because the score curve is fitted to a yes/no question
-  (same role or not).
+  (same role or not). That is one reason the fit score gives the LLM only 15%.
 
 Reproduce: `evaluate_llm.py` as above. The numbers change a little from run to run.
 
@@ -173,8 +178,9 @@ Things to know:
 - A Space **sleeps after a while with no visits** (the idle time is in the Space's settings). The
   first request after that takes a minute or two. Open `/health` before a demo.
 - **Ollama does not run on the Space**, so `/api/chat` answers 503 there. Explain score and
-  role briefs don't need it any more (hirelabs-explainer). `OLLAMA_URL` is now only used to
-  fill in profile fields the parser misses, plus the bias check and `EVALUATOR_PROVIDER=ollama`.
+  role briefs don't need it any more (hirelabs-explainer), and profile gaps are filled by rules.
+  `OLLAMA_URL` is only used with `EVALUATOR_PROVIDER=ollama` and by the bias check, so it can
+  be removed from Vercel.
 - **Private Space and tokens.** A private Space only accepts requests carrying a Hugging Face
   token (`Authorization: Bearer hf_...`). That header is then taken, so the server also accepts
   its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. When `HF_SPACE_TOKEN` is set, the site

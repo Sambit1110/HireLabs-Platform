@@ -68,8 +68,10 @@ describe('shared candidate prompt', () => {
     expect(route).toContain("from '@/lib/ai/candidate-prompt'");
     expect(route).not.toMatch(/const candidateSchema\s*=/);
     expect(route).not.toMatch(/function buildCandidatePrompt/);
-    expect(route).toMatch(/mode === 'candidate' \? buildCandidateMessages\(body\)/);
-    expect(route).toMatch(/evaluateLocally\(input, schema\)/);
+    // The full or compact prompt (OLLAMA_CANDIDATE_FORMAT=compact), both from the shared module.
+    expect(route).toMatch(/compact \? buildCompactMessages : buildCandidateMessages/);
+    expect(route).toMatch(/mode === 'candidate' \? candidatePrompt\(body\)/);
+    expect(route).toMatch(/evaluateLocally\(input, compact \? compactCandidateSchema : schema\)/);
   });
 });
 
