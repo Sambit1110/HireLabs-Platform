@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_EVALUATION } from "@/lib/fixtures/sample-evaluation";
+import { containsEmbeddedResume } from "@/lib/ai/input-validation";
 import CandidateEvaluation from "@/components/dashboard/CandidateEvaluation";
 import ModelBadge from "@/components/dashboard/ModelBadge";
 
@@ -23,6 +24,7 @@ type Candidate = {
   extracted_skills: string[] | null;
   parsed_text: string | null;
   years_experience: number | null;
+  parser_error?: string | null;
 };
 
 type AnalysisMode = "candidate" | "role";
@@ -63,6 +65,8 @@ export type AnalysisPreset = {
 type AIAnalysisPanelProps = {
   candidates: Candidate[];
   preset?: AnalysisPreset | null;
+  onReprocess?: (candidateId: string) => void;
+  reprocessingId?: string;
 };
 
 function isRecord(
@@ -391,6 +395,8 @@ function ResultDisplay({
 export default function AIAnalysisPanel({
   candidates,
   preset = null,
+  onReprocess,
+  reprocessingId = "",
 }: AIAnalysisPanelProps) {
   const [candidateId, setCandidateId] = useState("");
   const [role, setRole] = useState("");
@@ -442,8 +448,9 @@ export default function AIAnalysisPanel({
     selectedCandidate?.parsed_text?.trim()
   );
 
+  const jobDescriptionHasResume = containsEmbeddedResume(jobDescription);
   const roleReady = Boolean(
-    role.trim() && jobDescription.trim()
+    role.trim() && jobDescription.trim() && !jobDescriptionHasResume
   );
 
   const resetOutput = () => {
@@ -661,6 +668,11 @@ export default function AIAnalysisPanel({
             {jobDescription.length.toLocaleString()}
             /12,000 characters
           </span>
+          {jobDescriptionHasResume && (
+            <span className="dashboard-alert" role="alert">
+              This field contains a RESUME section. Remove the resume text here; the selected candidate&apos;s uploaded resume is included separately.
+            </span>
+          )}
         </label>
 
         <label className="dashboard-label">
@@ -724,11 +736,40 @@ export default function AIAnalysisPanel({
                 : "No skills extracted"}
             </p>
 
+            {selectedCandidate.parser_error && (
+              <>
+                <p className="resume-note">
+                  Structured profile fields were not fully extracted. Candidate evaluation uses the resume text below.
+                </p>
+                {selectedCandidate.parsed_text?.trim() && onReprocess && (
+                  <button
+                    type="button"
+                    className="dashboard-secondary"
+                    disabled={Boolean(reprocessingId)}
+                    onClick={() => onReprocess(selectedCandidate.id)}
+                  >
+                    {reprocessingId === selectedCandidate.id
+                      ? "Re-extracting…"
+                      : "Re-extract profile"}
+                  </button>
+                )}
+              </>
+            )}
+
             {!candidateReady && (
               <p className="resume-note">
                 Candidate evaluation requires parsed
                 resume text.
               </p>
+            )}
+
+            {candidateReady && (
+              <details className="candidate-resume-text">
+                <summary>
+                  View extracted resume text ({selectedCandidate.parsed_text?.length.toLocaleString()} characters)
+                </summary>
+                <pre>{selectedCandidate.parsed_text}</pre>
+              </details>
             )}
           </div>
         </div>

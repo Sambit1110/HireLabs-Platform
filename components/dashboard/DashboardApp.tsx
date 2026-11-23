@@ -846,6 +846,11 @@ export default function DashboardApp() {
           <AIAnalysisPanel
             candidates={aiCandidates}
             preset={analysisPreset}
+            reprocessingId={actionId}
+            onReprocess={(resumeId) => {
+              const resume = resumes.find((item) => item.id === resumeId);
+              if (resume) void retry(resume);
+            }}
           />
         </section>
 

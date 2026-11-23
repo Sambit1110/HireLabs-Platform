@@ -5,9 +5,12 @@ The website on Vercel cannot run the Python model server or Ollama. One machine 
 ```
 Vercel (website) ──HTTPS + Bearer token──► Cloudflare tunnel ──► model server 127.0.0.1:8000
                                                                    ├─ /parse     hirelabs-parser
+                                                                   ├─ /extract-pdf pdfplumber fallback
                                                                    ├─ /embed     hirelabs-matcher
                                                                    └─ /api/chat ──► Ollama 127.0.0.1:11434 (hirelabs-evaluator)
 ```
+
+The Next.js API uses `pdf-parse` first and calls the authenticated `/extract-pdf` endpoint when that returns no text or errors. The model server limits PDFs to 5 MB and extracts selectable text with `pdfplumber`; scanned/image-only PDFs still need OCR.
 
 ## Security
 
@@ -70,8 +73,8 @@ Vercel (website) ──HTTPS + Bearer token──► Cloudflare tunnel ──►
 
    The matcher URL follows `MODEL_SERVER_URL` automatically. Leave `EMBED_SERVICE_URL` unset on Vercel.
 
-4. **Check it.** Open `https://<tunnel>/health`. All three of `parser_ready`, `matcher_ready` and `evaluator_ready` should be `true`. `evaluator_ready` is `false` when Ollama isn't running or doesn't have `OLLAMA_MODEL` loaded. Then, on the website:
-   - Upload a resume. The badge shows `hirelabs-parser`.
+4. **Check it.** Open `https://<tunnel>/health`. `parser_ready`, `matcher_ready` and `evaluator_ready` report which services are ready. `evaluator_ready` is `false` when Ollama isn't running or doesn't have `OLLAMA_MODEL` loaded. Then, on the website:
+   - Upload a resume. The HireLabs parser is preferred; configured Ollama fills profile fields it misses.
    - Rank candidates.
    - Run an evaluation and a role brief. Both show `hirelabs-evaluator`.
 
@@ -88,6 +91,8 @@ The website gives the evaluator 35 seconds by default (`OLLAMA_TIMEOUT_MS`, at m
 ## Local development
 
 Without `MODEL_API_TOKEN`, the model server accepts requests without a token and prints a warning. That is only safe on `127.0.0.1` with no tunnel. Locally, `OLLAMA_URL` can point straight at Ollama (`http://127.0.0.1:11434`) or at the model server (`http://127.0.0.1:8000`). Both work.
+
+If you host a protected Ollama endpoint directly instead of using this model-server tunnel, set `OLLAMA_URL` to the full `/api/generate` URL and `OLLAMA_KEY` to the server's bearer token in the Next.js server environment. The app uses that endpoint for evaluation and as a fallback to extract structured resume profile fields. It sends resume text and the key only from server-side API routes. Use HTTPS, keep the endpoint protected, and never name the variable `NEXT_PUBLIC_OLLAMA_KEY`. PDFPlumber extraction and semantic embeddings still require the separately hosted model server.
 
 Run the model server tests with:
 

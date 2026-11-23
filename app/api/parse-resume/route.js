@@ -4,10 +4,11 @@ import mammoth from 'mammoth';
 import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
-import { normalizePythonProfile } from '@/lib/resume/model-parser';
-import { callModelServer, useLocalModels } from '@/lib/ai/model-server';
+import { enrichResume } from '@/lib/resume/profile-enrichment';
+import { callModelServerFile } from '@/lib/ai/model-server';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
 import { embedText } from '@/lib/resume/embedding';
+import { ResumeProcessingError, resumeProcessingFailure } from '@/lib/resume/processing-errors';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -90,7 +91,7 @@ function validateFileSignature(buffer, fileType) {
   return false;
 }
 
-async function extractPdf(buffer) {
+async function extractPdfWithPdfParse(buffer) {
   const pkg = await import('pdf-parse');
 
   const PDFParse =
@@ -115,6 +116,35 @@ async function extractPdf(buffer) {
   }
 }
 
+async function extractPdf(buffer) {
+  let pdfParseError = null;
+  try {
+    const text = await extractPdfWithPdfParse(buffer);
+    if (text.trim()) return text;
+  } catch (error) {
+    pdfParseError = error;
+  }
+
+  if (process.env.MODEL_SERVER_URL || process.env.USE_LOCAL_MODELS === 'true') {
+    try {
+      const result = await callModelServerFile(
+        '/extract-pdf',
+        new Uint8Array(buffer),
+        PDF_MIME
+      );
+      if (typeof result?.text === 'string') return result.text;
+      throw new Error('PDF extraction service returned an invalid response.');
+    } catch (error) {
+      console.warn('PDFPlumber fallback failed:', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }
+  }
+
+  if (pdfParseError) throw pdfParseError;
+  return '';
+}
+
 async function extractDocx(buffer) {
   const result = await mammoth.extractRawText({
     buffer: Buffer.from(buffer),
@@ -124,10 +154,21 @@ async function extractDocx(buffer) {
 }
 
 async function extractResumeText(buffer, fileType) {
-  const rawText =
-    fileType === 'pdf'
+  let rawText;
+  try {
+    rawText = fileType === 'pdf'
       ? await extractPdf(buffer)
       : await extractDocx(buffer);
+  } catch (error) {
+    console.error('Resume text extraction failed:', {
+      fileType,
+      name: error instanceof Error ? error.name : 'UnknownError',
+    });
+    throw new ResumeProcessingError(
+      'RESUME_DOCUMENT_INVALID',
+      `The ${fileType.toUpperCase()} could not be read. Re-save it as a valid ${fileType.toUpperCase()} file and upload it again.`
+    );
+  }
 
   const cleanedText = cleanResumeText(
     rawText,
@@ -135,40 +176,13 @@ async function extractResumeText(buffer, fileType) {
   );
 
   if (!cleanedText) {
-    throw new Error(
-      'No readable text was found in the resume.'
+    throw new ResumeProcessingError(
+      'RESUME_TEXT_EMPTY',
+      'No readable text was found in the resume. Make sure the document contains selectable text.'
     );
   }
 
   return cleanedText;
-}
-
-/** Structured profile from the team's own parser (hirelabs-parser) on the model server. */
-async function enrichResume(text) {
-  if (!useLocalModels()) {
-    return { value: null, error: 'Text extracted; the HireLabs parser is turned off.' };
-  }
-  try {
-    const { value, placeholder } = await callModelServer('/parse', { text });
-    const modelProfile = normalizePythonProfile(value);
-    if (
-      modelProfile.candidateName ||
-      modelProfile.candidateTitle ||
-      modelProfile.extractedSkills.length > 0 ||
-      modelProfile.yearsExperience !== null
-    ) {
-      return {
-        value: modelProfile,
-        modelUsed: placeholder ? 'parser-placeholder' : 'hirelabs-parser',
-        error: null,
-      };
-    }
-    return { value: null, modelUsed: 'hirelabs-parser', error: 'Text extracted; the HireLabs parser found no profile fields.' };
-  } catch (error) {
-    // Do not log resume content or model output.
-    console.error('Resume parsing model failed:', { name: error instanceof Error ? error.name : 'UnknownError' });
-    return { value: null, error: 'Text extracted; the HireLabs parser is unavailable.' };
-  }
 }
 
 async function updateResume(
@@ -314,8 +328,9 @@ export async function POST(request) {
     const buffer = await file.arrayBuffer();
 
     if (!validateFileSignature(buffer, fileType)) {
-      throw new Error(
-        'Resume file content does not match its type.'
+      throw new ResumeProcessingError(
+        'RESUME_DOCUMENT_INVALID',
+        `This file is not a valid ${fileType.toUpperCase()} document. Re-save it in that format and upload it again.`
       );
     }
 
@@ -379,11 +394,13 @@ export async function POST(request) {
     }
     return apiSuccess({ ...saved, model_used: enrichment.modelUsed || null });
   } catch (error) {
+    const failure = resumeProcessingFailure(error);
     console.error('Resume processing failed:', {
       name:
         error instanceof Error
           ? error.name
           : 'UnknownError',
+      code: failure.code,
     });
 
     if (resume?.id) {
@@ -394,8 +411,7 @@ export async function POST(request) {
           auth.user.id,
           {
             processing_status: 'failed',
-            parser_error:
-              'Resume processing failed. Please retry.',
+            parser_error: failure.message,
           }
         );
 
@@ -412,8 +428,8 @@ export async function POST(request) {
     }
 
     return apiError(
-      'PARSE_FAILED',
-      'Unable to process this resume. Please retry.',
+      failure.code,
+      failure.message,
       500
     );
   }
