@@ -56,7 +56,7 @@ class TokenRequired(unittest.TestCase):
     def test_health_stays_open_and_reports_readiness_only(self):
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.json()), {"parser_ready", "matcher_ready", "placeholder", "evaluator_ready"})
+        self.assertEqual(set(response.json()), {"parser_ready", "matcher_ready", "placeholder", "evaluator_ready", "llm_ready"})
 
 
 class EvaluatorHealth(unittest.TestCase):

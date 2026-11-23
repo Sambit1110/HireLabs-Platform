@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI):
     app.state.placeholder = os.getenv("MODEL_PLACEHOLDERS") == "true"
     app.state.parser = None
     app.state.matcher = None
+    app.state.llm = None
     if not app.state.placeholder:
         try:
             import spacy
@@ -47,6 +48,12 @@ async def lifespan(app: FastAPI):
             )
         except (ImportError, OSError, ValueError):
             print("HireLabs matcher unavailable.", file=sys.stderr)
+        try:
+            from hirelabs_llm.score import Scorer
+
+            app.state.llm = Scorer.load(os.getenv("HIRELABS_LLM_DIR", "models/hirelabs-llm"))
+        except (ImportError, OSError, ValueError, RuntimeError, KeyError):
+            print("HireLabs LLM unavailable.", file=sys.stderr)
     yield
 
 
@@ -61,11 +68,18 @@ OPEN_PATHS = {"/health"}
 
 @app.middleware("http")
 async def require_token(request: Request, call_next):
-    """With MODEL_API_TOKEN set, every request but /health needs `Authorization: Bearer <token>`."""
+    """With MODEL_API_TOKEN set, every request but /health needs `Authorization: Bearer <token>`.
+
+    `X-HireLabs-Token: <token>` also works, for hosts such as a private Hugging Face Space
+    whose own access token occupies the Authorization header.
+    """
     token = os.getenv("MODEL_API_TOKEN", "")
     if token and request.url.path not in OPEN_PATHS:
         supplied = request.headers.get("authorization", "")
-        if not hmac.compare_digest(supplied.encode(), f"Bearer {token}".encode()):
+        alternate = request.headers.get("x-hirelabs-token", "")
+        bearer_ok = hmac.compare_digest(supplied.encode(), f"Bearer {token}".encode())
+        header_ok = hmac.compare_digest(alternate.encode(), token.encode())
+        if not (bearer_ok or header_ok):
             return JSONResponse({"detail": "Unauthorized."}, status_code=401)
     return await call_next(request)
 
@@ -79,6 +93,11 @@ EmbeddingText = Annotated[str, StringConstraints(min_length=1, max_length=50000)
 
 class EmbedInput(BaseModel):
     texts: list[EmbeddingText] = Field(min_length=1, max_length=128)
+
+
+class MatchInput(BaseModel):
+    job: str = Field(min_length=1, max_length=50000)
+    resume: str = Field(min_length=1, max_length=50000)
 
 
 def ollama_base():
@@ -111,6 +130,7 @@ def health(request: Request):
         "matcher_ready": matcher_ready,
         "placeholder": state.placeholder,
         "evaluator_ready": evaluator_ready(),
+        "llm_ready": state.llm is not None,
     }
 
 
@@ -189,6 +209,20 @@ def embed(body: EmbedInput, request: Request, response: Response):
         "dim": 384,
         "model_used": "hirelabs-matcher",
     }
+
+
+@app.post("/match")
+def match(body: MatchInput, request: Request, response: Response):
+    """Score a resume against a job with hirelabs-llm, the team's from-scratch language model."""
+    if not body.job.strip() or not body.resume.strip():
+        raise HTTPException(422, "Job and resume text are required.")
+    state = request.app.state
+    if state.placeholder:
+        response.headers["X-HireLabs-Placeholder"] = "true"
+        return {"score": 50, "verdict": "moderate", "pmi": 0.0, "missingSkills": [], "model_used": "llm-placeholder"}
+    if state.llm is None:
+        raise HTTPException(503, "HireLabs LLM unavailable.")
+    return state.llm.match(body.job, body.resume)
 
 
 # ---------------------------------------------------------------- evaluator proxy

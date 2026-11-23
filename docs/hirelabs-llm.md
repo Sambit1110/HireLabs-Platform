@@ -1,0 +1,156 @@
+# hirelabs-llm: the team's from-scratch language model
+
+hirelabs-llm is a small GPT language model (2.02 million parameters) that the team builds
+and trains itself. It scores how well a resume fits a job.
+
+- **From scratch.** The tokenizer and the model are written in this repo
+  ([scripts/python/hirelabs_llm](../scripts/python/hirelabs_llm)). Weights start random.
+  Nothing pretrained is downloaded, and nothing is fine-tuned.
+- **No labels.** Training uses only the raw resume and job text. No Gemini output and no
+  human scores go in, so the `gemini_checked` labels play no part.
+- **Free.** It trains in about 5 minutes on a Mac (Apple GPU) and runs on a CPU.
+
+## How it works
+
+1. **Tokenizer.** A byte-level BPE tokenizer ([tokenizer.py](../scripts/python/hirelabs_llm/tokenizer.py))
+   is trained on the training text. The text is so repetitive that it stops after 734 merges,
+   which gives a 994-token vocabulary (256 bytes, 734 merges, 4 special tokens).
+2. **Model.** A decoder-only transformer ([model.py](../scripts/python/hirelabs_llm/model.py)):
+   4 layers, 4 attention heads, 192-wide, 256-token context.
+3. **Training text** ([corpus.py](../scripts/python/hirelabs_llm/corpus.py)). Every resume and
+   job starts with a role title (24 roles). The model learns to predict the next token in three
+   kinds of sequences:
+   - a job followed by a resume **with the same role**
+   - a resume on its own
+   - a job on its own
+
+   Half the time a resume's title lines are removed, so the model has to connect jobs and
+   resumes through skills and experience, not by copying the title. Half the time, random lines
+   of the job or resume are dropped too, so the model copes with shorter text. The same-role relation
+   comes from the documents' own titles. Nobody labelled it.
+4. **Scoring** ([score.py](../scripts/python/hirelabs_llm/score.py)). The match score is how
+   much reading the job makes the model expect this resume:
+
+   ```
+   pmi = average over resume tokens of [ log p(token | job, earlier resume) - log p(token | earlier resume) ]
+   ```
+
+   Above 0, the job makes the resume more likely: the candidate looks like what people in that
+   role write. A logistic curve fitted after training turns pmi into 0-100 (same-role train pairs
+   = 1, other-role = 0). The curve only changes the number shown, never the ranking.
+   `missingSkills` is a plain text check, not the model: required skills in the job's
+   "Required skills:" line that the resume never mentions.
+
+The model is also a normal text generator: `Scorer.write_resume(job)` writes the kind of resume
+it expects for a job. Training prints one example at the end.
+
+## Train and evaluate
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install torch
+.venv/bin/python scripts/python/train_llm.py --data-dir /path/to/HireLabs-Data
+.venv/bin/python scripts/python/evaluate_llm.py --model models/hirelabs-llm --data-dir /path/to/HireLabs-Data --output llm-dev.json
+```
+
+Training writes `models/hirelabs-llm/` (`model.pt`, `tokenizer.json`, `calibration.json`,
+`training-log.json`). `models/` is git-ignored: the model saw private resumes, so never commit it.
+Training uses the 700 train-split resumes and the 300 shared jobs. The 150 dev resumes are held
+out. On a Kaggle or Colab GPU, add `--device cuda`.
+
+Unit tests: `python3 -m unittest discover -s scripts/python/tests -t scripts/python`.
+
+## Results (dev split, held-out resumes)
+
+Default settings, one run on an Apple M5 (Mac GPU): 4.6 minutes, best dev loss 0.301 at step
+1,500 of 3,000 (the saved checkpoint). Each of the 300 jobs ranks all 150 dev resumes. A
+resume counts as relevant when its role equals the job's.
+
+| View | Method | MRR | Recall@1 | Recall@5 |
+|---|---|---|---|---|
+| Full text | **hirelabs-llm** | **0.998** | **99.7%** | **100%** |
+| | Required-skill overlap (rule) | 0.577 | 36.3% | 90.3% |
+| | Random | 0.157 | 5.3% | 21.7% |
+| Title lines removed | **hirelabs-llm** | **0.508** | **30.7%** | **86.3%** |
+| | Required-skill overlap (rule) | 0.573 | 35.0% | 92.0% |
+| | Random | 0.133 | 4.0% | 17.7% |
+| ~35% of lines removed | **hirelabs-llm** | **0.874** | **81.0%** | **94.3%** |
+| | Required-skill overlap (rule) | 0.396 | 22.0% | 60.7% |
+| | Random | 0.147 | 4.0% | 23.3% |
+
+What this shows:
+
+- With the full text, the model almost always ranks a same-role resume first. Much of that
+  comes from recognising the role title.
+- With the titles removed, it has to match on skills alone. It is far better than chance but
+  slightly behind a plain skill-overlap rule.
+- With shortened text it holds up much better than the rule does.
+- A free-text resume that does not follow the dataset's layout scored 0 against a matching job
+  in a manual check. The model has only ever seen one layout. See Limitations.
+- Scores cluster near 0 or 100, because the score curve is fitted to a yes/no question
+  (same role or not).
+
+Reproduce: `evaluate_llm.py` as above. The numbers change a little from run to run.
+
+## Serving
+
+The model server ([services/model-server/main.py](../services/model-server/main.py)) loads the
+model from `HIRELABS_LLM_DIR` (default `models/hirelabs-llm`) and adds:
+
+- `POST /match` with `{"job": "...", "resume": "..."}` returns
+  `{"score": 0-100, "verdict": "strong|moderate|weak", "pmi": ..., "missingSkills": [...], "model_used": "hirelabs-llm"}`.
+  It needs the same bearer token as the other routes.
+- `/health` gains `llm_ready`.
+
+The model is about 8 MB and answers in well under a second on a CPU.
+
+## Free hosting on a Hugging Face Space
+
+This replaces the laptop + ngrok setup. A free CPU Space has 2 vCPU and 16 GB RAM and needs no
+credit card.
+
+1. Make a free account at huggingface.co, then **New Space**: SDK **Docker**, hardware
+   **CPU basic (free)**, visibility **Private**.
+2. In the Space's **Settings → Variables and secrets**, add a secret `MODEL_API_TOKEN`
+   (32+ random characters, e.g. from `openssl rand -hex 32`).
+3. Build the Space folder and push it:
+
+   ```bash
+   git clone https://huggingface.co/spaces/<your-name>/<space-name> ../hirelabs-space
+   scripts/build_hf_space.sh ../hirelabs-space            # add a parser .whl path as a 2nd argument if you have one
+   cd ../hirelabs-space && git lfs install && git add . && git commit -m "HireLabs model server" && git push
+   ```
+
+   The Space builds itself, which takes a few minutes. Then check `/health` on the Space URL
+   (`https://<your-name>-<space-name>.hf.space`).
+4. In Vercel, set `MODEL_SERVER_URL` to the Space URL and `MODEL_API_TOKEN` to the same secret.
+   Because the Space is private, the site also has to send a Hugging Face read token. See below.
+
+Things to know:
+
+- A free Space **sleeps after about 48 hours with no visits**. The first request after that
+  takes a minute or two. Open `/health` before a demo.
+- **Ollama does not run on the Space**, so `/api/chat` (the evaluator) answers 503 there. The
+  site's evaluator calls need moving to `/match` first.
+- **Private Space and tokens.** A private Space only accepts requests carrying a Hugging Face
+  token (`Authorization: Bearer hf_...`). That header is then taken, so the server also accepts
+  its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. The site currently sends only
+  `Authorization`, so it needs a small change to send both before it can use a private Space.
+  Don't make the Space public to avoid that change: anyone could then download the model, and it
+  was trained on the team's resumes.
+
+## Limitations
+
+- **Templated training data: the biggest limitation.** The 850 resumes and 300 jobs follow one
+  fixed layout across 24 roles. Real uploaded resumes look different, and a free-text resume
+  scored 0 against a matching job in a manual check. Before the website relies on this model,
+  it needs more varied resume and job text. Options are a free public resume dataset (record its
+  licence in the dataset card) or real, consented team resumes. The pairing step reads the role
+  from each document's first line, so new text needs a role title there, or a change to
+  `corpus.py`.
+- **"Relevant" means same role.** The evaluation counts a resume as a match only when its role
+  equals the job's. That is not a human judgment of fit, and near roles (BI Analyst vs Data
+  Analyst) count as misses.
+- **The 0-100 number is not the team rubric.** It estimates "same role" probability. Checking it
+  against human scores needs the blind review sheets filled in by people.
+- **Other models.** hirelabs-matcher is fine-tuned from `BAAI/bge-small-en-v1.5`, and the
+  evaluator runs on Ollama. Check both against the "from scratch, no fine-tuning" rule.
