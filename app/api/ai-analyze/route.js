@@ -133,8 +133,19 @@ function validateInput(body) {
 /** Drops evidence whose quotes are not in the resume and records how many went. */
 function candidateSuccess(result, body, model, modelUsed) {
   const { kept, removed } = checkEvidence(result.evidence_signals, body.candidate.parsedText);
+  // hirelabs-explainer's skill table quotes the resume too: drop any quote not found in it.
+  const skillMatrix = Array.isArray(result.skill_matrix)
+    ? result.skill_matrix.map((row) => (row?.quote && !checkEvidence([`"${row.quote}"`], body.candidate.parsedText).kept.length
+      ? { ...row, quote: null }
+      : row))
+    : undefined;
   return apiSuccess({
-    result: { ...result, evidence_signals: kept, evidence_removed: removed.length },
+    result: {
+      ...result,
+      ...(skillMatrix ? { skill_matrix: skillMatrix } : {}),
+      evidence_signals: kept,
+      evidence_removed: removed.length,
+    },
     model,
     model_used: modelUsed,
   });

@@ -254,7 +254,10 @@ describe('hirelabs-explainer (default provider)', () => {
 
     expect(response.status).toBe(200);
     expect(data.model_used).toBe('hirelabs-explainer');
-    expect(data.result.must_have_skills).toEqual(['Node.js', 'PostgreSQL']);
+    // Two named skills, topped up with typical Backend Engineer skills (and said so).
+    expect(data.result.must_have_skills.slice(0, 2)).toEqual(['Node.js', 'PostgreSQL']);
+    expect(data.result.must_have_skills).toEqual(expect.arrayContaining(['REST APIs', 'SQL']));
+    expect(data.result.role_summary).toContain('typical for a backend engineer');
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 

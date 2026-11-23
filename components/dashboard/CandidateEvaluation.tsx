@@ -38,6 +38,93 @@ function BulletList({ items, empty }: { items: string[]; empty: string }) {
   );
 }
 
+const STATUS_LABELS: Record<string, { label: string; tone: string }> = {
+  demonstrated: { label: "Shown in work", tone: "match" },
+  partial: { label: "Related only", tone: "partial" },
+  unverified: { label: "Listed only", tone: "partial" },
+  missing: { label: "Missing", tone: "missing" },
+};
+
+const BREAKDOWN_PARTS: { key: "skillCoverage" | "matcherSimilarity" | "llmFit"; label: string; weight: number }[] = [
+  { key: "skillCoverage", label: "Skill coverage", weight: 55 },
+  { key: "matcherSimilarity", label: "Text similarity (hirelabs-matcher)", weight: 30 },
+  { key: "llmFit", label: "Fit (hirelabs-llm)", weight: 15 },
+];
+
+/** How hirelabs-explainer built the score: each signal, its value and its weight. */
+function ScoreBreakdown({ breakdown }: { breakdown: NonNullable<ReturnType<typeof normalizeEvaluation>["breakdown"]> }) {
+  return (
+    <section className="eval-panel" aria-labelledby="eval-breakdown">
+      <h3 id="eval-breakdown">How the score was built</h3>
+      <ul className="eval-breakdown">
+        {BREAKDOWN_PARTS.map(({ key, label, weight }) => {
+          const value = breakdown[key];
+          return (
+            <li key={key}>
+              <span>
+                {label} <span className="eval-muted">· weight {weight}%</span>
+              </span>
+              <strong>{value === null ? "not available" : `${value}%`}</strong>
+              <span className="eval-breakdown__bar" role="img" aria-label={value === null ? `${label} not available` : `${label} ${value}%`}>
+                <span style={{ width: `${value ?? 0}%` }} />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="eval-muted">
+        Signals that are not available are left out and the other weights are scaled up.
+      </p>
+    </section>
+  );
+}
+
+/** Every skill the job asks for, with its status and the resume line behind it. */
+function SkillMatrix({ rows, assumedRole }: { rows: ReturnType<typeof normalizeEvaluation>["skillMatrix"]; assumedRole: string }) {
+  return (
+    <section className="eval-panel" aria-labelledby="eval-matrix">
+      <h3 id="eval-matrix">Skill by skill</h3>
+      {assumedRole && (
+        <p className="eval-muted">
+          The job description names few skills, so typical {assumedRole} skills are marked “assumed”.
+        </p>
+      )}
+      <div className="eval-matrix-wrap">
+        <table className="eval-matrix">
+          <thead>
+            <tr>
+              <th scope="col">Skill</th>
+              <th scope="col">Status</th>
+              <th scope="col">Evidence in the resume</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const status = STATUS_LABELS[row.status];
+              return (
+                <tr key={row.skill}>
+                  <th scope="row">
+                    {row.skill}
+                    <span className="eval-muted eval-matrix__kind">
+                      {row.kind}{row.assumed ? ", assumed" : ""}
+                    </span>
+                  </th>
+                  <td>
+                    <span className={`eval-chip eval-chip--${status.tone}`}>{status.label}</span>
+                  </td>
+                  <td className="eval-matrix__quote">
+                    {row.quote ? `“${row.quote}”` : <span className="eval-empty">No line to quote</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Explains a candidate evaluation: score and verdict, matched vs missing
  * skills, and the resume evidence behind them.
@@ -82,6 +169,11 @@ export default function CandidateEvaluation({ data }: { data: unknown }) {
         </div>
       </div>
 
+      {evaluation.breakdown && <ScoreBreakdown breakdown={evaluation.breakdown} />}
+
+      {evaluation.skillMatrix.length > 0 ? (
+        <SkillMatrix rows={evaluation.skillMatrix} assumedRole={evaluation.assumedRole} />
+      ) : (
       <div className="eval-grid">
         <section className="eval-panel" aria-labelledby="eval-matched">
           <h3 id="eval-matched">Matched skills</h3>
@@ -123,11 +215,14 @@ export default function CandidateEvaluation({ data }: { data: unknown }) {
           )}
         </section>
       </div>
+      )}
 
       {evaluation.skillGapSummary && (
         <p className="eval-muted">{evaluation.skillGapSummary}</p>
       )}
 
+      {/* The skill table already shows each quote next to its skill. */}
+      {evaluation.skillMatrix.length === 0 && (
       <section className="eval-panel" aria-labelledby="eval-evidence">
         <h3 id="eval-evidence">Evidence from the resume</h3>
         {evaluation.evidence.length > 0 ? (
@@ -153,6 +248,7 @@ export default function CandidateEvaluation({ data }: { data: unknown }) {
           </p>
         )}
       </section>
+      )}
 
       <div className="eval-grid">
         <section className="eval-panel" aria-labelledby="eval-strengths">
