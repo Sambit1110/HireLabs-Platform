@@ -1,8 +1,9 @@
 import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
-import { embedText } from '@/lib/resume/embedding';
+import { embedText, toPgVector } from '@/lib/resume/embedding';
 import { LLM_MODEL, scoreWithLlm } from '@/lib/ai/llm-match';
+import { databaseErrorCode } from '@/lib/resume/processing-errors';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -92,12 +93,15 @@ export async function POST(request) {
 
     // 2. Persist job description in public.job_descriptions (scoped to user via RLS)
     try {
-      await auth.supabase.from('job_descriptions').insert({
+      const { error: saveJdError } = await auth.supabase.from('job_descriptions').insert({
         user_id: auth.user.id,
         title: title || 'Job Description',
         text: jdText,
-        embedding: vector,
+        embedding: toPgVector(vector),
       });
+      if (saveJdError) {
+        console.warn('Could not persist job description:', { dbCode: databaseErrorCode(saveJdError) });
+      }
     } catch (saveJdErr) {
       // Non-fatal if table migration hasn't run yet in dev
       console.warn('Could not persist job description:', saveJdErr.message);
