@@ -31,6 +31,12 @@ type LlmFit = {
 /**
  * One row of the /api/match response (see docs/api/MATCH_CONTRACT.md).
  */
+/** hirelabs-explainer's fit score: the same number Explain score shows. */
+type Fit = { score: number | null; verdict: string };
+
+/** The numbers behind the fit score, passed on to Explain score so it matches exactly. */
+export type MatchSignals = { similarity: number | null; llmScore: number | null };
+
 type MatchRow = {
   id: string;
   file_name?: string;
@@ -38,6 +44,33 @@ type MatchRow = {
   candidate_title?: string | null;
   similarity: number;
   llm_fit?: LlmFit | null;
+  fit?: Fit | null;
+  signals?: MatchSignals | null;
+};
+
+function readFit(value: unknown): Fit | null {
+  if (typeof value !== "object" || value === null) return null;
+  const fit = value as Partial<Fit>;
+  if (typeof fit.verdict !== "string") return null;
+  const score = typeof fit.score === "number" && Number.isFinite(fit.score)
+    ? Math.round(Math.min(100, Math.max(0, fit.score)))
+    : null;
+  return { score, verdict: fit.verdict };
+}
+
+function readSignals(value: unknown): MatchSignals | null {
+  if (typeof value !== "object" || value === null) return null;
+  const signals = value as Partial<MatchSignals>;
+  const similarity = typeof signals.similarity === "number" && Number.isFinite(signals.similarity) ? signals.similarity : null;
+  const llmScore = typeof signals.llmScore === "number" && Number.isInteger(signals.llmScore) ? signals.llmScore : null;
+  return { similarity, llmScore };
+}
+
+const VERDICT_TEXT: Record<string, string> = {
+  strong: "strong fit",
+  moderate: "moderate fit",
+  weak: "weak fit",
+  insufficient_evidence: "not enough evidence",
 };
 
 type Ranking = {
@@ -63,7 +96,7 @@ function readLlmFit(value: unknown): LlmFit | null {
 
 type CandidateRankingProps = {
   resumes: RankableResume[];
-  onExplain: (candidateId: string, role: string, jobDescription: string) => void;
+  onExplain: (candidateId: string, role: string, jobDescription: string, signals: MatchSignals | null) => void;
 };
 
 function parseMatches(value: unknown): MatchRow[] {
@@ -78,8 +111,9 @@ function parseMatches(value: unknown): MatchRow[] {
         typeof (row as MatchRow).similarity === "number" &&
         Number.isFinite((row as MatchRow).similarity)
     )
-    .map((row) => ({ ...row, llm_fit: readLlmFit(row.llm_fit) }))
-    .sort((a, b) => b.similarity - a.similarity);
+    .map((row) => ({ ...row, llm_fit: readLlmFit(row.llm_fit), fit: readFit(row.fit), signals: readSignals(row.signals) }))
+    // Same order as the API: fit score first, then text similarity.
+    .sort((a, b) => (b.fit?.score ?? -1) - (a.fit?.score ?? -1) || b.similarity - a.similarity);
 }
 
 function similarityPercent(similarity: number) {
@@ -128,6 +162,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
         },
         body: JSON.stringify({
           job_description: jobDescription.trim(),
+          ...(role.trim() ? { title: role.trim() } : {}),
           match_count: 10,
         }),
       });
@@ -288,9 +323,11 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                   resume?.candidate_name?.trim() ||
                   match.candidate_name?.trim() ||
                   (resume?.file_name || match.file_name || "Unnamed resume").replace(/\.[^.]+$/, "");
-                const title = resume?.candidate_title || match.candidate_title || "Title not extracted";
+                const rawTitle = resume?.candidate_title || match.candidate_title;
+                const title = rawTitle && rawTitle.toLowerCase() !== name.toLowerCase() ? rawTitle : "Title not extracted";
                 const skills = (resume?.extracted_skills || []).slice(0, 6);
-                const percent = similarityPercent(match.similarity);
+                const similarity = similarityPercent(match.similarity);
+                const fitScore = match.fit?.score ?? null;
                 const canExplain = Boolean(resume?.parsed_text?.trim()) && !ranking.sample;
                 const fit = match.llm_fit;
 
@@ -312,10 +349,11 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                         </ul>
                       )}
 
-                      {fit && (
+                      {(fit || match.fit) && (
                         <div className="ranking__llm">
                           <p className="eval-muted">
-                            hirelabs-llm fit: <strong>{fit.score}/100</strong> ({fit.verdict})
+                            Text similarity {similarity}%
+                            {fit ? <> · hirelabs-llm {fit.score}/100</> : null}
                           </p>
                           {fit.missing_skills.length > 0 && (
                             <ul className="eval-chips" aria-label="Required skills not found in the resume">
@@ -331,16 +369,26 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                     </div>
 
                     <div className="ranking__score">
-                      <span>
-                        <strong>{percent}%</strong> match
-                      </span>
-                      <span
-                        className="ranking__bar"
-                        role="img"
-                        aria-label={`${percent}% similarity`}
-                      >
-                        <span style={{ width: `${percent}%` }} />
-                      </span>
+                      {fitScore !== null ? (
+                        <>
+                          <span>
+                            <strong>{fitScore}</strong>/100 fit
+                            <span className="eval-muted"> · {VERDICT_TEXT[match.fit?.verdict ?? ""] ?? match.fit?.verdict}</span>
+                          </span>
+                          <span className="ranking__bar" role="img" aria-label={`Fit score ${fitScore} out of 100`}>
+                            <span style={{ width: `${fitScore}%` }} />
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            <strong>{similarity}%</strong> match
+                          </span>
+                          <span className="ranking__bar" role="img" aria-label={`${similarity}% similarity`}>
+                            <span style={{ width: `${similarity}%` }} />
+                          </span>
+                        </>
+                      )}
 
                       <button
                         type="button"
@@ -351,7 +399,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                             ? "Open the full AI evaluation for this candidate"
                             : "Available for your own parsed resumes"
                         }
-                        onClick={() => onExplain(match.id, role, jobDescription)}
+                        onClick={() => onExplain(match.id, role, jobDescription, match.signals ?? null)}
                       >
                         Explain score
                       </button>
@@ -362,18 +410,12 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
             </ol>
           )}
 
-          <p className="resume-note">
-            Similarity measures how closely the resume text matches the job description.
+          <p className="ai-analysis-disclaimer">
+            {ranking.matches.some((match) => match.fit?.score != null)
+              ? "The fit score is the same one Explain score shows: skill coverage (55%), text similarity from hirelabs-matcher (30%) and hirelabs-llm (15%). hirelabs-llm is experimental, so it counts least."
+              : "Similarity measures how closely the resume text matches the job description."}{" "}
             It is a starting point for review, not a hiring decision.
           </p>
-
-          {ranking.matches.some((match) => match.llm_fit) && (
-            <p className="resume-note">
-              hirelabs-llm fit is a second opinion from the team&apos;s own language model, built
-              from scratch. It is experimental: it learned from template-style resumes, so it can
-              under-score resumes written another way, and it does not change the order above.
-            </p>
-          )}
         </div>
       )}
     </section>

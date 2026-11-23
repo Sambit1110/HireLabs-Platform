@@ -15,7 +15,7 @@ import ResumeUpload from "@/components/resume/ResumeUpload";
 import AIAnalysisPanel, {
   type AnalysisPreset,
 } from "@/components/dashboard/AIAnalysisPanel";
-import CandidateRanking from "@/components/dashboard/CandidateRanking";
+import CandidateRanking, { type MatchSignals } from "@/components/dashboard/CandidateRanking";
 import {
   isParsedStatus,
   isPendingStatus,
@@ -355,13 +355,15 @@ export default function DashboardApp() {
   const explainCandidate = (
     candidateId: string,
     role: string,
-    jobDescription: string
+    jobDescription: string,
+    signals: MatchSignals | null
   ) => {
     setAnalysisPreset((current) => ({
       key: (current?.key || 0) + 1,
       candidateId,
       role,
       jobDescription,
+      signals,
     }));
   };
 

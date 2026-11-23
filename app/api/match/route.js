@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { embedText, toPgVector } from '@/lib/resume/embedding';
 import { LLM_MODEL, scoreWithLlm } from '@/lib/ai/llm-match';
+import { analyzeCandidate, roleName } from '@/lib/ai/own-analysis';
 import { databaseErrorCode } from '@/lib/resume/processing-errors';
 
 export const runtime = 'nodejs';
@@ -140,20 +141,49 @@ export async function POST(request) {
         );
         llmScored = llm.results.size > 0;
         llmPlaceholder = llm.placeholder;
+        // The same fit score Explain score shows (hirelabs-explainer), from the same inputs.
+        const role = title || roleName('', jdText);
         enrichedMatches = matchesList.map((m) => {
           const profile = profileMap.get(m.id) || {};
+          const similarity = Number(Number(m.similarity || 0).toFixed(4));
+          const llmScore = llm.placeholder ? null : llm.results.get(m.id)?.score ?? null;
+          const analysis = profile.parsed_text
+            ? analyzeCandidate(
+              {
+                role,
+                jobDescription: jdText,
+                candidate: {
+                  parsedText: profile.parsed_text,
+                  name: profile.candidate_name,
+                  title: profile.candidate_title,
+                  yearsExperience: profile.years_experience,
+                },
+              },
+              { similarity, llmScore }
+            )
+            : null;
           return {
             id: m.id,
             file_name: m.file_name,
-            similarity: Number(Number(m.similarity || 0).toFixed(4)),
+            similarity,
             candidate_name: profile.candidate_name || null,
             candidate_title: profile.candidate_title || null,
             years_experience: profile.years_experience ?? null,
             extracted_skills: profile.extracted_skills || [],
             profile_completeness: profile.profile_completeness || 0,
             llm_fit: llm.results.get(m.id) || null,
+            fit: analysis
+              ? {
+                score: analysis.fit_verdict === 'insufficient_evidence' ? null : analysis.fit_score,
+                verdict: analysis.fit_verdict,
+              }
+              : null,
+            // Sent back with Explain score so it scores with exactly these numbers.
+            signals: { similarity, llmScore },
           };
         });
+        // Rank by the fit score (as Explain score shows it), then by text similarity.
+        enrichedMatches.sort((a, b) => (b.fit?.score ?? -1) - (a.fit?.score ?? -1) || b.similarity - a.similarity);
       }
     }
 

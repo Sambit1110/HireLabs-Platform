@@ -6,7 +6,8 @@ import { containsEmbeddedResume } from '@/lib/ai/input-validation';
 import { PromptTooLongError, evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
 import { checkEvidence } from '@/lib/ai/evidence';
 import { useLocalModels } from '@/lib/ai/model-server';
-import { EXPLAINER_MODEL, analyzeCandidate, buildRoleBrief, evaluatorProvider, modelSignals, roleName } from '@/lib/ai/own-analysis';
+import { EXPLAINER_MODEL, analyzeCandidate, buildRoleBrief, evaluatorProvider, modelSignals, parseSignals, roleName } from '@/lib/ai/own-analysis';
+import { cleanResumeText } from '@/lib/resume/text';
 import {
   CANDIDATE_LIMITS as LIMITS,
   buildCandidateMessages,
@@ -143,6 +144,7 @@ function candidateSuccess(result, body, model, modelUsed) {
       evidence_signals: kept,
       evidence_removed: removed.length,
     },
+    role: body.role,
     model,
     model_used: modelUsed,
   });
@@ -272,16 +274,19 @@ export async function POST(request) {
   // EVALUATOR_PROVIDER=ollama, or the bias check's explicit `local` provider, uses Ollama.
   if (provider === null && evaluatorProvider() === 'hirelabs') {
     try {
+      // Cleaned the same way as Rank candidates, so both give the same score for the same job.
+      const job = cleanResumeText(body.jobDescription, LIMITS.jobDescription);
+      const input = { ...body, jobDescription: job };
       const result = mode === 'candidate'
-        ? analyzeCandidate(body, await modelSignals(body.jobDescription, body.candidate.parsedText))
-        : buildRoleBrief(body);
+        ? analyzeCandidate(input, parseSignals(body.signals) ?? await modelSignals(job, body.candidate.parsedText))
+        : buildRoleBrief(input);
       if (!validateAnalysis(result, schema, mode)) {
         return apiError('INVALID_AI_RESPONSE', 'The HireLabs explainer returned an incomplete analysis.', 502);
       }
       if (mode === 'candidate') {
         return candidateSuccess(result, body, EXPLAINER_MODEL, EXPLAINER_MODEL);
       }
-      return apiSuccess({ result, model: EXPLAINER_MODEL, model_used: EXPLAINER_MODEL });
+      return apiSuccess({ result, role: body.role, model: EXPLAINER_MODEL, model_used: EXPLAINER_MODEL });
     } catch (error) {
       // Errors can contain candidate information: log the error type only.
       console.error('HireLabs explainer failed', { name: error instanceof Error ? error.name : 'UnknownError' });
