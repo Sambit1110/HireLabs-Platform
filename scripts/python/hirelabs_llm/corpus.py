@@ -10,8 +10,9 @@ Gemini or a human score. The model is trained on three kinds of sequences:
 
 Half the time a resume's title lines are removed, so the model has to link a job to a resume
 through skills and experience, not by copying the title. Half the time, too, random lines of a
-job or resume are dropped, so the model also copes with shorter, differently laid-out text
-like real uploads.
+job or resume are dropped, and half the time the text is re-laid-out by rules (augment.py:
+shuffled and relabelled lists, bullets, one paragraph), so the model learns content rather
+than the dataset's single template.
 """
 
 import json
@@ -19,6 +20,8 @@ import os
 import random
 import re
 from typing import Dict, List, Optional, Sequence
+
+from .augment import relayout
 
 LEVEL_PREFIX = re.compile(r"^(Junior|Mid|Senior|Lead|Principal|Staff)\s+", re.IGNORECASE)
 
@@ -100,11 +103,13 @@ class SequenceSampler:
 
     def __init__(self, corpus: Corpus, tokenizer, block_size: int, max_job_tokens: int = 160,
                  pair_prob: float = 0.5, resume_prob: float = 0.3, title_drop_prob: float = 0.5,
-                 line_drop_prob: float = 0.5, line_drop_rate: float = 0.35, seed: int = 0):
+                 line_drop_prob: float = 0.5, line_drop_rate: float = 0.35, relayout_prob: float = 0.0,
+                 seed: int = 0):
         self.corpus, self.tok, self.block_size = corpus, tokenizer, block_size
         self.max_job_tokens = max_job_tokens
         self.pair_prob, self.resume_prob, self.title_drop_prob = pair_prob, resume_prob, title_drop_prob
         self.line_drop_prob, self.line_drop_rate = line_drop_prob, line_drop_rate
+        self.relayout_prob = relayout_prob
         self.rng = random.Random(seed)
         self.newline = tokenizer.encode("\n")
         # Each document as token lists per line, so lines can be dropped without re-tokenizing.
@@ -123,11 +128,20 @@ class SequenceSampler:
             out += (self.newline if i else []) + line
         return out
 
+    def _relaid(self, text: str) -> List[List[int]]:
+        return [self.tok.encode(line) for line in relayout(text, self.rng).split("\n")]
+
     def _job(self, jid: str) -> List[int]:
+        if self.rng.random() < self.relayout_prob:
+            return self._join(self._relaid(self.corpus.jobs[jid]))[: self.max_job_tokens]
         return self._join(self.job_lines[jid])[: self.max_job_tokens]
 
     def _resume(self, rid: str) -> List[int]:
-        source = self.blind_lines if self.rng.random() < self.title_drop_prob else self.resume_lines
+        blind = self.rng.random() < self.title_drop_prob
+        if self.rng.random() < self.relayout_prob:
+            text = self.corpus.resumes[rid]
+            return self._join(self._relaid(drop_title(text) if blind else text))
+        source = self.blind_lines if blind else self.resume_lines
         return self._join(source[rid])
 
     def sample(self) -> List[int]:

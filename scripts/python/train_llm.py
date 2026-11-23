@@ -112,6 +112,8 @@ def main():
     parser.add_argument("--warmup", type=int, default=100)
     parser.add_argument("--eval-every", type=int, default=250)
     parser.add_argument("--device", default="auto", help="auto, cpu, mps (Mac GPU) or cuda")
+    parser.add_argument("--relayout-prob", type=float, default=0.5,
+                        help="Share of samples re-laid-out by rules (augment.py); 0 trains on the template only")
     parser.add_argument("--seed", type=int, default=1337)
     args = parser.parse_args()
 
@@ -135,8 +137,8 @@ def main():
     model = GPT(config).to(device)
     print(f"Model: {model.num_parameters() / 1e6:.2f}M parameters, random init, device {device}")
 
-    sampler = SequenceSampler(train, tokenizer, args.block_size, seed=args.seed)
-    dev_sampler = SequenceSampler(dev, tokenizer, args.block_size, seed=args.seed + 1)
+    sampler = SequenceSampler(train, tokenizer, args.block_size, relayout_prob=args.relayout_prob, seed=args.seed)
+    dev_sampler = SequenceSampler(dev, tokenizer, args.block_size, relayout_prob=args.relayout_prob, seed=args.seed + 1)
     dev_batches = [to_tensors(dev_sampler.batch(args.batch_size), device) for _ in range(20)]
 
     decay = [p for n, p in model.named_parameters() if p.dim() >= 2]
