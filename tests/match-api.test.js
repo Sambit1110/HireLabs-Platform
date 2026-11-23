@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { createDeterministicEmbedding, embedText, embedTexts } from '../lib/resume/embedding.js';
 
+const PRIYA_TEXT = 'Priya Raman\nBackend Engineer\nSkills: Node.js, PostgreSQL\nBuilt payment APIs in Node.js on PostgreSQL for 4 years, cutting p95 latency from 900 ms to 220 ms.';
 const mockRpc = vi.fn();
 const mockInsert = vi.fn().mockReturnValue(Promise.resolve({ error: null }));
 const mockFrom = vi.fn().mockImplementation((table) => {
@@ -22,7 +23,7 @@ const mockFrom = vi.fn().mockImplementation((table) => {
                 years_experience: 7,
                 extracted_skills: ['Node.js', 'PostgreSQL'],
                 profile_completeness: 100,
-                parsed_text: 'Priya Raman\nBackend Engineer\nSkills: Node.js, PostgreSQL',
+                parsed_text: PRIYA_TEXT,
               },
             ],
             error: null,
@@ -243,8 +244,45 @@ describe('POST /api/match contract', () => {
       expect(String(url)).toBe('https://models.example.test/match');
       expect(JSON.parse(init.body)).toEqual({
         job: 'Backend Engineer\nRequired skills: Node.js, Kafka',
-        resume: 'Priya Raman\nBackend Engineer\nSkills: Node.js, PostgreSQL',
+        resume: PRIYA_TEXT,
       });
+    });
+
+    it('shows the same fit score as Explain score, and ranks by it', async () => {
+      const job = 'Backend Engineer\nRequired skills: Node.js, PostgreSQL, Kafka';
+      globalThis.fetch = vi.fn(async () => Response.json({ score: 70, verdict: 'moderate', missingSkills: ['Kafka'] }));
+      process.env.USE_LOCAL_MODELS = 'true';
+      process.env.MODEL_SERVER_URL = 'https://models.example.test';
+      mockRpc.mockResolvedValue({
+        data: [{ id: '11111111-1111-1111-1111-111111111111', file_name: 'priya_backend.pdf', similarity: 0.6123 }],
+        error: null,
+      });
+      const { POST: rank } = await import('../app/api/match/route.js');
+      const ranked = await (await rank(new Request('http://localhost:3000/api/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        body: JSON.stringify({ job_description: job }),
+      }))).json();
+      const match = ranked.data.matches[0];
+      expect(match.fit.score).toEqual(expect.any(Number));
+      expect(match.signals).toEqual({ similarity: 0.6123, llmScore: 70 });
+
+      vi.doMock('@/lib/api/ai-rate-limit', () => ({ checkAIRateLimit: () => null }));
+      const { POST: explain } = await import('../app/api/ai-analyze/route.js');
+      const explained = await (await explain(new Request('http://localhost:3000/api/ai-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+        body: JSON.stringify({
+          mode: 'candidate',
+          role: '',
+          jobDescription: job,
+          candidate: { name: 'Priya Raman', parsedText: PRIYA_TEXT },
+          signals: match.signals,
+        }),
+      }))).json();
+      expect(explained.data.result.fit_score).toBe(match.fit.score);
+      expect(explained.data.result.fit_verdict).toBe(match.fit.verdict);
+      expect(explained.data.role).toBe('Backend Engineer');
     });
 
     it('still ranks when the LLM is unavailable', async () => {

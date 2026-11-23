@@ -34,10 +34,13 @@ Content-Type: application/json
 |---|---|---|
 | `model_used` | string | `hirelabs-matcher` for our model. Anything starting with `gemini` shows as "Gemini fallback". |
 | `matches[].id` | string | The `resumes.id`. The UI looks up name, title and skills from the user's resume list. |
-| `matches[].similarity` | number, 0–1 | Cosine similarity (`1 - distance`). Shown as a percentage. The UI sorts by it. |
+| `matches[].similarity` | number, 0–1 | Cosine similarity (`1 - distance`). Tie-breaker after the fit score. |
+| `matches[].fit` | object or `null` | hirelabs-explainer's fit, the same number Explain score shows: `{ "score": 0-100 or null, "verdict": "strong" \| "moderate" \| "weak" \| "insufficient_evidence" }`. Matches are sorted by `score`, then `similarity`. `null` without parsed resume text. |
+| `matches[].signals` | object | `{ "similarity", "llmScore" }` behind the fit score. The dashboard sends it back with Explain score (`signals` in `/api/ai-analyze`) so both show the same score. |
+| request `title` | string, optional | The target role. Without it the role is read from the job description. |
 | `matches[].file_name` | string, optional | Fallback label if the resume isn't in the loaded list. |
 | `matches[].candidate_name`, `candidate_title` | string, optional | Same, as a fallback. |
-| `matches[].llm_fit` | object or `null` | hirelabs-llm's second opinion for the top 20: `{ "score": 0-100, "verdict": "strong" \| "moderate" \| "weak", "missing_skills": [...] }`. `null` when the LLM was off, unavailable or failed. Never changes the order. |
+| `matches[].llm_fit` | object or `null` | hirelabs-llm's own score for the top 20: `{ "score": 0-100, "verdict": "strong" \| "moderate" \| "weak", "missing_skills": [...] }`. `null` when the LLM was off, unavailable or failed. It counts for 15% of `fit`. |
 | `llm_model` | string or `null` | `hirelabs-llm` when at least one match has `llm_fit`, `llm-placeholder` in placeholder mode, else `null`. |
 
 ## Errors

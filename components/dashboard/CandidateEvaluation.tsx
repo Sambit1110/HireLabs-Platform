@@ -45,9 +45,9 @@ const STATUS_LABELS: Record<string, { label: string; tone: string }> = {
   missing: { label: "Missing", tone: "missing" },
 };
 
-const BREAKDOWN_PARTS: { key: "skillCoverage" | "matcherSimilarity" | "llmFit"; label: string; weight: number }[] = [
+const BREAKDOWN_PARTS: { key: "skillCoverage" | "matcherPoints" | "llmFit"; label: string; weight: number }[] = [
   { key: "skillCoverage", label: "Skill coverage", weight: 55 },
-  { key: "matcherSimilarity", label: "Text similarity (hirelabs-matcher)", weight: 30 },
+  { key: "matcherPoints", label: "Text similarity (hirelabs-matcher)", weight: 30 },
   { key: "llmFit", label: "Fit (hirelabs-llm)", weight: 15 },
 ];
 
@@ -58,11 +58,15 @@ function ScoreBreakdown({ breakdown }: { breakdown: NonNullable<ReturnType<typeo
       <h3 id="eval-breakdown">How the score was built</h3>
       <ul className="eval-breakdown">
         {BREAKDOWN_PARTS.map(({ key, label, weight }) => {
-          const value = breakdown[key];
+          // Older results have no matcherPoints: fall back to the raw similarity.
+          const value = key === "matcherPoints" ? (breakdown.matcherPoints ?? breakdown.matcherSimilarity) : breakdown[key];
           return (
             <li key={key}>
               <span>
                 {label} <span className="eval-muted">· weight {weight}%</span>
+                {key === "matcherPoints" && breakdown.matcherPoints !== null && breakdown.matcherSimilarity !== null && (
+                  <span className="eval-muted"> · raw similarity {breakdown.matcherSimilarity}%</span>
+                )}
               </span>
               <strong>{value === null ? "not available" : `${value}%`}</strong>
               <span className="eval-breakdown__bar" role="img" aria-label={value === null ? `${label} not available` : `${label} ${value}%`}>
@@ -73,7 +77,9 @@ function ScoreBreakdown({ breakdown }: { breakdown: NonNullable<ReturnType<typeo
         })}
       </ul>
       <p className="eval-muted">
-        Signals that are not available are left out and the other weights are scaled up.
+        Each bar is what that signal counted for. Text similarity of 70% or more counts in full,
+        20% or less counts for nothing. Signals that are not available are left out and the other
+        weights are scaled up.
       </p>
     </section>
   );

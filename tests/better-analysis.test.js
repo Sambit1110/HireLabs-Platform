@@ -95,7 +95,7 @@ describe('dashboard evaluation view', () => {
 
   it('normalises the score breakdown and skill table', () => {
     const evaluation = normalizeEvaluation(result);
-    expect(evaluation.breakdown).toEqual({ skillCoverage: 67, matcherSimilarity: 60, llmFit: 80 });
+    expect(evaluation.breakdown).toEqual({ skillCoverage: 67, matcherSimilarity: 60, matcherPoints: 80, llmFit: 80 });
     expect(evaluation.skillMatrix.map((row) => [row.skill, row.status])).toEqual([
       ['FastAPI', 'demonstrated'], ['React', 'demonstrated'], ['Kubernetes', 'missing'],
     ]);
