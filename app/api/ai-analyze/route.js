@@ -9,6 +9,9 @@ import { useLocalModels } from '@/lib/ai/model-server';
 import {
   CANDIDATE_LIMITS as LIMITS,
   buildCandidateMessages,
+  buildCompactMessages,
+  compactCandidateSchema,
+  normalizeCompactCandidate,
   candidateSchema,
   clip,
   validateAnalysis,
@@ -260,8 +263,11 @@ export async function POST(request) {
   }
 
   try {
-    const input = mode === 'candidate' ? buildCandidateMessages(body) : buildRolePrompt(body);
-    const result = await evaluateLocally(input, schema);
+    const compact = mode === 'candidate' && process.env.OLLAMA_CANDIDATE_FORMAT === 'compact';
+    const candidatePrompt = compact ? buildCompactMessages : buildCandidateMessages;
+    const input = mode === 'candidate' ? candidatePrompt(body) : buildRolePrompt(body);
+    const raw = await evaluateLocally(input, compact ? compactCandidateSchema : schema);
+    const result = compact ? normalizeCompactCandidate(raw) : raw;
 
     if (!validateAnalysis(result, schema, mode)) {
       return apiError(
