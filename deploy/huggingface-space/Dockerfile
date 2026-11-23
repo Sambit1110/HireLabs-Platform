@@ -1,4 +1,4 @@
-# HireLabs model server on a free Hugging Face Space (CPU basic: 2 vCPU, 16 GB RAM).
+# HireLabs model server on a Hugging Face Docker Space (CPU basic: 2 vCPU, 16 GB RAM; needs PRO).
 # Build context is the folder made by scripts/build_hf_space.sh, not the repo root.
 FROM python:3.11-slim
 

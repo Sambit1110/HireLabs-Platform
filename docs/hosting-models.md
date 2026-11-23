@@ -87,7 +87,7 @@ Keep the terminal open while the website is in use. Ctrl+C stops the tunnel and 
 
 A quick tunnel gets a new address every time it starts, so Vercel must be updated and redeployed each time. For a fixed address, create a named tunnel in a Cloudflare account with a domain and route a hostname such as `models.<your-domain>` to `http://127.0.0.1:8000`. Then run that tunnel in place of the last line of `scripts/host-models.sh`. The token check stays the same.
 
-To host without anyone's laptop, run the same server on a free Hugging Face Space. See [hirelabs-llm.md](hirelabs-llm.md#free-hosting-on-a-hugging-face-space).
+To host without anyone's laptop, run the same server on a Hugging Face Space. Docker Spaces need a PRO account. See [hirelabs-llm.md](hirelabs-llm.md#hosting-on-a-hugging-face-space-needs-pro).
 
 ## Speed
 

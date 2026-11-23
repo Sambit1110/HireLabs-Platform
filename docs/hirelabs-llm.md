@@ -112,35 +112,46 @@ and adds `llm_fit: { score, verdict, missing_skills }` to each. The dashboard sh
 the list. If the model server or model is missing, or a request fails, the remaining resumes
 get `llm_fit: null` and ranking carries on normally.
 
-## Free hosting on a Hugging Face Space
+## Hosting on a Hugging Face Space (needs PRO)
 
-This replaces the laptop + ngrok setup. A free CPU Space has 2 vCPU and 16 GB RAM and needs no
-credit card.
+This replaces the laptop + ngrok setup. Since November 2026, Hugging Face runs Docker Spaces on
+CPU basic (2 vCPU, 16 GB RAM) only for **PRO** accounts (about $9/month). Free accounts can
+host only static pages, which cannot run this server. Without PRO, keep the laptop setup in
+[hosting-models.md](hosting-models.md).
 
-1. Make a free account at huggingface.co, then **New Space**: SDK **Docker**, hardware
-   **CPU basic (free)**, visibility **Private**.
-2. In the Space's **Settings → Variables and secrets**, add a secret `MODEL_API_TOKEN`
-   (32+ random characters, e.g. from `openssl rand -hex 32`).
-3. Build the Space folder and push it:
+1. With a PRO account, sign in on your computer: create a **Write** access token
+   (huggingface.co → Settings → Access Tokens), then run `hf auth login` (from
+   `pip install huggingface_hub`) and paste it.
+2. Build the Space folder. Add the parser wheel as a second argument so `/parse` works too:
 
    ```bash
-   git clone https://huggingface.co/spaces/<your-name>/<space-name> ../hirelabs-space
-   scripts/build_hf_space.sh ../hirelabs-space            # add a parser .whl path as a 2nd argument if you have one
-   cd ../hirelabs-space && git lfs install && git add . && git commit -m "HireLabs model server" && git push
+   scripts/build_hf_space.sh ../hirelabs-space path/to/en_hirelabs_parser-0.1.0-py3-none-any.whl
    ```
 
-   The Space builds itself, which takes a few minutes. Then check `/health` on the Space URL
-   (`https://<your-name>-<space-name>.hf.space`).
-4. In Vercel, set `MODEL_SERVER_URL` to the Space URL and `MODEL_API_TOKEN` to the same secret.
-   Because the Space is private, also add `HF_SPACE_TOKEN`: a Hugging Face access token with
-   read access (huggingface.co → Settings → Access Tokens). Mark both as secrets and redeploy.
+3. Create a **private** Docker Space, set the parser's name and upload the folder:
+
+   ```bash
+   hf repo create <your-name>/hirelabs-models --repo-type space --space-sdk docker --private
+   hf upload <your-name>/hirelabs-models ../hirelabs-space . --repo-type space
+   ```
+
+   Then, in the Space's **Settings → Variables and secrets**, add the variable
+   `HIRELABS_PARSER_MODEL` = `en_hirelabs_parser`.
+4. In the same settings, add the secret `MODEL_API_TOKEN`. Use **the value already in Vercel**:
+   the evaluator calls to Ollama on the hosting machine reuse it.
+5. The Space builds itself, which takes several minutes. Then `/health` on the Space URL
+   (`https://<your-name>-hirelabs-models.hf.space`) should report the models as ready.
+6. In Vercel, set `MODEL_SERVER_URL` to the Space URL. Add `HF_SPACE_TOKEN`: a separate
+   **Read** access token, never the Write one. Mark it as a secret and redeploy. Leave
+   `OLLAMA_URL` pointing at the hosting machine.
 
 Things to know:
 
-- A free Space **sleeps after about 48 hours with no visits**. The first request after that
-  takes a minute or two. Open `/health` before a demo.
-- **Ollama does not run on the Space**, so `/api/chat` (the evaluator) answers 503 there. The
-  site's evaluator calls need moving to `/match` first.
+- A Space **sleeps after a while with no visits** (the idle time is in the Space's settings). The
+  first request after that takes a minute or two. Open `/health` before a demo.
+- **Ollama does not run on the Space**, so `/api/chat` (the evaluator) answers 503 there. That
+  is why `OLLAMA_URL` stays on the hosting machine. **Explain score** keeps working only while
+  that machine is on.
 - **Private Space and tokens.** A private Space only accepts requests carrying a Hugging Face
   token (`Authorization: Bearer hf_...`). That header is then taken, so the server also accepts
   its own token as `X-HireLabs-Token: <MODEL_API_TOKEN>`. When `HF_SPACE_TOKEN` is set, the site
