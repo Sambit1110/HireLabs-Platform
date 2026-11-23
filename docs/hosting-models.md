@@ -77,7 +77,7 @@ The Next.js API uses `pdf-parse` first and calls the authenticated `/extract-pdf
    The matcher URL follows `MODEL_SERVER_URL` automatically. Leave `EMBED_SERVICE_URL` unset on Vercel.
 
 4. **Check it.** Open `https://<tunnel>/health`. `parser_ready`, `matcher_ready` and `evaluator_ready` report which services are ready. `evaluator_ready` is `false` when Ollama isn't running or doesn't have `OLLAMA_MODEL` loaded. Then, on the website:
-   - Upload a resume. The HireLabs parser is preferred; configured Ollama fills profile fields it misses.
+   - Upload a resume. The HireLabs parser is preferred; rules fill the profile fields it misses (Ollama only with `EVALUATOR_PROVIDER=ollama`).
    - Rank candidates.
    - Run an evaluation and a role brief. Both show `hirelabs-evaluator`.
 

@@ -16,7 +16,7 @@ vi.mock('../lib/ai/local-llm.js', () => ({
 
 import { enrichResume } from '../lib/resume/profile-enrichment.js';
 
-const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_URL', 'OLLAMA_KEY'];
+const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_URL', 'OLLAMA_KEY', 'EVALUATOR_PROVIDER'];
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 const completeProfile = {
   candidateName: 'Jordan Lee',
@@ -40,6 +40,7 @@ afterEach(() => {
 
 describe('resume profile enrichment', () => {
   it('uses configured Ollama when the HireLabs parser is disabled', async () => {
+    process.env.EVALUATOR_PROVIDER = 'ollama';
     process.env.OLLAMA_URL = 'https://models.example.test/api/generate';
     evaluateLocallyMock.mockResolvedValue(completeProfile);
 
@@ -59,6 +60,7 @@ describe('resume profile enrichment', () => {
 
   it('uses Ollama to fill fields missing from the HireLabs parser', async () => {
     process.env.USE_LOCAL_MODELS = 'true';
+    process.env.EVALUATOR_PROVIDER = 'ollama';
     process.env.OLLAMA_URL = 'https://models.example.test/api/generate';
     callModelServerMock.mockResolvedValue({
       value: {
@@ -75,6 +77,21 @@ describe('resume profile enrichment', () => {
 
     expect(result.value).toEqual(completeProfile);
     expect(result.modelUsed).toBe('ollama-profile-extractor');
+    expect(result.error).toBeNull();
+  });
+
+  it('never contacts Ollama by default, even with OLLAMA_URL set: the rules fill the gaps', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    process.env.OLLAMA_URL = 'https://models.example.test/api/generate';
+    callModelServerMock.mockResolvedValue({
+      value: { candidateName: 'Jordan Lee', candidateTitle: null, extractedSkills: [], yearsExperience: null },
+      placeholder: false,
+    });
+
+    const result = await enrichResume('Jordan Lee\nBackend Engineer\nSkills: Node.js, PostgreSQL\n6 years of experience');
+
+    expect(evaluateLocallyMock).not.toHaveBeenCalled();
+    expect(result.value).toEqual(completeProfile);
     expect(result.error).toBeNull();
   });
 
