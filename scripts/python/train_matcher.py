@@ -18,11 +18,24 @@ import os
 import sys
 from typing import Dict, List
 from sentence_transformers import InputExample, SentenceTransformer, losses
+from sentence_transformers.datasets import NoDuplicatesDataLoader
 from torch.utils.data import DataLoader
 from matcher_data import DatasetValidationError, load_texts, validate_dataset
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "models", "hirelabs-matcher-candidate")
+
+
+MODEL_CARD = """# hirelabs-matcher
+
+384-dimensional sentence embedding model for HireLabs resume-job matching, fine-tuned from
+`{base_model}` with MultipleNegativesRankingLoss on (job description, good resume, weak resume)
+examples ({examples} examples, {epochs} epochs). Load it with
+`SentenceTransformer("path/to/hirelabs-matcher")` and normalize embeddings; cosine similarity ranks resumes.
+
+Private: trained on HireLabs resume data. Do not publish. Evaluation and limitations are in the
+HireLabs report, section 4.
+"""
 
 
 class TeeStream:
@@ -138,7 +151,7 @@ def _run_training(
     batch_size: int,
     learning_rate: float,
 ) -> None:
-    print(f"Loading data from: {data_dir}")
+    print(f"Loading data from: {os.path.basename(os.path.abspath(data_dir))}")
     resumes = load_texts(os.path.join(data_dir, "raw", "resumes"))
     jds = load_texts(os.path.join(data_dir, "raw", "jds"))
 
@@ -152,7 +165,20 @@ def _run_training(
     print(f"Initializing base model: {base_model_name}")
     model = SentenceTransformer(base_model_name)
 
-    train_dataloader = DataLoader(examples, shuffle=True, batch_size=min(batch_size, len(examples)))
+    # The same job description appears in many examples. A batch must not hold it twice, or
+    # MultipleNegativesRankingLoss treats one of its good resumes as a wrong answer.
+    distinct_anchors = len({example.texts[0] for example in examples})
+    if distinct_anchors >= 2 * batch_size:
+        # Enough different job descriptions: use in-batch negatives, never two copies of a text in one batch.
+        effective_batch = min(batch_size, len(examples))
+        train_dataloader = NoDuplicatesDataLoader(examples, batch_size=effective_batch)
+    else:
+        # Few job descriptions: other examples in a batch would mostly be the same job, whose good
+        # resumes must not count as wrong answers (and the no-duplicates loader can stall). Train one
+        # (job, good resume, weak resume) example at a time instead.
+        effective_batch = 1
+        train_dataloader = DataLoader(examples, shuffle=True, batch_size=1)
+    print(f"Batch size {effective_batch} ({distinct_anchors} distinct job descriptions).")
     train_loss = losses.MultipleNegativesRankingLoss(model)
 
     warmup_steps = int(len(train_dataloader) * epochs * 0.1)
@@ -167,7 +193,10 @@ def _run_training(
     )
 
     print(f"Saving fine-tuned model to: {output_dir}")
-    model.save(output_dir)
+    # No auto-generated model card: it embeds training examples, which here are resume text.
+    model.save(output_dir, create_model_card=False)
+    with open(os.path.join(output_dir, "README.md"), "w", encoding="utf-8") as card:
+        card.write(MODEL_CARD.format(base_model=base_model_name, epochs=epochs, examples=len(examples)))
     run_metadata = {
         "trained_at_utc": datetime.now(timezone.utc).isoformat(),
         "base_model": base_model_name,
@@ -175,6 +204,7 @@ def _run_training(
         "parameters": {
             "epochs": epochs,
             "batch_size": batch_size,
+            "effective_batch_size": effective_batch,
             "learning_rate": learning_rate,
             "training_examples": len(examples),
         },
