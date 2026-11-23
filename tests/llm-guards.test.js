@@ -261,6 +261,27 @@ describe('hirelabs-explainer (default provider)', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  it('works without a target role, reading it from the job description', async () => {
+    globalThis.fetch = modelServer();
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+    const job = 'We are seeking a detail-oriented Data Analyst to collect and interpret data. Proficiency in SQL, Python and Excel.';
+
+    const brief = await POST(analyzeRequest({ mode: 'role', role: '', jobDescription: job }));
+    const briefData = (await brief.json()).data;
+    expect(brief.status).toBe(200);
+    expect(briefData.result.role_summary.startsWith('Data Analyst (')).toBe(true);
+
+    const candidate = await POST(analyzeRequest({ mode: 'candidate', role: undefined, jobDescription: job, candidate: { name: 'Priya Raman', parsedText: RESUME } }));
+    expect(candidate.status).toBe(200);
+    expect((await candidate.json()).data.model_used).toBe('hirelabs-explainer');
+  });
+
+  it('still rejects a role that is too long', async () => {
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+    const response = await POST(analyzeRequest({ mode: 'role', role: 'x'.repeat(301) }));
+    expect(response.status).toBe(400);
+  });
+
   it('still explains from skills alone when the model server is down', async () => {
     globalThis.fetch = vi.fn(async () => new Response('down', { status: 503 }));
     const { POST } = await import('../app/api/ai-analyze/route.js');

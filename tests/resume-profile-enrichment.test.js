@@ -86,3 +86,17 @@ describe('resume profile enrichment', () => {
     expect(evaluateLocallyMock).not.toHaveBeenCalled();
   });
 });
+
+describe('profile clean-up', () => {
+  it('replaces a title that is really the name with the line under it', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    callModelServerMock.mockResolvedValue({
+      value: { candidateName: null, candidateTitle: 'Riya Kapoor', extractedSkills: ['SQL'], yearsExperience: 3 },
+      placeholder: false,
+    });
+    const result = await enrichResume('Riya Kapoor\nData Analyst\nSkills: SQL, Python, Tableau\nData Analyst with 3 years of experience in Retail.');
+    expect(result.value.candidateName).toBe('Riya Kapoor');
+    expect(result.value.candidateTitle).toBe('Data Analyst');
+    expect(result.error).toBeNull();
+  });
+});
