@@ -6,7 +6,7 @@ import { containsEmbeddedResume } from '@/lib/ai/input-validation';
 import { PromptTooLongError, evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
 import { checkEvidence } from '@/lib/ai/evidence';
 import { useLocalModels } from '@/lib/ai/model-server';
-import { EXPLAINER_MODEL, analyzeCandidate, buildRoleBrief, evaluatorProvider, modelSignals } from '@/lib/ai/own-analysis';
+import { EXPLAINER_MODEL, analyzeCandidate, buildRoleBrief, evaluatorProvider, modelSignals, roleName } from '@/lib/ai/own-analysis';
 import {
   CANDIDATE_LIMITS as LIMITS,
   buildCandidateMessages,
@@ -60,12 +60,9 @@ function validateInput(body) {
     return 'Invalid AI analysis mode.';
   }
 
-  if (
-    typeof body.role !== 'string' ||
-    !body.role.trim() ||
-    body.role.length > LIMITS.role
-  ) {
-    return 'A valid target role is required (maximum 300 characters).';
+  // The target role is optional: without one it is read from the job description.
+  if (body.role != null && (typeof body.role !== 'string' || body.role.length > LIMITS.role)) {
+    return 'The target role must be text of at most 300 characters.';
   }
 
   if (
@@ -253,6 +250,7 @@ export async function POST(request) {
     );
   }
 
+  body.role = (typeof body.role === 'string' && body.role.trim()) || roleName('', body.jobDescription);
   const mode = body.mode;
   // The bias check may ask for the real evaluator explicitly (skipping the placeholder).
   const provider = process.env.ENABLE_BIAS_CHECK === 'true'

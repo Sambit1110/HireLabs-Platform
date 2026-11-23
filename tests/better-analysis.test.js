@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import CandidateEvaluation from '../components/dashboard/CandidateEvaluation';
 import { normalizeEvaluation } from '../lib/ai/evaluation.js';
-import { analyzeCandidate, buildRoleBrief, jobRequirements, tagLines, skillEvidence } from '../lib/ai/own-analysis.js';
+import { analyzeCandidate, buildRoleBrief, jobRequirements, roleName, tagLines, skillEvidence } from '../lib/ai/own-analysis.js';
 import { roleProfileFor } from '../lib/ai/role-profiles.js';
 import { SKILL_INDEX } from '../lib/ai/skill-lexicon.js';
 import { cleanParserSkills, ruleProfile, yearsFromDates } from '../lib/resume/rule-profile.js';
@@ -116,5 +116,13 @@ describe('dashboard evaluation view', () => {
     }));
     expect(html).toContain('Matched skills');
     expect(html).not.toContain('Skill by skill');
+  });
+});
+
+describe('role name from a job description', () => {
+  it('drops leading adjectives and keeps the title', () => {
+    expect(roleName('', 'We are seeking a detail-oriented Data Analyst to collect data.')).toBe('Data Analyst');
+    expect(roleName('', 'We are seeking an AI & Full-Stack Software Engineering Intern to help build apps.')).toBe('AI & Full-Stack Software Engineering Intern');
+    expect(roleName('Backend Engineer', 'anything')).toBe('Backend Engineer');
   });
 });

@@ -408,6 +408,8 @@ export default function AIAnalysisPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // Set by "Explain score" in the ranking: evaluate as soon as the fields are filled in.
+  const [autoRun, setAutoRun] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(
     null
@@ -429,10 +431,11 @@ export default function AIAnalysisPanel({
     setBusy(false);
     setResult(null);
     setError("");
-    setNotice("Job details and candidate filled in from the ranking.");
+    setNotice("Explaining this candidate's score…");
     setCandidateId(preset.candidateId);
-    if (preset.role.trim()) setRole(preset.role);
+    setRole(preset.role.trim());
     setJobDescription(preset.jobDescription);
+    setAutoRun(true);
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [preset]);
 
@@ -449,9 +452,17 @@ export default function AIAnalysisPanel({
   );
 
   const jobDescriptionHasResume = containsEmbeddedResume(jobDescription);
+  // The target role is optional: the server reads it from the job description.
   const roleReady = Boolean(
-    role.trim() && jobDescription.trim() && !jobDescriptionHasResume
+    jobDescription.trim() && !jobDescriptionHasResume
   );
+  const disabledReason = !jobDescription.trim()
+    ? "Paste a job description to start."
+    : jobDescriptionHasResume
+      ? ""
+      : !candidateReady
+        ? "Pick a parsed resume above to evaluate a candidate."
+        : "";
 
   const resetOutput = () => {
     controllerRef.current?.abort();
@@ -585,6 +596,26 @@ export default function AIAnalysisPanel({
     }
   };
 
+  // Keep a handle on the latest analyze() for the auto-run effect below.
+  const analyzeRef = useRef(analyze);
+  useEffect(() => {
+    analyzeRef.current = analyze;
+  });
+
+  useEffect(() => {
+    if (!autoRun || busy) return;
+    if (!roleReady || !candidateReady) {
+      // The candidate has no parsed text (or the job is unusable): leave it to the user.
+      if (candidates.length) {
+        setAutoRun(false);
+        setNotice("Job details and candidate filled in from the ranking.");
+      }
+      return;
+    }
+    setAutoRun(false);
+    void analyzeRef.current("candidate");
+  }, [autoRun, busy, roleReady, candidateReady, candidates.length]);
+
   const previewSample = () => {
     resetOutput();
     setResult({
@@ -633,7 +664,7 @@ export default function AIAnalysisPanel({
 
       <div className="ai-analysis-fields">
         <label className="dashboard-label">
-          Target role
+          Target role (optional)
 
           <input
             className="ai-analysis-input"
@@ -841,6 +872,12 @@ export default function AIAnalysisPanel({
         )}
       </div>
 
+      {!busy && disabledReason && (
+        <p className="eval-muted" style={{ marginTop: 12 }}>
+          {disabledReason}
+        </p>
+      )}
+
       {busy && (
         <p role="status" style={{ marginTop: 16 }}>
           Generating recruitment analysis…
@@ -866,14 +903,11 @@ export default function AIAnalysisPanel({
         />
       )}
 
-      <p
-        className="resume-note"
-        style={{ marginTop: 20 }}
-      >
-        AI evaluations may be incomplete or inaccurate.
-        Recruiters should verify qualifications and
-        supporting evidence. Do not use AI output as the
-        sole basis for employment decisions.
+      <p className="ai-analysis-disclaimer">
+        These results come from HireLabs&apos; own models and
+        rules and can be wrong. Check the evidence yourself,
+        and never use them as the only basis for a hiring
+        decision.
       </p>
     </section>
   );
