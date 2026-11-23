@@ -37,6 +37,8 @@ Content-Type: application/json
 | `matches[].similarity` | number, 0–1 | Cosine similarity (`1 - distance`). Shown as a percentage. The UI sorts by it. |
 | `matches[].file_name` | string, optional | Fallback label if the resume isn't in the loaded list. |
 | `matches[].candidate_name`, `candidate_title` | string, optional | Same, as a fallback. |
+| `matches[].llm_fit` | object or `null` | hirelabs-llm's second opinion for the top 20: `{ "score": 0-100, "verdict": "strong" \| "moderate" \| "weak", "missing_skills": [...] }`. `null` when the LLM was off, unavailable or failed. Never changes the order. |
+| `llm_model` | string or `null` | `hirelabs-llm` when at least one match has `llm_fit`, `llm-placeholder` in placeholder mode, else `null`. |
 
 ## Errors
 

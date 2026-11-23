@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import assert from 'node:assert/strict';
 
 import { createDeterministicEmbedding, embedText, embedTexts } from '../lib/resume/embedding.js';
@@ -22,6 +22,7 @@ const mockFrom = vi.fn().mockImplementation((table) => {
                 years_experience: 7,
                 extracted_skills: ['Node.js', 'PostgreSQL'],
                 profile_completeness: 100,
+                parsed_text: 'Priya Raman\nBackend Engineer\nSkills: Node.js, PostgreSQL',
               },
             ],
             error: null,
@@ -199,6 +200,61 @@ describe('POST /api/match contract', () => {
     expect(firstMatch.candidate_name).toBe('Priya Raman');
     expect(firstMatch.candidate_title).toBe('Senior Backend Engineer');
     expect(firstMatch.years_experience).toBe(7);
+    // USE_LOCAL_MODELS is off here, so hirelabs-llm is not asked.
+    expect(firstMatch.llm_fit).toBeNull();
+    expect(json.data.llm_model).toBeNull();
+    expect(firstMatch).not.toHaveProperty('parsed_text');
+  });
+
+  describe('with hirelabs-llm', () => {
+    const realFetch = globalThis.fetch;
+    const match = (fetchImpl) => {
+      process.env.USE_LOCAL_MODELS = 'true';
+      process.env.MODEL_SERVER_URL = 'https://models.example.test';
+      globalThis.fetch = vi.fn(fetchImpl);
+      mockRpc.mockResolvedValue({
+        data: [{ id: '11111111-1111-1111-1111-111111111111', file_name: 'priya_backend.pdf', similarity: 0.8842 }],
+        error: null,
+      });
+      return import('../app/api/match/route.js').then(({ POST }) =>
+        POST(new Request('http://localhost:3000/api/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+          body: JSON.stringify({ job_description: 'Backend Engineer\nRequired skills: Node.js, Kafka' }),
+        }))
+      );
+    };
+
+    afterEach(() => {
+      delete process.env.USE_LOCAL_MODELS;
+      delete process.env.MODEL_SERVER_URL;
+      globalThis.fetch = realFetch;
+    });
+
+    it('adds the LLM fit score to each scored match', async () => {
+      const res = await match(async () => Response.json({
+        score: 82, verdict: 'strong', pmi: 0.05, missingSkills: ['Kafka'], model_used: 'hirelabs-llm',
+      }));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.data.llm_model).toBe('hirelabs-llm');
+      expect(json.data.matches[0].llm_fit).toEqual({ score: 82, verdict: 'strong', missing_skills: ['Kafka'] });
+      const [url, init] = globalThis.fetch.mock.calls[0];
+      expect(String(url)).toBe('https://models.example.test/match');
+      expect(JSON.parse(init.body)).toEqual({
+        job: 'Backend Engineer\nRequired skills: Node.js, Kafka',
+        resume: 'Priya Raman\nBackend Engineer\nSkills: Node.js, PostgreSQL',
+      });
+    });
+
+    it('still ranks when the LLM is unavailable', async () => {
+      const res = await match(async () => new Response('down', { status: 503 }));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.data.matches[0].similarity).toBe(0.8842);
+      expect(json.data.matches[0].llm_fit).toBeNull();
+      expect(json.data.llm_model).toBeNull();
+    });
   });
 });
 

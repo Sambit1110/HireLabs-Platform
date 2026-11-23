@@ -21,6 +21,13 @@ type RankableResume = {
   parsed_text: string | null;
 };
 
+/** hirelabs-llm's second opinion on one resume (see docs/hirelabs-llm.md). */
+type LlmFit = {
+  score: number;
+  verdict: string;
+  missing_skills: string[];
+};
+
 /**
  * One row of the /api/match response (see docs/api/MATCH_CONTRACT.md).
  */
@@ -30,6 +37,7 @@ type MatchRow = {
   candidate_name?: string | null;
   candidate_title?: string | null;
   similarity: number;
+  llm_fit?: LlmFit | null;
 };
 
 type Ranking = {
@@ -37,6 +45,21 @@ type Ranking = {
   model: ModelInfo;
   sample: boolean;
 };
+
+function readLlmFit(value: unknown): LlmFit | null {
+  if (typeof value !== "object" || value === null) return null;
+  const fit = value as Partial<LlmFit>;
+  if (typeof fit.score !== "number" || !Number.isFinite(fit.score) || typeof fit.verdict !== "string") {
+    return null;
+  }
+  return {
+    score: Math.round(Math.min(100, Math.max(0, fit.score))),
+    verdict: fit.verdict,
+    missing_skills: Array.isArray(fit.missing_skills)
+      ? fit.missing_skills.filter((skill): skill is string => typeof skill === "string").slice(0, 8)
+      : [],
+  };
+}
 
 type CandidateRankingProps = {
   resumes: RankableResume[];
@@ -55,6 +78,7 @@ function parseMatches(value: unknown): MatchRow[] {
         typeof (row as MatchRow).similarity === "number" &&
         Number.isFinite((row as MatchRow).similarity)
     )
+    .map((row) => ({ ...row, llm_fit: readLlmFit(row.llm_fit) }))
     .sort((a, b) => b.similarity - a.similarity);
 }
 
@@ -268,6 +292,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                 const skills = (resume?.extracted_skills || []).slice(0, 6);
                 const percent = similarityPercent(match.similarity);
                 const canExplain = Boolean(resume?.parsed_text?.trim()) && !ranking.sample;
+                const fit = match.llm_fit;
 
                 return (
                   <li key={match.id} className="ranking__item">
@@ -285,6 +310,23 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                             </li>
                           ))}
                         </ul>
+                      )}
+
+                      {fit && (
+                        <div className="ranking__llm">
+                          <p className="eval-muted">
+                            hirelabs-llm fit: <strong>{fit.score}/100</strong> ({fit.verdict})
+                          </p>
+                          {fit.missing_skills.length > 0 && (
+                            <ul className="eval-chips" aria-label="Required skills not found in the resume">
+                              {fit.missing_skills.map((skill) => (
+                                <li key={skill} className="eval-chip eval-chip--missing">
+                                  Missing: {skill}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -324,6 +366,14 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
             Similarity measures how closely the resume text matches the job description.
             It is a starting point for review, not a hiring decision.
           </p>
+
+          {ranking.matches.some((match) => match.llm_fit) && (
+            <p className="resume-note">
+              hirelabs-llm fit is a second opinion from the team&apos;s own language model, built
+              from scratch. It is experimental: it learned from template-style resumes, so it can
+              under-score resumes written another way, and it does not change the order above.
+            </p>
+          )}
         </div>
       )}
     </section>

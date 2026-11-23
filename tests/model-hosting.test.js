@@ -4,7 +4,7 @@ import { callModelServer, callModelServerFile, modelAuthHeaders } from '../lib/a
 import { evaluateLocally, evaluatorTimeoutMs } from '../lib/ai/local-llm.js';
 import { embedTexts } from '../lib/resume/embedding.js';
 
-const KEYS = ['MODEL_API_TOKEN', 'MODEL_SERVER_URL', 'OLLAMA_URL', 'OLLAMA_KEY', 'EMBED_SERVICE_URL', 'EMBED_MOCK', 'OLLAMA_TIMEOUT_MS'];
+const KEYS = ['MODEL_API_TOKEN', 'HF_SPACE_TOKEN', 'MODEL_SERVER_URL', 'OLLAMA_URL', 'OLLAMA_KEY', 'EMBED_SERVICE_URL', 'EMBED_MOCK', 'OLLAMA_TIMEOUT_MS'];
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 const realFetch = globalThis.fetch;
 const TOKEN = 't'.repeat(40);
@@ -31,6 +31,12 @@ describe('model hosting token', () => {
     expect(modelAuthHeaders()).toEqual({});
     process.env.MODEL_API_TOKEN = TOKEN;
     expect(modelAuthHeaders()).toEqual({ Authorization: `Bearer ${TOKEN}` });
+  });
+
+  it('moves the token to X-HireLabs-Token for a private Hugging Face Space', () => {
+    process.env.MODEL_API_TOKEN = TOKEN;
+    process.env.HF_SPACE_TOKEN = 'hf_example';
+    expect(modelAuthHeaders()).toEqual({ Authorization: 'Bearer hf_example', 'X-HireLabs-Token': TOKEN });
   });
 
   it('sends the token to the parser, the evaluator and the matcher', async () => {

@@ -946,6 +946,14 @@
   min-width: 0;
 }
 
+.ranking__llm {
+  margin-top: 8px;
+}
+
+.ranking__llm p {
+  margin: 0;
+}
+
 .ranking__score {
   display: grid;
   justify-items: stretch;
