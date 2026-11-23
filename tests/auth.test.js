@@ -7,7 +7,8 @@ describe('authenticateRequest', () => {
   beforeEach(() => {
     vi.resetModules(); getUser.mockReset();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'public-anon-key';
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable-test';
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   });
   it('rejects missing bearer tokens', async () => {
     const { authenticateRequest } = await import('../lib/supabase/server-auth.js');

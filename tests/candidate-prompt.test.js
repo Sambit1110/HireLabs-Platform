@@ -11,6 +11,7 @@ import {
   candidateSchema,
   validateAnalysis,
 } from '../lib/ai/candidate-prompt.js';
+import { containsEmbeddedResume } from '../lib/ai/input-validation.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const body = {
@@ -21,6 +22,12 @@ const body = {
 };
 
 describe('shared candidate prompt', () => {
+  it('distinguishes candidate resume evidence from job requirements', () => {
+    expect(containsEmbeddedResume('Required skills: Java\nRESUME: Java developer with experience.')).toBe(true);
+    expect(containsEmbeddedResume('Required skills: Java and Spring Boot.')).toBe(false);
+    expect(CANDIDATE_SYSTEM_PROMPT).toContain('Never treat a skill, qualification, or achievement mentioned only in the job description as evidence');
+  });
+
   it('splits the prompt into a fixed system message and a per-pair user message', () => {
     const [system, user] = buildCandidateMessages(body);
     expect(system).toEqual({ role: 'system', content: CANDIDATE_SYSTEM_PROMPT });

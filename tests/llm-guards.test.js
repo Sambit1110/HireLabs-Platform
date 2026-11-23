@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase/server-auth', () => ({
 }));
 vi.mock('@/lib/api/ai-rate-limit', () => ({ checkAIRateLimit: () => null }));
 
-const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX', 'OLLAMA_MODEL', 'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK'];
+const ENV_KEYS = ['USE_LOCAL_MODELS', 'OLLAMA_NUM_CTX', 'OLLAMA_MODEL', 'OLLAMA_URL', 'OLLAMA_KEY', 'EVALUATOR_PLACEHOLDER', 'ENABLE_BIAS_CHECK'];
 const savedEnv = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
 const realFetch = globalThis.fetch;
 
@@ -68,6 +68,30 @@ describe('own models only', () => {
     expect(data.model_used).toBe('hirelabs-evaluator');
     expect(data.result.must_have_skills).toEqual(['Node.js']);
     expect(String(globalThis.fetch.mock.calls[0][0])).toContain('/api/chat');
+  });
+
+  it('sends extracted resume text separately and refuses resume text pasted into the job description', async () => {
+    process.env.USE_LOCAL_MODELS = 'true';
+    globalThis.fetch = ollamaReply(SAMPLE_EVALUATION);
+    const { POST } = await import('../app/api/ai-analyze/route.js');
+
+    const response = await POST(candidateRequest());
+    const body = JSON.parse(globalThis.fetch.mock.calls[0][1].body);
+    const userPrompt = body.messages.find((message) => message.role === 'user').content;
+
+    expect(response.status).toBe(200);
+    expect(userPrompt).toContain('JOB DESCRIPTION:\nBuild Node.js services on PostgreSQL.');
+    expect(userPrompt).toContain(`RESUME TEXT:\n${RESUME}`);
+
+    const contaminated = await POST(analyzeRequest({
+      mode: 'candidate',
+      jobDescription: 'Build Node.js services.\nRESUME: Java developer',
+      candidate: { parsedText: RESUME },
+    }));
+
+    expect(contaminated.status).toBe(400);
+    expect((await contaminated.json()).error.message).toMatch(/contains a RESUME section/);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('returns 503, with no other model tried, when the evaluator is down', async () => {

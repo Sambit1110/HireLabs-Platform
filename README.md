@@ -7,7 +7,7 @@ An AI-assisted resume workspace built with the Next.js App Router, Supabase (Aut
 | Area | State |
 |---|---|
 | Auth, upload, private storage, resume library | Built |
-| Resume parsing | Built. A downloaded spaCy model (`en_Resume_Parser_pipeline`) is served by the model server. Our own trained parser (`hirelabs-parser`) is in progress. If the parser is unavailable, the resume text is saved without profile fields. There is no external fallback. |
+| Resume parsing | Extracts PDF text with `pdf-parse`, falling back to authenticated `pdfplumber` on the model server when needed. It then prefers the HireLabs parser and uses configured Ollama to fill missing profile fields. If a PDF has no extractable text, OCR is still required. |
 | Candidate evaluation and role brief | Run only on our fine-tuned evaluator (`hirelabs-evaluator`) through Ollama. Fine-tuning is in progress. If Ollama is down, the API returns 503. |
 | Semantic matching | Built. The `/api/match` endpoint, pgvector HNSW migration (`supabase/migrations/005_semantic_matching.sql`), and `hirelabs-matcher` model (384d fine-tuned from `BAAI/bge-small-en-v1.5`) are implemented (see [`docs/api/MATCH_CONTRACT.md`](docs/api/MATCH_CONTRACT.md)). |
 | Model results page | Built. It shows real numbers once the evaluation script writes `public/model-results.json` (see [`docs/results/RESULTS_FORMAT.md`](docs/results/RESULTS_FORMAT.md)). |
@@ -51,7 +51,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
 
 2. **Run the migrations.** Open the Supabase SQL Editor and execute **every** file in [`supabase/migrations/`](supabase/migrations/) in filename order (`001` … `006`). Alternatively, link the Supabase CLI and run `supabase db push`. `005` (pgvector, `job_descriptions`, `match_resumes`) is required for **Rank candidates**, and `006` must follow `003`, or every successful parse is rejected by the status check. `GET /api/health` reports which parts of the schema are present.
 
-3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your project URL and anon key. No external AI key is needed: every model runs on the team's own services (see [Run everything locally](#run-everything-locally)). `SUPABASE_SERVICE_ROLE_KEY` is reserved for future privileged background jobs and must never be exposed to the browser.
+3. **Configure environment variables.** Copy `.env.example` to `.env.local` and fill in your Supabase project URL and publishable key (the legacy anon key is also supported). There is no vendor AI dependency. If your Ollama endpoint requires authentication, set `OLLAMA_KEY` in `.env.local`; never use a `NEXT_PUBLIC_` prefix. Do not put a Supabase secret key in any `NEXT_PUBLIC_` variable.
 
 4. **Start the dev server.**
 
@@ -93,7 +93,7 @@ The original static prototype (`index.html`, `signup.html`, `app.js`, `style.css
    `/health` reports `parser_ready`, `matcher_ready` and `evaluator_ready` (Ollama is running and has `OLLAMA_MODEL` loaded).
 
 4. Start Ollama with `ollama serve` if needed. In the directory containing the team's evaluator GGUF and Modelfile, run `ollama create hirelabs-evaluator -f Modelfile`. The Modelfile must reference the GGUF and use the team's training template. The app requests a 16384-token context (`OLLAMA_NUM_CTX`) and refuses any prompt that would not fit, because Ollama would otherwise cut it silently.
-5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser`. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. Run the role brief to verify it also reports `hirelabs-evaluator`. Stop Ollama and the analysis returns 503 `LOCAL_EVALUATOR_UNAVAILABLE`. Stop FastAPI and parsing saves the text without profile fields. Candidate analysis drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
+5. Run `npm run dev`. Upload a resume to verify `data.model_used=hirelabs-parser` or `ollama-profile-extractor` when Ollama fills missing fields. Run candidate analysis to verify `data.model_used=hirelabs-evaluator`. The role brief should report the same evaluator. Stop Ollama and analysis returns 503 `LOCAL_EVALUATOR_UNAVAILABLE`. If both Ollama and FastAPI are unavailable, parsing still saves resume text and reports that structured profile fields are incomplete. Candidate analysis drops any evidence quote that is not in the resume text and reports the count as `evidence_removed`. The authenticated `POST /api/embeddings` accepts `{"texts":["example"]}` and returns 384-dimensional vectors.
 
 For interface development, set `MODEL_PLACEHOLDERS=true` in the Python service environment and `EVALUATOR_PLACEHOLDER=true` in `.env.local`. Responses identify placeholders explicitly. Disable these options for the live demo. Keep both model services bound to loopback for local use.
 
@@ -166,9 +166,9 @@ Existing users are signed out once after this change, because sessions moved fro
 
 ## AI copilot configuration
 
-The Candidate matching workspace has two AI features, both answered by the team's own evaluator (`hirelabs-evaluator` in Ollama):
+The Candidate matching workspace has two AI features, both answered by the configured Ollama evaluator:
 
 - AI role brief: turns a job description into must-have skills, nice-to-have skills, screening signals, and interview focus.
 - AI candidate deep dive: summarizes candidate fit, strengths, gaps, evidence signals, risk flags, and generates tailored interview questions.
 
-No external AI provider is called. Set `OLLAMA_URL`, `OLLAMA_MODEL` and `OLLAMA_NUM_CTX` (default 16384, which should match the Modelfile) to point the app at the evaluator.
+No third-party AI provider is called. Set `USE_LOCAL_MODELS=true` to enable candidate analysis and role briefs. Set `OLLAMA_URL`, `OLLAMA_MODEL` and `OLLAMA_NUM_CTX` (default 16384, which should match the model's context window) to point the app at Ollama. `OLLAMA_URL` can be a base address (the app uses `/api/chat`) or a full Ollama `/api/generate` URL. For a protected remote endpoint, set `OLLAMA_KEY` to its bearer token. These settings are read only by server-side API code; do not use `NEXT_PUBLIC_OLLAMA_KEY`. The configured Ollama model also supports structured profile extraction when the HireLabs parser is unavailable or incomplete. Semantic matching still requires its separately configured service.

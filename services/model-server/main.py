@@ -1,3 +1,4 @@
+import io
 import hmac
 import json
 import os
@@ -8,9 +9,14 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
+import pdfplumber
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, StringConstraints
+from pdfminer.pdfdocument import PDFPasswordIncorrect
+from pdfminer.pdfparser import PDFSyntaxError
+from pdfminer.psparser import PSEOF
+from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "python"))
 from resume_parser import parse_profile
@@ -45,6 +51,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+MAX_PDF_BYTES = 5 * 1024 * 1024
+MAX_EXTRACTED_PDF_TEXT = 50_000
 
 # Reachable without the token: readiness booleans only, for tunnel checks.
 OPEN_PATHS = {"/health"}
@@ -103,6 +112,42 @@ def health(request: Request):
         "placeholder": state.placeholder,
         "evaluator_ready": evaluator_ready(),
     }
+
+
+def extract_pdfplumber_text(pdf_bytes: bytes) -> str:
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as document:
+        page_texts = []
+        for page in document.pages:
+            text = page.extract_text()
+            if text and text.strip():
+                page_texts.append(text.strip())
+    return "\n".join(page_texts)[:MAX_EXTRACTED_PDF_TEXT]
+
+
+@app.post("/extract-pdf")
+async def extract_pdf(request: Request):
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type != "application/pdf":
+        raise HTTPException(415, "Content-Type must be application/pdf.")
+
+    pdf_bytes = bytearray()
+    async for chunk in request.stream():
+        if len(pdf_bytes) + len(chunk) > MAX_PDF_BYTES:
+            raise HTTPException(413, "PDF must be 5 MB or smaller.")
+        pdf_bytes.extend(chunk)
+
+    if not pdf_bytes:
+        raise HTTPException(400, "PDF file is empty.")
+    if not pdf_bytes.startswith(b"%PDF-"):
+        raise HTTPException(422, "File is not a valid PDF.")
+
+    try:
+        text = await run_in_threadpool(extract_pdfplumber_text, bytes(pdf_bytes))
+    except (PDFPasswordIncorrect, PDFSyntaxError, PSEOF, OSError, ValueError) as error:
+        print("PDFPlumber extraction failed:", type(error).__name__, file=sys.stderr)
+        raise HTTPException(422, "PDF could not be read.") from error
+
+    return {"text": text}
 
 
 @app.post("/parse")

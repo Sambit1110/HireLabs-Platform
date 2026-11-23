@@ -2,6 +2,7 @@
 import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
+import { containsEmbeddedResume } from '@/lib/ai/input-validation';
 import { PromptTooLongError, evaluateLocally, evaluatorModel } from '@/lib/ai/local-llm';
 import { checkEvidence } from '@/lib/ai/evidence';
 import { useLocalModels } from '@/lib/ai/model-server';
@@ -69,6 +70,10 @@ function validateInput(body) {
     body.jobDescription.length > LIMITS.jobDescription
   ) {
     return 'A valid job description is required (maximum 12000 characters).';
+  }
+
+  if (containsEmbeddedResume(body.jobDescription)) {
+    return 'The job description contains a RESUME section. Remove the resume text; the selected candidate resume is supplied separately.';
   }
 
   if (body.mode === 'candidate') {
@@ -279,7 +284,7 @@ export async function POST(request) {
     });
     return apiError(
       'LOCAL_EVALUATOR_UNAVAILABLE',
-      'The HireLabs evaluator is not responding. Check that Ollama is running.',
+      'The configured Ollama evaluator is not responding. Check OLLAMA_URL, OLLAMA_KEY, and server availability.',
       503
     );
   }
