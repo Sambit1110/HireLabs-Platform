@@ -7,8 +7,8 @@ import { cleanResumeText } from '@/lib/resume/text';
 import { enrichResume } from '@/lib/resume/profile-enrichment';
 import { callModelServerFile } from '@/lib/ai/model-server';
 import { checkAIRateLimit } from '@/lib/api/ai-rate-limit';
-import { embedText } from '@/lib/resume/embedding';
-import { ResumeProcessingError, resumeProcessingFailure } from '@/lib/resume/processing-errors';
+import { embedText, toPgVector } from '@/lib/resume/embedding';
+import { ResumeProcessingError, databaseErrorCode, resumeProcessingFailure } from '@/lib/resume/processing-errors';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -185,7 +185,10 @@ async function extractResumeText(buffer, fileType) {
   return cleanedText;
 }
 
-async function updateResume(
+// Not async on purpose: callers chain .select().single() onto the returned query
+// builder. An async function would wrap it in a Promise, and `.select` on a Promise
+// threw a TypeError that failed every upload at the final save.
+function updateResume(
   supabase,
   resumeId,
   userId,
@@ -196,6 +199,27 @@ async function updateResume(
     .update(fields)
     .eq('id', resumeId)
     .eq('user_id', userId);
+}
+
+/** Embeds the resume text and stores the vector. Returns embedded_at, or null on any failure. */
+async function saveEmbedding(supabase, resumeId, userId, text) {
+  try {
+    const { vector } = await embedText(text);
+    const embedding = toPgVector(vector);
+    if (!embedding) return null;
+    const embeddedAt = new Date().toISOString();
+    const { error } = await updateResume(supabase, resumeId, userId, { embedding, embedded_at: embeddedAt });
+    if (error) {
+      console.warn('Saving the resume embedding failed:', { dbCode: databaseErrorCode(error) });
+      return null;
+    }
+    return embeddedAt;
+  } catch (error) {
+    console.warn('Embedding generation on parse failed (will be retried/backfilled):', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return null;
+  }
 }
 
 export async function POST(request) {
@@ -351,19 +375,8 @@ export async function POST(request) {
     const profileCompleteness =
       calculateCompleteness(profile);
 
-    // Generate 384-d dense embedding vector for semantic matching
-    let embedding = null;
-    let embeddedAt = null;
-    try {
-      const embedResult = await embedText(text);
-      if (Array.isArray(embedResult.vector) && embedResult.vector.length === 384) {
-        embedding = embedResult.vector;
-        embeddedAt = new Date().toISOString();
-      }
-    } catch (embedError) {
-      console.warn('Embedding generation on parse failed (will be retried/backfilled):', embedError?.message);
-    }
-
+    // 1. Save the parsed profile on its own, so a resume is parsed even if the
+    //    embedding step below fails.
     const fields = {
       parsed_text: text,
       extracted_skills: profile.extractedSkills,
@@ -373,8 +386,6 @@ export async function POST(request) {
       profile_completeness: profileCompleteness,
       parser_error: enrichment.error || null,
       processing_status: 'parsed',
-      embedding,
-      embedded_at: embeddedAt,
     };
 
     const {
@@ -392,7 +403,12 @@ export async function POST(request) {
     if (saveError) {
       throw saveError;
     }
-    return apiSuccess({ ...saved, model_used: enrichment.modelUsed || null });
+
+    // 2. Add the 384-d embedding for semantic matching. Never fails the upload: a resume
+    //    without one is skipped by Rank candidates until it is backfilled.
+    const embeddedAt = await saveEmbedding(auth.supabase, resume.id, auth.user.id, text);
+
+    return apiSuccess({ ...saved, embedded_at: embeddedAt, model_used: enrichment.modelUsed || null });
   } catch (error) {
     const failure = resumeProcessingFailure(error);
     console.error('Resume processing failed:', {
@@ -401,6 +417,7 @@ export async function POST(request) {
           ? error.name
           : 'UnknownError',
       code: failure.code,
+      dbCode: databaseErrorCode(error),
     });
 
     if (resume?.id) {
