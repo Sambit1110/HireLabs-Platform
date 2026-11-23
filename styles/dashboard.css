@@ -870,6 +870,114 @@
   font-size: 14px;
 }
 
+.eval-breakdown {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.eval-breakdown li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 12px;
+  font-size: 14px;
+}
+
+.eval-breakdown__bar {
+  grid-column: 1 / -1;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(243, 233, 223, 0.12);
+}
+
+.eval-breakdown__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--d-champagne);
+}
+
+.eval-matrix-wrap {
+  overflow-x: auto;
+}
+
+.eval-matrix {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.eval-matrix th,
+.eval-matrix td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--d-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.eval-matrix thead th {
+  color: var(--d-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.eval-matrix tbody th {
+  font-weight: 600;
+}
+
+.eval-matrix__kind {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.eval-matrix td .eval-chip {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.eval-matrix__quote {
+  color: var(--d-text);
+  font-style: italic;
+}
+
+/* Phones: each skill becomes a small card (skill and status, then the quote). */
+@media (max-width: 640px) {
+  .eval-matrix {
+    min-width: 0;
+  }
+
+  .eval-matrix thead {
+    display: none;
+  }
+
+  .eval-matrix tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--d-line);
+  }
+
+  .eval-matrix th,
+  .eval-matrix td {
+    padding: 0;
+    border: 0;
+  }
+
+  .eval-matrix__quote {
+    grid-column: 1 / -1;
+  }
+}
+
 .eval-quotes {
   display: grid;
   gap: 10px;
