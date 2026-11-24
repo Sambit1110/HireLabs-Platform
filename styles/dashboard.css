@@ -1565,9 +1565,108 @@
   text-decoration-color: currentColor;
 }
 
-/* Jump targets land below the sticky header. */
+/* Jump targets land below the sticky header and the "On this page" bar
+   (both heights are measured by SectionNav). */
 .dashboard-anchor {
-  scroll-margin-top: 96px;
+  scroll-margin-top: calc(var(--dashboard-header-h, 72px) + var(--section-nav-h, 54px) + 16px);
+}
+
+/* A section focused by a jump shows no ring unless the keyboard moved there. */
+.dashboard-anchor:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------- On this page ---------- */
+/* The bar sits flush under the header; the header's old bottom margin (index.css) moves below it. */
+.dashboard-header:has(+ .section-nav) {
+  margin-bottom: 0;
+}
+
+.section-nav {
+  position: sticky;
+  top: var(--dashboard-header-h, 72px);
+  z-index: 9;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px max(24px, calc((100vw - 1180px) / 2));
+  border-bottom: 1px solid var(--d-line);
+  background: rgba(42, 3, 4, 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.section-nav__label {
+  flex: none;
+  color: var(--d-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-nav__list {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.section-nav__list::-webkit-scrollbar {
+  display: none;
+}
+
+.section-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--d-line);
+  border-radius: 999px;
+  color: var(--d-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.section-nav__link:hover {
+  border-color: var(--d-line-strong);
+  color: var(--d-text);
+}
+
+.section-nav__link[aria-current='location'] {
+  border-color: var(--d-champagne);
+  background: var(--d-champagne);
+  color: var(--d-bg);
+}
+
+.section-nav__link:focus-visible {
+  outline: 2px solid var(--d-champagne);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .section-nav {
+    padding: 8px 16px;
+  }
+
+  .section-nav__label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-nav__link {
+    transition: none;
+  }
 }
 
 /* Cards: a soft, offset shadow and a faint top light give them depth. */
@@ -1633,10 +1732,6 @@
     font-size: 11px;
     letter-spacing: 0.1em;
     white-space: nowrap;
-  }
-
-  .dashboard-anchor {
-    scroll-margin-top: 128px;
   }
 }
 
