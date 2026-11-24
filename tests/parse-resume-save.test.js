@@ -79,17 +79,17 @@ beforeEach(() => {
 });
 
 describe('POST /api/parse-resume saving', () => {
-  it('saves the profile first, then the embedding in pgvector text format', async () => {
+  it('saves the profile and the embedding (pgvector text format) in one database write', async () => {
     const { status, json } = await upload();
     expect(status).toBe(200);
     expect(json.data.processing_status).toBe('parsed');
     expect(json.data.embedded_at).toEqual(expect.any(String));
 
-    const profileSave = updates.find((fields) => fields.processing_status === 'parsed');
-    expect(profileSave).not.toHaveProperty('embedding');
-    const embeddingSave = updates.find((fields) => 'embedding' in fields);
-    expect(embeddingSave.embedding).toBe(toPgVector(VECTOR));
-    expect(updates.indexOf(profileSave)).toBeLessThan(updates.indexOf(embeddingSave));
+    const saves = updates.filter((fields) => fields.processing_status === 'parsed');
+    expect(saves).toHaveLength(1);
+    expect(saves[0].embedding).toBe(toPgVector(VECTOR));
+    expect(saves[0].embedded_at).toBe(json.data.embedded_at);
+    expect(updates.filter((fields) => 'embedding' in fields)).toHaveLength(1);
   });
 
   it('keeps the resume parsed when saving the embedding fails', async () => {
@@ -100,6 +100,9 @@ describe('POST /api/parse-resume saving', () => {
     expect(json.data.processing_status).toBe('parsed');
     expect(json.data.embedded_at).toBeNull();
     expect(updates.some((fields) => fields.processing_status === 'failed')).toBe(false);
+    // The profile is saved again without the embedding.
+    const retry = updates.filter((fields) => fields.processing_status === 'parsed').at(-1);
+    expect(retry).not.toHaveProperty('embedding');
     expect(warn).toHaveBeenCalledWith('Saving the resume embedding failed:', { dbCode: '22P02' });
     warn.mockRestore();
   });
