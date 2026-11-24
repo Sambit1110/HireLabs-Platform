@@ -101,7 +101,7 @@ def main():
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--vocab-size", type=int, default=2048)
-    parser.add_argument("--max-len", type=int, default=256, help="Tokens read per document (about 2.5 per word)")
+    parser.add_argument("--max-len", type=int, default=512, help="Tokens read per document (about 2.5 per word)")
     parser.add_argument("--steps", type=int, default=1500)
     parser.add_argument("--batch-size", type=int, default=48)
     parser.add_argument("--lr", type=float, default=2e-4)
