@@ -8,6 +8,7 @@ import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_MATCHES } from "@/lib/fixtures/sample-evaluation";
 import ModelBadge from "@/components/dashboard/ModelBadge";
 import { isParsedStatus } from "@/lib/resume/status";
+import { buildRankingRows, exportFileName, rankingToCsv } from "@/lib/resume/ranking-export";
 
 const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
 const MAX_JOB_DESCRIPTION = 12000;
@@ -18,6 +19,7 @@ type RankableResume = {
   candidate_name: string | null;
   candidate_title: string | null;
   extracted_skills: string[] | null;
+  years_experience?: number | null;
   processing_status: string;
   parsed_text: string | null;
 };
@@ -43,6 +45,8 @@ type MatchRow = {
   file_name?: string;
   candidate_name?: string | null;
   candidate_title?: string | null;
+  years_experience?: number | null;
+  extracted_skills?: string[] | null;
   similarity: number;
   llm_fit?: LlmFit | null;
   fit?: Fit | null;
@@ -67,15 +71,10 @@ function readSignals(value: unknown): MatchSignals | null {
   return { similarity, llmScore };
 }
 
-const VERDICT_TEXT: Record<string, string> = {
-  strong: "strong fit",
-  moderate: "moderate fit",
-  weak: "weak fit",
-  insufficient_evidence: "not enough evidence",
-};
-
 type Ranking = {
   matches: MatchRow[];
+  /** The target role typed when this ranking ran (names the exported file). */
+  role: string;
   model: ModelInfo;
   sample: boolean;
 };
@@ -98,6 +97,9 @@ function readLlmFit(value: unknown): LlmFit | null {
 type CandidateRankingProps = {
   resumes: RankableResume[];
   onExplain: (candidateId: string, role: string, jobDescription: string, signals: MatchSignals | null) => void;
+  /** Blind review: show aliases instead of names, and no file names. */
+  blind: boolean;
+  aliases: Map<string, string>;
 };
 
 function parseMatches(value: unknown): MatchRow[] {
@@ -117,22 +119,42 @@ function parseMatches(value: unknown): MatchRow[] {
     .sort((a, b) => (b.fit?.score ?? -1) - (a.fit?.score ?? -1) || b.similarity - a.similarity);
 }
 
-function similarityPercent(similarity: number) {
-  return Math.round(Math.min(1, Math.max(0, similarity)) * 100);
-}
-
-export default function CandidateRanking({ resumes, onExplain }: CandidateRankingProps) {
+export default function CandidateRanking({ resumes, onExplain, blind, aliases }: CandidateRankingProps) {
   const [role, setRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [ranking, setRanking] = useState<Ranking | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [exportNote, setExportNote] = useState("");
   const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
   const byId = new Map(resumes.map((resume) => [resume.id, resume]));
   const parsedCount = resumes.filter((resume) => isParsedStatus(resume.processing_status)).length;
+  // What the list shows and what the CSV holds come from the same rows.
+  const rows = ranking ? buildRankingRows(ranking.matches, byId, { blind, aliases }) : [];
+
+  const exportCsv = () => {
+    if (!ranking || rows.length === 0) return;
+    try {
+      const fileName = exportFileName({ role: ranking.role, blind, sample: ranking.sample });
+      const blob = new Blob([rankingToCsv(rows, { blind })], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      // Safari can cancel a download whose URL is revoked straight away.
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setExportNote(`Saved ${fileName}${blind ? " (blind review: no names or file names)" : ""}.`);
+    } catch {
+      setExportNote("The ranking could not be exported. Please try again.");
+    }
+  };
 
   const rank = async () => {
     if (busy || !jobDescription.trim()) return;
@@ -143,6 +165,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
 
     setBusy(true);
     setError("");
+    setExportNote("");
     setRanking(null);
 
     try {
@@ -190,6 +213,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
 
       setRanking({
         matches: parseMatches(payload.data?.matches),
+        role: role.trim(),
         model: describeModel(payload.data),
         sample: false,
       });
@@ -209,8 +233,10 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
     controllerRef.current = null;
     setBusy(false);
     setError("");
+    setExportNote("");
     setRanking({
       matches: SAMPLE_MATCHES,
+      role: role.trim(),
       model: describeModel({ model_used: "hirelabs-matcher" }),
       sample: true,
     });
@@ -297,7 +323,22 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
             <span className="eval-muted">
               {ranking.matches.length} candidate{ranking.matches.length === 1 ? "" : "s"} ranked
             </span>
+            <button
+              type="button"
+              className="dashboard-secondary ranking__export"
+              disabled={rows.length === 0}
+              onClick={exportCsv}
+              title={blind ? "Download this ranking as a CSV file, without names or file names" : "Download this ranking as a CSV file"}
+            >
+              Export CSV
+            </button>
           </div>
+
+          {exportNote && (
+            <p className="eval-muted" role="status">
+              {exportNote}
+            </p>
+          )}
 
           {ranking.sample && (
             <p className="sample-banner" role="note">
@@ -318,26 +359,20 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
           ) : (
             <ol className="ranking__list">
               {ranking.matches.map((match, index) => {
+                const row = rows[index];
                 const resume = byId.get(match.id);
-                const name =
-                  resume?.candidate_name?.trim() ||
-                  match.candidate_name?.trim() ||
-                  (resume?.file_name || match.file_name || "Unnamed resume").replace(/\.[^.]+$/, "");
-                const rawTitle = resume?.candidate_title || match.candidate_title;
-                const title = rawTitle && rawTitle.toLowerCase() !== name.toLowerCase() ? rawTitle : "Title not extracted";
-                const skills = (resume?.extracted_skills || []).slice(0, 6);
-                const similarity = similarityPercent(match.similarity);
-                const fitScore = match.fit?.score ?? null;
+                const skills = row.skills.slice(0, 6);
+                const similarity = row.similarityPercent;
+                const fitScore = row.fitScore;
                 const canExplain = Boolean(resume?.parsed_text?.trim()) && !ranking.sample;
-                const fit = match.llm_fit;
 
                 return (
                   <li key={match.id} className="ranking__item">
-                    <span className="ranking__rank">#{index + 1}</span>
+                    <span className="ranking__rank">#{row.rank}</span>
 
                     <div className="ranking__body">
-                      <p className="ranking__name">{name}</p>
-                      <p className="eval-muted">{title}</p>
+                      <p className="ranking__name">{row.candidate}</p>
+                      <p className="eval-muted">{row.title ?? "Title not extracted"}</p>
 
                       {skills.length > 0 && (
                         <ul className="eval-chips">
@@ -349,15 +384,15 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                         </ul>
                       )}
 
-                      {(fit || match.fit) && (
+                      {(row.llmScore !== null || match.fit) && (
                         <div className="ranking__llm">
                           <p className="eval-muted">
                             Text similarity {similarity}%
-                            {fit ? <> · hirelabs-llm {fit.score}/100</> : null}
+                            {row.llmScore !== null ? <> · hirelabs-llm {row.llmScore}/100</> : null}
                           </p>
-                          {fit.missing_skills.length > 0 && (
+                          {row.missingSkills.length > 0 && (
                             <ul className="eval-chips" aria-label="Required skills not found in the resume">
-                              {fit.missing_skills.map((skill) => (
+                              {row.missingSkills.map((skill) => (
                                 <li key={skill} className="eval-chip eval-chip--missing">
                                   Missing: {skill}
                                 </li>
@@ -373,7 +408,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
                         <>
                           <span>
                             <strong>{fitScore}</strong>/100 fit
-                            <span className="eval-muted"> · {VERDICT_TEXT[match.fit?.verdict ?? ""] ?? match.fit?.verdict}</span>
+                            <span className="eval-muted"> · {row.verdict}</span>
                           </span>
                           <span className="ranking__bar" role="img" aria-label={`Fit score ${fitScore} out of 100`}>
                             <span style={{ width: `${fitScore}%` }} />

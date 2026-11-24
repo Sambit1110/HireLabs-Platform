@@ -16,6 +16,7 @@ import { containsEmbeddedResume } from "@/lib/ai/input-validation";
 import CandidateEvaluation from "@/components/dashboard/CandidateEvaluation";
 import FeedbackBar from "@/components/dashboard/FeedbackBar";
 import ModelBadge from "@/components/dashboard/ModelBadge";
+import { blindSkills, blindTitle, identityNames, redactDeep } from "@/lib/resume/blind-review";
 
 const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
 
@@ -72,6 +73,9 @@ type AIAnalysisPanelProps = {
   preset?: AnalysisPreset | null;
   onReprocess?: (candidateId: string) => void;
   reprocessingId?: string;
+  /** Blind review: aliases instead of names, no resume text, no contact details. */
+  blind?: boolean;
+  aliases?: Map<string, string>;
 };
 
 function isRecord(
@@ -126,13 +130,22 @@ function getErrorMessage(payload: ApiResponse): string {
   return "AI analysis could not be completed.";
 }
 
-function candidateLabel(candidate: Candidate) {
+function candidateLabel(candidate: Candidate, blind: boolean, aliases: Map<string, string>) {
+  if (blind) return aliases.get(candidate.id) || "Hidden candidate";
   return (
     candidate.candidate_name?.trim() ||
     candidate.candidate_title?.trim() ||
     `Candidate ${candidate.id.slice(0, 8)}`
   );
 }
+
+/** The candidate's title: in blind review only a job title, with any name taken out. */
+function candidateTitle(candidate: Candidate, blind: boolean, aliases: Map<string, string>) {
+  if (!blind) return candidate.candidate_title?.trim() || "";
+  return blindTitle(candidate, candidateLabel(candidate, true, aliases)) || "";
+}
+
+const NO_ALIASES = new Map<string, string>();
 
 function hasContent(value: unknown): boolean {
   if (value === null || value === undefined) {
@@ -419,6 +432,8 @@ export default function AIAnalysisPanel({
   preset = null,
   onReprocess,
   reprocessingId = "",
+  blind = false,
+  aliases = NO_ALIASES,
 }: AIAnalysisPanelProps) {
   const [candidateId, setCandidateId] = useState("");
   const [role, setRole] = useState("");
@@ -475,6 +490,20 @@ export default function AIAnalysisPanel({
   const candidateReady = Boolean(
     selectedCandidate?.parsed_text?.trim()
   );
+
+  // What is shown (and copied): in blind review, the evaluation without the candidate's
+  // name or contact details. The stored result keeps the original, so switching back is instant.
+  const shownResult = useMemo(() => {
+    if (!result || !blind) return result;
+    const candidate = candidates.find((item) => item.id === result.candidateId);
+    return {
+      ...result,
+      data: redactDeep(result.data, {
+        names: identityNames(candidate),
+        alias: candidate ? candidateLabel(candidate, true, aliases) : "The candidate",
+      }),
+    };
+  }, [result, blind, candidates, aliases]);
 
   const jobDescriptionHasResume = containsEmbeddedResume(jobDescription);
   // The target role is optional: the server reads it from the job description.
@@ -755,9 +784,9 @@ export default function AIAnalysisPanel({
                 key={candidate.id}
                 value={candidate.id}
               >
-                {candidateLabel(candidate)}
+                {candidateLabel(candidate, blind, aliases)}
                 {" · "}
-                {candidate.candidate_title || "No title"}
+                {candidateTitle(candidate, blind, aliases) || "No title"}
               </option>
             ))}
           </select>
@@ -771,11 +800,11 @@ export default function AIAnalysisPanel({
         >
           <div className="resume-main">
             <h3>
-              {candidateLabel(selectedCandidate)}
+              {candidateLabel(selectedCandidate, blind, aliases)}
             </h3>
 
             <p>
-              {selectedCandidate.candidate_title ||
+              {candidateTitle(selectedCandidate, blind, aliases) ||
                 "Professional title not extracted"}
             </p>
 
@@ -788,11 +817,10 @@ export default function AIAnalysisPanel({
 
             <p className="resume-skills">
               <strong>Extracted skills: </strong>
-              {selectedCandidate.extracted_skills?.length
-                ? selectedCandidate.extracted_skills.join(
-                    ", "
-                  )
-                : "No skills extracted"}
+              {(blind
+                ? blindSkills(selectedCandidate.extracted_skills, selectedCandidate)
+                : selectedCandidate.extracted_skills || []
+              ).join(", ") || "No skills extracted"}
             </p>
 
             {selectedCandidate.parser_error && (
@@ -822,7 +850,13 @@ export default function AIAnalysisPanel({
               </p>
             )}
 
-            {candidateReady && (
+            {candidateReady && blind && (
+              <p className="resume-note">
+                The resume text is hidden in blind review. The evaluation still reads all of it.
+              </p>
+            )}
+
+            {candidateReady && !blind && (
               <details className="candidate-resume-text">
                 <summary>
                   View extracted resume text ({selectedCandidate.parsed_text?.length.toLocaleString()} characters)
@@ -923,10 +957,10 @@ export default function AIAnalysisPanel({
         </p>
       )}
 
-      {result && (
+      {shownResult && (
         <ResultDisplay
-          key={`${result.mode}-${result.generatedAt}`}
-          analysis={result}
+          key={`${shownResult.mode}-${shownResult.generatedAt}`}
+          analysis={shownResult}
           jobDescription={jobDescription}
         />
       )}

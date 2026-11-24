@@ -679,6 +679,25 @@
   background: var(--d-warn);
 }
 
+/* Blind review: the switch shows its state, and a banner says what is hidden. */
+.blind-toggle.is-on {
+  border-color: var(--d-champagne);
+  background: rgba(232, 203, 168, 0.16);
+  color: var(--d-champagne);
+}
+
+.blind-banner {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border: 1px solid rgba(232, 203, 168, 0.4);
+  border-radius: 12px;
+  background: rgba(232, 203, 168, 0.1);
+  color: var(--d-champagne);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .sample-banner {
   margin: 14px 0;
   padding: 10px 14px;
@@ -1023,6 +1042,14 @@
 
 .ranking__meta .model-badge {
   margin-top: 0;
+}
+
+/* Export CSV sits at the end of the ranking's meta line. */
+.ranking__export {
+  margin-left: auto;
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 .ranking__list {

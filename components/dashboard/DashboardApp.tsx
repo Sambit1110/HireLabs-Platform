@@ -25,6 +25,26 @@ import {
   isPendingStatus,
   statusLabel,
 } from "@/lib/resume/status";
+import { blindAliases, blindSkills, blindTitle, candidateDisplayName } from "@/lib/resume/blind-review";
+
+/** Per-browser memory of the Blind review switch (a convenience only: it can be unavailable). */
+const BLIND_STORAGE_KEY = "hirelabs:blind-review";
+
+function readBlindPreference() {
+  try {
+    return window.localStorage.getItem(BLIND_STORAGE_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+function saveBlindPreference(on: boolean) {
+  try {
+    window.localStorage.setItem(BLIND_STORAGE_KEY, on ? "on" : "off");
+  } catch {
+    // Private windows or blocked storage: the switch still works for this visit.
+  }
+}
 
 type Resume = {
   id: string;
@@ -75,13 +95,6 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function candidateName(resume: Resume) {
-  return (
-    resume.candidate_name?.trim() ||
-    resume.file_name.replace(/\.[^.]+$/, "")
-  );
-}
-
 function Stat({
   label,
   value,
@@ -114,9 +127,11 @@ function normalizedSkills(resume: Resume) {
 
 function CandidateComparison({
   candidates,
+  label,
   onClear,
 }: {
   candidates: Resume[];
+  label: (resume: Resume) => string;
   onClear: () => void;
 }) {
   const skillMaps = useMemo(
@@ -183,7 +198,7 @@ function CandidateComparison({
                   key={candidate.id}
                   style={{ padding: 12 }}
                 >
-                  {candidateName(candidate)}
+                  {label(candidate)}
                 </th>
               ))}
             </tr>
@@ -357,6 +372,29 @@ export default function DashboardApp() {
 
   const [analysisPreset, setAnalysisPreset] =
     useState<AnalysisPreset | null>(null);
+
+  // Blind review hides names, file names and contact details on screen and in exports.
+  const [blind, setBlind] = useState(false);
+  useEffect(() => {
+    // Read after mount: the server render has no localStorage.
+    setBlind(readBlindPreference());
+  }, []);
+  const toggleBlind = () => {
+    setBlind((on) => {
+      saveBlindPreference(!on);
+      return !on;
+    });
+  };
+  const aliases = useMemo(() => blindAliases(resumes), [resumes]);
+  const candidateName = useCallback(
+    (resume: Resume) => candidateDisplayName(resume, { blind, aliases }),
+    [blind, aliases]
+  );
+  // The title and skills to show: in blind review, without names, links or contact details.
+  const shownTitle = (resume: Resume) =>
+    blind ? blindTitle(resume, candidateName(resume)) : resume.candidate_title;
+  const shownSkills = (resume: Resume) =>
+    blind ? blindSkills(resume.extracted_skills, resume) : resume.extracted_skills || [];
 
   const explainCandidate = (
     candidateId: string,
@@ -645,7 +683,7 @@ export default function DashboardApp() {
   const remove = async (resume: Resume) => {
     if (
       !window.confirm(
-        `Delete "${resume.file_name}"? This removes the file and its resume record.`
+        `Delete ${blind ? `the resume of ${candidateName(resume)}` : `"${resume.file_name}"`}? This removes the file and its resume record.`
       )
     ) {
       return;
@@ -723,10 +761,14 @@ export default function DashboardApp() {
       <CandidateRanking
         resumes={resumes}
         onExplain={explainCandidate}
+        blind={blind}
+        aliases={aliases}
       />
 
       <AIAnalysisPanel
         candidates={aiCandidates}
+        blind={blind}
+        aliases={aliases}
         preset={analysisPreset}
         reprocessingId={actionId}
         onReprocess={(resumeId) => {
@@ -831,7 +873,12 @@ export default function DashboardApp() {
 
       {selectedCandidates.length >= 2 && (
         <CandidateComparison
-          candidates={selectedCandidates}
+          candidates={selectedCandidates.map((resume) => ({
+            ...resume,
+            candidate_title: shownTitle(resume),
+            extracted_skills: shownSkills(resume),
+          }))}
+          label={candidateName}
           onClear={() => setSelectedIds([])}
         />
       )}
@@ -873,6 +920,15 @@ export default function DashboardApp() {
             )}
             <button
               type="button"
+              className={`dashboard-secondary blind-toggle${blind ? " is-on" : ""}`}
+              aria-pressed={blind}
+              onClick={toggleBlind}
+              title="Hide candidate names, file names and contact details while you review"
+            >
+              Blind review: {blind ? "on" : "off"}
+            </button>
+            <button
+              type="button"
               className="dashboard-secondary"
               disabled={loading}
               onClick={() => void load()}
@@ -881,6 +937,14 @@ export default function DashboardApp() {
             </button>
           </div>
         </div>
+
+        {blind && (
+          <p className="blind-banner" role="note">
+            Blind review is on. Names, file names, resume text and contact details are hidden
+            on this page and in exports, and candidates are shown as Candidate 1, 2, 3 (in upload
+            order). Scores do not change.
+          </p>
+        )}
 
         {error && (
           <p className="dashboard-alert" role="alert">
@@ -1012,12 +1076,12 @@ export default function DashboardApp() {
                     </div>
 
                     <p className="resume-filename">
-                      {resume.file_name}
+                      {blind ? "File name hidden (blind review)" : resume.file_name}
                     </p>
 
                     <p>
-                      {resume.candidate_title ||
-                        "Title not extracted"}
+                      {shownTitle(resume) ||
+                        (blind ? "Title hidden or not extracted" : "Title not extracted")}
 
                       {resume.years_experience !== null
                         ? ` · ${resume.years_experience} years experience`
@@ -1036,10 +1100,10 @@ export default function DashboardApp() {
                       ).toLocaleDateString()}
                     </p>
 
-                    {resume.extracted_skills?.length ? (
+                    {shownSkills(resume).length ? (
                       <p className="resume-skills">
                         <strong>Skills: </strong>
-                        {resume.extracted_skills.join(", ")}
+                        {shownSkills(resume).join(", ")}
                       </p>
                     ) : null}
 
