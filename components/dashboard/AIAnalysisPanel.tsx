@@ -655,9 +655,6 @@ export default function AIAnalysisPanel({
     >
       <div className="dashboard-section-heading">
         <div>
-          <p className="dashboard-eyebrow">
-            AI RECRUITMENT INTELLIGENCE
-          </p>
 
           <h2 id="ai-analysis-heading">
             Advanced AI analysis

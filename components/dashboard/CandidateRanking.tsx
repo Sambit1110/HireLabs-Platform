@@ -219,7 +219,6 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
     <section className="dashboard-card" aria-labelledby="ranking-heading">
       <div className="dashboard-section-heading" style={{ marginTop: 0 }}>
         <div>
-          <p className="dashboard-eyebrow">SEMANTIC MATCHING</p>
           <h2 id="ranking-heading">Rank candidates for a job</h2>
           <p>
             Paste a job description to rank your {parsedCount} parsed resume
