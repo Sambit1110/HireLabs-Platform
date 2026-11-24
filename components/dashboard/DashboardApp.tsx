@@ -12,6 +12,9 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/resume/ResumeUpload";
+import { isEmptyQuery, matchResume, parseSkillQuery } from "@/lib/resume/skill-search";
+import { runWithConcurrency } from "@/lib/resume/batch";
+import { parseResumeWithRetry } from "@/lib/resume/service";
 import AIAnalysisPanel, {
   type AnalysisPreset,
 } from "@/components/dashboard/AIAnalysisPanel";
@@ -340,6 +343,8 @@ export default function DashboardApp() {
 
   const [error, setError] = useState("");
   const [actionId, setActionId] = useState("");
+  // "Re-process all": progress of re-extracting every stored resume with the current rules.
+  const [reprocess, setReprocess] = useState<{ done: number; failed: number; total: number } | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
@@ -479,20 +484,20 @@ export default function DashboardApp() {
     };
   }, [resumes]);
 
-  const filteredResumes = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
+  // Skill search: "SQL + Python, 3+ years", aliases understood, resume text searched too.
+  const parsedSearch = useMemo(() => parseSkillQuery(search), [search]);
+  const searchMatches = useMemo(() => {
+    const matches = new Map<string, string[]>();
+    for (const resume of resumes) {
+      const result = matchResume(resume, parsedSearch);
+      if (result.match) matches.set(resume.id, result.matched);
+    }
+    return matches;
+  }, [resumes, parsedSearch]);
 
+  const filteredResumes = useMemo(() => {
     return resumes.filter((resume) => {
-      const matchesSearch =
-        !query ||
-        [
-          resume.candidate_name || "",
-          resume.file_name,
-          resume.candidate_title || "",
-          ...(resume.extracted_skills || []),
-        ].some((value) =>
-          value.toLocaleLowerCase().includes(query)
-        );
+      const matchesSearch = searchMatches.has(resume.id);
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -504,7 +509,42 @@ export default function DashboardApp() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [resumes, search, statusFilter]);
+  }, [resumes, searchMatches, statusFilter]);
+
+  const reprocessTargets = resumes.filter((resume) => !isPendingStatus(resume.processing_status));
+  const reprocessBusy = reprocess !== null && reprocess.done < reprocess.total;
+
+  const reprocessAll = async () => {
+    if (reprocessBusy || !reprocessTargets.length) return;
+    if (!window.confirm(`Re-process all ${reprocessTargets.length} resumes? Profiles and skills are extracted again with the latest rules. This takes about ${Math.max(1, Math.ceil(reprocessTargets.length / 8))} min.`)) return;
+    const supabase = createClient();
+    setReprocess({ done: 0, failed: 0, total: reprocessTargets.length });
+    await runWithConcurrency(
+      reprocessTargets,
+      async (resume) => {
+        const result = await parseResumeWithRetry(supabase, resume.id);
+        if (!result.ok) throw new Error(result.message);
+      },
+      {
+        concurrency: 2,
+        onSettled: (outcome) =>
+          setReprocess((current) => current && {
+            ...current,
+            done: current.done + 1,
+            failed: current.failed + (outcome.status === "rejected" ? 1 : 0),
+          }),
+      }
+    );
+    await load();
+  };
+
+  const searchSummary = isEmptyQuery(parsedSearch)
+    ? ""
+    : `${searchMatches.size} of ${resumes.length} resume${resumes.length === 1 ? "" : "s"} match ` +
+      [
+        ...parsedSearch.terms.map((term) => term.label),
+        ...(parsedSearch.minYears !== null ? [`${parsedSearch.minYears}+ years`] : []),
+      ].join(" + ");
 
   const selectedCandidates = useMemo(() => {
     return selectedIds
@@ -794,8 +834,8 @@ export default function DashboardApp() {
               onChange={(event) =>
                 setSearch(event.target.value)
               }
-              placeholder="Search candidate, title, or skill"
-              aria-label="Search resumes"
+              placeholder="Search skills (e.g. SQL + Python, 3+ years) or a name"
+              aria-label="Search resumes by skill, years of experience or name"
               className="dashboard-search"
             />
 
@@ -814,6 +854,31 @@ export default function DashboardApp() {
               <option value="processing">Pending</option>
               <option value="failed">Failed</option>
             </select>
+          </div>
+
+          {searchSummary && (
+            <p className="eval-muted" role="status" style={{ marginTop: 12 }}>
+              {searchSummary}
+            </p>
+          )}
+
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 12 }}>
+            <button
+              type="button"
+              className="dashboard-secondary"
+              disabled={reprocessBusy || reprocessTargets.length === 0}
+              onClick={() => void reprocessAll()}
+              title="Extract profiles and skills again for every resume, with the latest rules"
+            >
+              {reprocessBusy ? "Re-processing…" : `Re-process all (${reprocessTargets.length})`}
+            </button>
+            {reprocess && (
+              <span className="eval-muted" role="status" aria-live="polite">
+                {reprocess.done} of {reprocess.total} re-processed
+                {reprocess.failed ? ` · ${reprocess.failed} failed` : ""}
+                {!reprocessBusy ? " · done" : ""}
+              </span>
+            )}
           </div>
 
           <p className="resume-note" style={{ marginTop: 12 }}>
@@ -957,6 +1022,16 @@ export default function DashboardApp() {
                         {resume.extracted_skills.join(", ")}
                       </p>
                     ) : null}
+
+                    {(searchMatches.get(resume.id)?.length ?? 0) > 0 && (
+                      <ul className="eval-chips" aria-label="Searched skills found in this resume">
+                        {searchMatches.get(resume.id)!.map((skill) => (
+                          <li key={skill} className="eval-chip eval-chip--match">
+                            ✓ {skill}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
 
                     {resume.parser_error && (
                       <p className="resume-note">
