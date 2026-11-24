@@ -201,19 +201,11 @@ function updateResume(
     .eq('user_id', userId);
 }
 
-/** Embeds the resume text and stores the vector. Returns embedded_at, or null on any failure. */
-async function saveEmbedding(supabase, resumeId, userId, text) {
+/** Embeds the resume text for semantic matching. Returns the pgvector text, or null on any failure. */
+async function embedResume(text) {
   try {
     const { vector } = await embedText(text);
-    const embedding = toPgVector(vector);
-    if (!embedding) return null;
-    const embeddedAt = new Date().toISOString();
-    const { error } = await updateResume(supabase, resumeId, userId, { embedding, embedded_at: embeddedAt });
-    if (error) {
-      console.warn('Saving the resume embedding failed:', { dbCode: databaseErrorCode(error) });
-      return null;
-    }
-    return embeddedAt;
+    return toPgVector(vector);
   } catch (error) {
     console.warn('Embedding generation on parse failed (will be retried/backfilled):', {
       name: error instanceof Error ? error.name : 'UnknownError',
@@ -314,27 +306,29 @@ export async function POST(request) {
       );
     }
 
-    // Set processing state before extraction.
-    const { error: stateError } = await updateResume(
-      auth.supabase,
-      resume.id,
-      auth.user.id,
-      {
-        processing_status: 'processing',
-        parser_error: null,
-      }
-    );
+    // Set the processing state while the file downloads: both are round trips to
+    // the database's region, so they run at once.
+    const [
+      { error: stateError },
+      { data: file, error: downloadError },
+    ] = await Promise.all([
+      updateResume(
+        auth.supabase,
+        resume.id,
+        auth.user.id,
+        {
+          processing_status: 'processing',
+          parser_error: null,
+        }
+      ),
+      auth.supabase.storage
+        .from('resumes')
+        .download(resume.file_path),
+    ]);
 
     if (stateError) {
       throw stateError;
     }
-
-    const {
-      data: file,
-      error: downloadError,
-    } = await auth.supabase.storage
-      .from('resumes')
-      .download(resume.file_path);
 
     if (downloadError || !file) {
       throw new Error(
@@ -363,7 +357,11 @@ export async function POST(request) {
       fileType
     );
 
-    const enrichment = await enrichResume(text);
+    // Profile fields and the 384-d embedding come from the model server; ask for both at once.
+    const [enrichment, embedding] = await Promise.all([
+      enrichResume(text),
+      embedResume(text),
+    ]);
 
     const profile = enrichment.value || {
       candidateName: null,
@@ -375,8 +373,6 @@ export async function POST(request) {
     const profileCompleteness =
       calculateCompleteness(profile);
 
-    // 1. Save the parsed profile on its own, so a resume is parsed even if the
-    //    embedding step below fails.
     const fields = {
       parsed_text: text,
       extracted_skills: profile.extractedSkills,
@@ -388,25 +384,33 @@ export async function POST(request) {
       processing_status: 'parsed',
     };
 
-    const {
-      data: saved,
-      error: saveError,
-    } = await updateResume(
-      auth.supabase,
-      resume.id,
-      auth.user.id,
-      fields
-    ).select(
-      'id,processing_status,candidate_name,candidate_title,years_experience,extracted_skills,profile_completeness,parser_error,embedded_at'
-    ).single();
+    const saveProfile = (values) =>
+      updateResume(
+        auth.supabase,
+        resume.id,
+        auth.user.id,
+        values
+      ).select(
+        'id,processing_status,candidate_name,candidate_title,years_experience,extracted_skills,profile_completeness,parser_error,embedded_at'
+      ).single();
+
+    // Save the profile and the embedding in one write. The embedding never fails the
+    // upload: if that write fails, the profile is saved without it, and Rank candidates
+    // skips the resume until it is backfilled.
+    let embeddedAt = embedding ? new Date().toISOString() : null;
+    let { data: saved, error: saveError } = await saveProfile(
+      embedding ? { ...fields, embedding, embedded_at: embeddedAt } : fields
+    );
+
+    if (saveError && embedding) {
+      console.warn('Saving the resume embedding failed:', { dbCode: databaseErrorCode(saveError) });
+      embeddedAt = null;
+      ({ data: saved, error: saveError } = await saveProfile(fields));
+    }
 
     if (saveError) {
       throw saveError;
     }
-
-    // 2. Add the 384-d embedding for semantic matching. Never fails the upload: a resume
-    //    without one is skipped by Rank candidates until it is backfilled.
-    const embeddedAt = await saveEmbedding(auth.supabase, resume.id, auth.user.id, text);
 
     return apiSuccess({ ...saved, embedded_at: embeddedAt, model_used: enrichment.modelUsed || null });
   } catch (error) {

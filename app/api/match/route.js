@@ -93,25 +93,26 @@ export async function POST(request) {
       throw new Error(`Invalid embedding vector dimension: expected 384, got ${vector?.length}`);
     }
 
-    // 2. Persist job description in public.job_descriptions (scoped to user via RLS)
-    try {
-      const { error: saveJdError } = await auth.supabase.from('job_descriptions').insert({
-        user_id: auth.user.id,
-        title: title || 'Job Description',
-        text: jdText,
-        embedding: toPgVector(vector),
-      });
-      if (saveJdError) {
-        console.warn('Could not persist job description:', { dbCode: databaseErrorCode(saveJdError) });
+    // 2. Persist the job description (scoped to user via RLS) and, after a matcher switch,
+    //    re-embed this recruiter's resumes stored with the old matcher, so the ranking below
+    //    compares like with like. Both run at once: each is a round trip to the database.
+    const saveJd = (async () => {
+      try {
+        const { error: saveJdError } = await auth.supabase.from('job_descriptions').insert({
+          user_id: auth.user.id,
+          title: title || 'Job Description',
+          text: jdText,
+          embedding: toPgVector(vector),
+        });
+        if (saveJdError) {
+          console.warn('Could not persist job description:', { dbCode: databaseErrorCode(saveJdError) });
+        }
+      } catch (saveJdErr) {
+        // Non-fatal if table migration hasn't run yet in dev
+        console.warn('Could not persist job description:', saveJdErr.message);
       }
-    } catch (saveJdErr) {
-      // Non-fatal if table migration hasn't run yet in dev
-      console.warn('Could not persist job description:', saveJdErr.message);
-    }
-
-    // 2b. After a matcher switch, re-embed this recruiter's resumes stored with the old matcher,
-    //     so the ranking below compares like with like.
-    await refreshStaleEmbeddings(auth.supabase, auth.user.id, releasedAt);
+    })();
+    await Promise.all([saveJd, refreshStaleEmbeddings(auth.supabase, auth.user.id, releasedAt)]);
 
     // 3. Call pgvector match_resumes RPC
     const { data: rawMatches, error: rpcError } = await auth.supabase.rpc('match_resumes', {
