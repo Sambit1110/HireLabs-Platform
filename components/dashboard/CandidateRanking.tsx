@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { fetchWithNetworkRetry } from "@/lib/api/fetch-retry";
 import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_MATCHES } from "@/lib/fixtures/sample-evaluation";
 import ModelBadge from "@/components/dashboard/ModelBadge";
@@ -153,7 +154,7 @@ export default function CandidateRanking({ resumes, onExplain }: CandidateRankin
         throw new Error("Your session expired. Please sign in again.");
       }
 
-      const response = await fetch("/api/match", {
+      const response = await fetchWithNetworkRetry("/api/match", {
         method: "POST",
         signal: controller.signal,
         headers: {

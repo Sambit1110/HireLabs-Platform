@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { fetchWithNetworkRetry } from "@/lib/api/fetch-retry";
 
 type Summary = {
   count: number;
@@ -31,7 +32,7 @@ export default function FeedbackSummary() {
       try {
         const { data: { session } } = await createClient().auth.getSession();
         if (!session?.access_token) throw new Error("Sign in to see your feedback.");
-        const response = await fetch("/api/feedback", { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const response = await fetchWithNetworkRetry("/api/feedback", { headers: { Authorization: `Bearer ${session.access_token}` } });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || payload.success !== true) throw new Error(payload.error?.message || "Feedback could not be loaded.");
         if (active) setState({ status: "ready", summary: payload.data.summary as Summary });

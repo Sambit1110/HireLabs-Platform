@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { fetchWithNetworkRetry } from "@/lib/api/fetch-retry";
 
 type Props = {
   resumeId: string;
@@ -52,7 +53,7 @@ export default function FeedbackBar({ resumeId, jobDescription, modelUsed, model
     try {
       const { data: { session } } = await createClient().auth.getSession();
       if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
-      const response = await fetch("/api/feedback", {
+      const response = await fetchWithNetworkRetry("/api/feedback", {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ resumeId, jobDescription, modelUsed, modelScore, modelVerdict, agrees, humanScore: scoreValue, note }),
