@@ -1363,3 +1363,269 @@
 .bulk-item--processing .bulk-item__stage {
   color: var(--d-champagne);
 }
+
+/* ==========================================================================
+   Workspace refinements: home navigation, next-step heading, pipeline bar,
+   card depth and section rhythm. Same tokens as above; nothing new.
+   ========================================================================== */
+.dashboard-shell {
+  scrollbar-color: rgba(232, 203, 168, 0.35) transparent;
+}
+
+.dashboard-header__start {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dashboard-brand {
+  transition: color 150ms ease;
+}
+
+.dashboard-brand:hover {
+  color: var(--d-champagne);
+}
+
+.dashboard-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px 0 9px;
+  border: 1px solid var(--d-line);
+  border-radius: 999px;
+  color: var(--d-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-home:hover {
+  border-color: var(--d-line-strong);
+  background: rgba(243, 233, 223, 0.06);
+  color: var(--d-text);
+}
+
+.dashboard-home svg {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dashboard-home:hover svg {
+  transform: translateX(-2px);
+}
+
+/* The heading says what to do next; the primary action sits beside it. */
+.dashboard-heading {
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.dashboard-heading h1 {
+  margin: 0 0 10px;
+  font-size: 48px;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.dashboard-heading p {
+  max-width: 62ch;
+  font-size: 16px;
+}
+
+.dashboard-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-heading__actions .btn-primary {
+  text-decoration: none;
+}
+
+/* Pipeline: one bar instead of four identical number cards. */
+.dashboard-pipeline {
+  margin: 0 0 8px;
+  padding: 20px 22px;
+  border: 1px solid var(--d-line);
+  border-radius: 20px;
+  background: var(--d-card);
+  box-shadow: inset 0 1px 0 rgba(243, 233, 223, 0.05), 0 24px 48px -30px rgba(0, 0, 0, 0.7);
+}
+
+.dashboard-pipeline__bar {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(243, 233, 223, 0.1);
+}
+
+.dashboard-pipeline__bar span {
+  flex-basis: 0;
+  min-width: 6px;
+  border-radius: 999px;
+  transition: flex-grow 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dashboard-pipeline__bar .is-parsed,
+.dashboard-dot.is-parsed {
+  background: var(--d-good);
+}
+
+.dashboard-pipeline__bar .is-pending,
+.dashboard-dot.is-pending {
+  background: var(--d-warn);
+}
+
+.dashboard-pipeline__bar .is-failed,
+.dashboard-dot.is-failed {
+  background: var(--d-bad);
+}
+
+.dashboard-pipeline__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 26px;
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--d-muted);
+  font-size: 14px;
+  list-style: none;
+}
+
+.dashboard-pipeline__legend li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.dashboard-pipeline__legend strong {
+  color: var(--d-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-pipeline__legend li:first-child strong {
+  font-family: var(--lp-font-display), 'DM Serif Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.dashboard-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateY(-1px);
+}
+
+.dashboard-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--d-bad);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(244, 173, 165, 0.45);
+  text-underline-offset: 4px;
+}
+
+.dashboard-link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Jump targets land below the sticky header. */
+.dashboard-anchor {
+  scroll-margin-top: 96px;
+}
+
+/* Cards: a soft, offset shadow and a faint top light give them depth. */
+.dashboard-card,
+.dashboard-empty,
+.dashboard-skeleton {
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(243, 233, 223, 0.05), 0 24px 48px -30px rgba(0, 0, 0, 0.7);
+}
+
+.dashboard-card {
+  padding: 26px 28px;
+}
+
+.dashboard-section-heading {
+  margin: 56px 0 18px;
+}
+
+.ranking__score strong,
+.eval-score strong,
+.dashboard-stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .dashboard-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-heading h1 {
+    font-size: 36px;
+  }
+
+  .dashboard-card {
+    padding: 20px 18px;
+  }
+
+  .dashboard-section-heading {
+    margin-top: 40px;
+  }
+
+  .dashboard-pipeline__legend {
+    gap: 8px 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  /* A compact header on phones: email hidden (Log out stays), nav on one line. */
+  .dashboard-account span {
+    display: none;
+  }
+
+  .dashboard-header nav {
+    flex: 1 0 100%;
+    gap: 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .dashboard-header nav a {
+    flex: none;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .dashboard-anchor {
+    scroll-margin-top: 128px;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-header__start {
+    gap: 10px;
+  }
+
+  .dashboard-home {
+    padding: 0 10px 0 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-home svg,
+  .dashboard-pipeline__bar span {
+    transition: none;
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useEffect, useState } from "react";
 
 import {
@@ -222,24 +222,11 @@ export default function ModelResults() {
 
   return (
     <main className="dashboard-shell">
-      <header className="dashboard-header">
-        <Link href="/dashboard" className="dashboard-brand">
-          HireLabs
-        </Link>
-
-        <nav aria-label="Dashboard">
-          <Link href="/dashboard">Overview</Link>
-          <Link href="/dashboard/resumes">Resume library</Link>
-          <Link href="/dashboard/results" aria-current="page">
-            Model results
-          </Link>
-        </nav>
-      </header>
+      <DashboardHeader current="results" />
 
       <div className="dashboard-content">
         <div className="dashboard-heading">
           <div className="results-intro">
-            <p className="dashboard-eyebrow">EVALUATION</p>
             <h1>Model results</h1>
             <p>
               How HireLabs&apos; own models compare with a simple keyword baseline,

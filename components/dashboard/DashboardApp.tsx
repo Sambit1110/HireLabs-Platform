@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/resume/ResumeUpload";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { isEmptyQuery, matchResume, parseSkillQuery } from "@/lib/resume/skill-search";
 import { runWithConcurrency } from "@/lib/resume/batch";
 import { parseResumeWithRetry } from "@/lib/resume/service";
@@ -81,21 +82,6 @@ function candidateName(resume: Resume) {
   );
 }
 
-function normalizedSkills(resume: Resume) {
-  const skills = new Map<string, string>();
-
-  for (const skill of resume.extracted_skills || []) {
-    const trimmed = skill.trim();
-    const key = trimmed.toLocaleLowerCase();
-
-    if (key && !skills.has(key)) {
-      skills.set(key, trimmed);
-    }
-  }
-
-  return skills;
-}
-
 function Stat({
   label,
   value,
@@ -109,6 +95,21 @@ function Stat({
       <strong>{value}</strong>
     </div>
   );
+}
+
+function normalizedSkills(resume: Resume) {
+  const skills = new Map<string, string>();
+
+  for (const skill of resume.extracted_skills || []) {
+    const trimmed = skill.trim();
+    const key = trimmed.toLocaleLowerCase();
+
+    if (key && !skills.has(key)) {
+      skills.set(key, trimmed);
+    }
+  }
+
+  return skills;
 }
 
 function CandidateComparison({
@@ -699,6 +700,144 @@ export default function DashboardApp() {
     }
   };
 
+  // Overview order: the main task (ranking a job) comes first once there are parsed resumes.
+  const rankFirst = !library && stats.parsed > 0;
+
+  const nextStep =
+    stats.total === 0
+      ? "Upload resumes to start ranking candidates for a job."
+      : stats.pending > 0
+        ? `${stats.pending} resume${stats.pending === 1 ? " is" : "s are"} still processing; ${stats.parsed} ready to rank.`
+        : stats.failed > 0
+          ? `${stats.parsed} resume${stats.parsed === 1 ? "" : "s"} ready to rank. ${stats.failed} failed: retry ${stats.failed === 1 ? "it" : "them"} below.`
+          : `${stats.parsed} resume${stats.parsed === 1 ? "" : "s"} ready to rank. Paste a job to see who fits.`;
+
+  const showFailed = () => {
+    setStatusFilter("failed");
+    document.getElementById("candidates")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const rankBlock = (
+    <section id="rank" className="dashboard-anchor" aria-label="Rank and evaluate candidates">
+
+      <CandidateRanking
+        resumes={resumes}
+        onExplain={explainCandidate}
+      />
+
+      <AIAnalysisPanel
+        candidates={aiCandidates}
+        preset={analysisPreset}
+        reprocessingId={actionId}
+        onReprocess={(resumeId) => {
+          const resume = resumes.find((item) => item.id === resumeId);
+          if (resume) void retry(resume);
+        }}
+      />
+    </section>
+  );
+
+  const uploadBlock = (
+    <div id="upload" className="dashboard-anchor">
+      <ResumeUpload
+        onUploaded={() => void load()}
+      />
+    </div>
+  );
+
+  const managementBlock = (
+    <>
+      <section
+        id="candidates"
+        className="dashboard-resume-list dashboard-anchor"
+        aria-label="Candidate management"
+      >
+        <div className="dashboard-section-heading">
+          <div>
+            <h2>Candidate management</h2>
+            <p>
+              Search, filter, and select candidates for
+              comparison.
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 12,
+            marginTop: 16,
+          }}
+        >
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              setSearch(event.target.value)
+            }
+            placeholder="Search skills (e.g. SQL + Python, 3+ years) or a name"
+            aria-label="Search resumes by skill, years of experience or name"
+            className="dashboard-search"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event.target.value as StatusFilter
+              )
+            }
+            aria-label="Filter by processing status"
+            className="dashboard-select"
+          >
+            <option value="all">All statuses</option>
+            <option value="parsed">Parsed</option>
+            <option value="processing">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+
+        {searchSummary && (
+          <p className="eval-muted" role="status" style={{ marginTop: 12 }}>
+            {searchSummary}
+          </p>
+        )}
+
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 12 }}>
+          <button
+            type="button"
+            className="dashboard-secondary"
+            disabled={reprocessBusy || reprocessTargets.length === 0}
+            onClick={() => void reprocessAll()}
+            title="Extract profiles and skills again for every resume, with the latest rules"
+          >
+            {reprocessBusy ? "Re-processing…" : `Re-process all (${reprocessTargets.length})`}
+          </button>
+          {reprocess && (
+            <span className="eval-muted" role="status" aria-live="polite">
+              {reprocess.done} of {reprocess.total} re-processed
+              {reprocess.failed ? ` · ${reprocess.failed} failed` : ""}
+              {!reprocessBusy ? " · done" : ""}
+            </span>
+          )}
+        </div>
+
+        <p className="resume-note" style={{ marginTop: 12 }}>
+          {selectedIds.length} of 3 candidates selected
+          for comparison. Select at least 2 parsed resumes.
+        </p>
+      </section>
+
+      {selectedCandidates.length >= 2 && (
+        <CandidateComparison
+          candidates={selectedCandidates}
+          onClear={() => setSelectedIds([])}
+        />
+      )}
+    </>
+  );
+
   if (authLoading || !user) {
     return (
       <main className="dashboard-shell">
@@ -709,79 +848,38 @@ export default function DashboardApp() {
 
   return (
     <main className="dashboard-shell">
-      <header className="dashboard-header">
-        <Link
-          href="/dashboard"
-          className="dashboard-brand"
-        >
-          HireLabs
-        </Link>
-
-        <nav aria-label="Dashboard">
-          <Link
-            href="/dashboard"
-            aria-current={
-              !library ? "page" : undefined
-            }
-          >
-            Overview
-          </Link>
-
-          <Link
-            href="/dashboard/resumes"
-            aria-current={
-              library ? "page" : undefined
-            }
-          >
-            Resume library
-          </Link>
-
-          <Link href="/dashboard/results">
-            Model results
-          </Link>
-        </nav>
-
-        <div className="dashboard-account">
-          <span>{user.email}</span>
-
-          <button
-            type="button"
-            className="dashboard-logout"
-            onClick={() => void logout()}
-          >
-            Log out
-          </button>
-        </div>
-      </header>
+      <DashboardHeader
+        current={library ? "library" : "overview"}
+        email={user.email}
+        onLogout={() => void logout()}
+      />
 
       <div className="dashboard-content">
         <div className="dashboard-heading">
           <div>
-            <p className="dashboard-eyebrow">
-              RECRUITER WORKSPACE
-            </p>
-
-            <h1>
-              {library
-                ? "Resume library"
-                : "Welcome to HireLabs"}
-            </h1>
-
+            <h1>{library ? "Resume library" : "Welcome back"}</h1>
             <p>
               {library
-                ? "Manage candidates, compare profiles, and review resume evidence."
-                : `Signed in as ${user.email || "your account"}.`}
+                ? "Search, compare and re-process every resume you have uploaded."
+                : nextStep}
             </p>
           </div>
 
-          <button
-            type="button"
-            className="dashboard-secondary"
-            disabled={loading}
-            onClick={() => void load()}
-          >
-            {loading ? "Refreshing…" : "Refresh"}
-          </button>
+          <div className="dashboard-heading__actions">
+            {!library && (
+              <a className="btn btn-primary" href={stats.parsed > 0 ? "#rank" : "#upload"}>
+                {stats.parsed > 0 ? "Rank candidates" : "Upload resumes"}
+              </a>
+            )}
+            <button
+              type="button"
+              className="dashboard-secondary"
+              disabled={loading}
+              onClick={() => void load()}
+            >
+              {loading ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -790,136 +888,58 @@ export default function DashboardApp() {
           </p>
         )}
 
-        {!library && (
-          <div
-            className="dashboard-stats"
-            aria-label="Resume statistics"
-          >
-            <Stat label="Total resumes" value={stats.total} />
-            <Stat label="Parsed" value={stats.parsed} />
-            <Stat label="Pending" value={stats.pending} />
-            <Stat label="Failed" value={stats.failed} />
-          </div>
+        {!library && stats.total > 0 && (
+          <section className="dashboard-pipeline" aria-label="Resume pipeline">
+            <div
+              className="dashboard-pipeline__bar"
+              role="img"
+              aria-label={`${stats.parsed} parsed, ${stats.pending} pending and ${stats.failed} failed, of ${stats.total} resumes`}
+            >
+              {stats.parsed > 0 && <span className="is-parsed" style={{ flexGrow: stats.parsed }} />}
+              {stats.pending > 0 && <span className="is-pending" style={{ flexGrow: stats.pending }} />}
+              {stats.failed > 0 && <span className="is-failed" style={{ flexGrow: stats.failed }} />}
+            </div>
+            <ul className="dashboard-pipeline__legend">
+              <li>
+                <strong>{stats.total}</strong> resume{stats.total === 1 ? "" : "s"}
+              </li>
+              <li>
+                <span className="dashboard-dot is-parsed" aria-hidden="true" />
+                <strong>{stats.parsed}</strong> parsed
+              </li>
+              <li>
+                <span className="dashboard-dot is-pending" aria-hidden="true" />
+                <strong>{stats.pending}</strong> pending
+              </li>
+              <li>
+                <span className="dashboard-dot is-failed" aria-hidden="true" />
+                {stats.failed > 0 ? (
+                  <button type="button" className="dashboard-link" onClick={showFailed}>
+                    <strong>{stats.failed}</strong> failed: show them
+                  </button>
+                ) : (
+                  <>
+                    <strong>0</strong> failed
+                  </>
+                )}
+              </li>
+            </ul>
+          </section>
         )}
 
-        <ResumeUpload
-          onUploaded={() => void load()}
-        />
-
-        <section
-          className="dashboard-resume-list"
-          aria-label="Candidate management"
-        >
-          <div className="dashboard-section-heading">
-            <div>
-              <h2>Candidate management</h2>
-              <p>
-                Search, filter, and select candidates for
-                comparison.
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 12,
-              marginTop: 16,
-            }}
-          >
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-              placeholder="Search skills (e.g. SQL + Python, 3+ years) or a name"
-              aria-label="Search resumes by skill, years of experience or name"
-              className="dashboard-search"
-            />
-
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(
-                  event.target.value as StatusFilter
-                )
-              }
-              aria-label="Filter by processing status"
-              className="dashboard-select"
-            >
-              <option value="all">All statuses</option>
-              <option value="parsed">Parsed</option>
-              <option value="processing">Pending</option>
-              <option value="failed">Failed</option>
-            </select>
-          </div>
-
-          {searchSummary && (
-            <p className="eval-muted" role="status" style={{ marginTop: 12 }}>
-              {searchSummary}
-            </p>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 12 }}>
-            <button
-              type="button"
-              className="dashboard-secondary"
-              disabled={reprocessBusy || reprocessTargets.length === 0}
-              onClick={() => void reprocessAll()}
-              title="Extract profiles and skills again for every resume, with the latest rules"
-            >
-              {reprocessBusy ? "Re-processing…" : `Re-process all (${reprocessTargets.length})`}
-            </button>
-            {reprocess && (
-              <span className="eval-muted" role="status" aria-live="polite">
-                {reprocess.done} of {reprocess.total} re-processed
-                {reprocess.failed ? ` · ${reprocess.failed} failed` : ""}
-                {!reprocessBusy ? " · done" : ""}
-              </span>
-            )}
-          </div>
-
-          <p className="resume-note" style={{ marginTop: 12 }}>
-            {selectedIds.length} of 3 candidates selected
-            for comparison. Select at least 2 parsed resumes.
-          </p>
-        </section>
-
-        {selectedCandidates.length >= 2 && (
-          <CandidateComparison
-            candidates={selectedCandidates}
-            onClear={() => setSelectedIds([])}
-          />
+        {rankFirst ? (
+          <>
+            {rankBlock}
+            {uploadBlock}
+            {managementBlock}
+          </>
+        ) : (
+          <>
+            {uploadBlock}
+            {managementBlock}
+            {rankBlock}
+          </>
         )}
-
-        <section aria-label="AI recruitment analysis">
-          <div className="dashboard-section-heading">
-            <div>
-              <h2>AI recruitment analysis</h2>
-              <p>
-                Review AI-powered candidate evaluations and
-                recruitment insights.
-              </p>
-            </div>
-          </div>
-
-          <CandidateRanking
-            resumes={resumes}
-            onExplain={explainCandidate}
-          />
-
-          <AIAnalysisPanel
-            candidates={aiCandidates}
-            preset={analysisPreset}
-            reprocessingId={actionId}
-            onReprocess={(resumeId) => {
-              const resume = resumes.find((item) => item.id === resumeId);
-              if (resume) void retry(resume);
-            }}
-          />
-        </section>
 
         {!library && (
           <div className="dashboard-section-heading">
