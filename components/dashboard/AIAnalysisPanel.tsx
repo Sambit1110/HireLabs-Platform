@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { fetchWithNetworkRetry } from "@/lib/api/fetch-retry";
 import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_EVALUATION } from "@/lib/fixtures/sample-evaluation";
 import { containsEmbeddedResume } from "@/lib/ai/input-validation";
@@ -557,7 +558,8 @@ export default function AIAnalysisPanel({
               ...(presetSignals ? { signals: presetSignals } : {}),
             };
 
-      const response = await fetch("/api/ai-analyze", {
+      // Analysis only reads data, so a dropped connection is retried once.
+      const response = await fetchWithNetworkRetry("/api/ai-analyze", {
         method: "POST",
         signal: controller.signal,
         headers: {
