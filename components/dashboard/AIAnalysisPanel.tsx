@@ -699,7 +699,8 @@ export default function AIAnalysisPanel({
   return (
     <section
       ref={sectionRef}
-      className="dashboard-card ai-analysis"
+      id="analysis"
+      className="dashboard-card ai-analysis dashboard-anchor"
       aria-labelledby="ai-analysis-heading"
     >
       <div className="dashboard-section-heading">

@@ -13,6 +13,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/resume/ResumeUpload";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import SectionNav from "@/components/dashboard/SectionNav";
+import { dashboardSections } from "@/lib/dashboard/sections";
 import { isEmptyQuery, matchResume, parseSkillQuery } from "@/lib/resume/skill-search";
 import { runWithConcurrency } from "@/lib/resume/batch";
 import { parseResumeWithRetry } from "@/lib/resume/service";
@@ -164,7 +166,8 @@ function CandidateComparison({
 
   return (
     <section
-      className="dashboard-resume-list"
+      id="compare"
+      className="dashboard-resume-list dashboard-anchor"
       aria-label="Candidate comparison"
     >
       <div className="dashboard-section-heading">
@@ -740,6 +743,8 @@ export default function DashboardApp() {
 
   // Overview order: the main task (ranking a job) comes first once there are parsed resumes.
   const rankFirst = !library && stats.parsed > 0;
+  // The "On this page" pills, in the same order as the sections below.
+  const sections = dashboardSections({ library, rankFirst, showCompare: selectedCandidates.length >= 2 });
 
   const nextStep =
     stats.total === 0
@@ -901,6 +906,8 @@ export default function DashboardApp() {
         onLogout={() => void logout()}
       />
 
+      <SectionNav sections={sections} />
+
       <div className="dashboard-content">
         <div className="dashboard-heading">
           <div>
@@ -1006,7 +1013,7 @@ export default function DashboardApp() {
         )}
 
         {!library && (
-          <div className="dashboard-section-heading">
+          <div id="resumes" className="dashboard-section-heading dashboard-anchor">
             <h2>Recent uploads</h2>
 
             <Link href="/dashboard/resumes">
@@ -1016,7 +1023,7 @@ export default function DashboardApp() {
         )}
 
         {library && (
-          <div className="dashboard-section-heading">
+          <div id="resumes" className="dashboard-section-heading dashboard-anchor">
             <h2>All resumes</h2>
             <span>
               {filteredResumes.length} results
