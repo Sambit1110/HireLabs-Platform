@@ -10,8 +10,9 @@ no pretrained model, no fine-tuning, no Gemini and no score labels.
 - **Tokenizer:** the team's own byte-pair tokenizer (2,048 tokens), trained on the training
   text, as in hirelabs-llm.
 - **Encoder** ([encoder.py](../scripts/python/hirelabs_llm/encoder.py)): 4 transformer layers,
-  4 heads, width 256, up to 256 tokens of text (`--max-len`). The token vectors are averaged and projected to
-  384 numbers, then scaled to length 1. 3.85M parameters, 15 MB on disk.
+  4 heads, width 256, up to 512 tokens of text (`--max-len`, about 200 words). The token
+  vectors are averaged and projected to 384 numbers, then scaled to length 1. 3.91M parameters,
+  16 MB on disk. On 2 CPU threads it embeds 32 resumes in about half a second.
 - **Training** ([train_scratch_matcher.py](../scripts/python/train_scratch_matcher.py)):
   contrastive (InfoNCE). In each batch of 48, every job is pulled towards a resume with the same
   role and pushed away from the other resumes. Other same-role resumes in the batch are not
@@ -28,8 +29,9 @@ v2 keeps v1's 384 dimensions, so the database column and search function stay th
 Trained on `HireLabs-Data-plus`, made by
 [import_external.py](../scripts/dataset/import_external.py). That is the team dataset plus two
 public datasets of real resumes and job posts (see the [dataset card](dataset-card.md)):
-831 training resumes and 1,140 jobs. 1,500 steps took 17 minutes on an Apple M5. The best
-checkpoint was step 750.
+831 training resumes and 1,140 jobs. 1,500 steps took 48 minutes on an Apple M5. The best
+checkpoint was step 1,250. A first version that read 256 tokens trained in 17 minutes; it was
+live for about an hour on 2026-11-24 before the 512-token version replaced it.
 
 ```bash
 python3 -I scripts/dataset/import_external.py --team /path/HireLabs-Data \
@@ -46,36 +48,38 @@ job's. The views are the same as for hirelabs-llm: full text, resume titles remo
 lines removed, and re-laid-out by rules. Numbers are MRR, with Recall@1 in brackets.
 
 **Free-text resumes** (split `extdev`): 30 held-out real resumes from the public dataset,
-323 jobs. Neither model trained on these resumes.
+323 jobs. No model trained on these resumes.
 
-| View | v1 (fine-tuned BGE) | **v2 (from scratch)** | v2, team data only | Skill-overlap rule |
-|---|---|---|---|---|
-| Full text | 0.784 (67%) | **0.892 (82%)** | 0.261 (13%) | 0.135 (8%) |
-| Titles removed | **0.347 (17%)** | 0.323 (13%) | 0.081 (0%) | 0.136 (8%) |
-| ~35% of lines removed | 0.634 (43%) | **0.751 (70%)** | 0.225 (12%) | 0.133 (8%) |
-| Re-laid-out | 0.787 (67%) | **0.864 (78%)** | 0.277 (12%) | 0.125 (7%) |
+| View | v1 (fine-tuned BGE) | **v2 (from scratch, 512 tokens)** | v2, 256 tokens | v2, team data only | Skill-overlap rule |
+|---|---|---|---|---|---|
+| Full text | 0.784 (67%) | **0.959 (93%)** | 0.892 (82%) | 0.261 (13%) | 0.135 (8%) |
+| Titles removed | 0.347 (17%) | **0.529 (37%)** | 0.323 (13%) | 0.081 (0%) | 0.136 (8%) |
+| ~35% of lines removed | 0.634 (43%) | **0.894 (86%)** | 0.751 (70%) | 0.225 (12%) | 0.133 (8%) |
+| Re-laid-out | 0.787 (67%) | **0.949 (92%)** | 0.864 (78%) | 0.277 (12%) | 0.125 (7%) |
 
 **Team template resumes** (split `dev`): 150 held-out resumes, 333 jobs.
 
-| View | v1 (fine-tuned BGE) | **v2 (from scratch)** | v2, team data only | Skill-overlap rule |
-|---|---|---|---|---|
-| Full text | **0.997 (99.7%)** | 0.962 (95.5%) | 0.934 (92.5%) | 0.521 (31.5%) |
-| Titles removed | 0.537 (34.5%) | **0.568 (36.9%)** | 0.488 (27.9%) | 0.521 (31.5%) |
-| ~35% of lines removed | **0.905 (87.4%)** | 0.884 (85.0%) | 0.843 (79.9%) | 0.381 (22.5%) |
-| Re-laid-out | **0.997 (99.7%)** | 0.954 (93.7%) | 0.935 (91.6%) | 0.341 (19.5%) |
+| View | v1 (fine-tuned BGE) | **v2 (from scratch, 512 tokens)** | v2, 256 tokens | v2, team data only | Skill-overlap rule |
+|---|---|---|---|---|---|
+| Full text | **0.997 (99.7%)** | 0.988 (98.5%) | 0.962 (95.5%) | 0.934 (92.5%) | 0.521 (31.5%) |
+| Titles removed | 0.537 (34.5%) | **0.573 (42.0%)** | 0.568 (36.9%) | 0.488 (27.9%) | 0.521 (31.5%) |
+| ~35% of lines removed | **0.905 (87.4%)** | 0.896 (86.5%) | 0.884 (85.0%) | 0.843 (79.9%) | 0.381 (22.5%) |
+| Re-laid-out | **0.997 (99.7%)** | 0.989 (98.5%) | 0.954 (93.7%) | 0.935 (91.6%) | 0.341 (19.5%) |
 
 What this shows:
 
-- **On free text, v2 beats v1** in three of four views. With titles removed, v1 is slightly
-  ahead on MRR (0.347 against 0.323), while v2 finds a same-role resume in the top 5 more often
-  (69% against 57%).
-- **On template resumes, v1 is a little ahead**, except with titles removed.
+- **On free text, v2 beats v1 in all four views**, by the widest margin with titles removed
+  (0.529 against 0.347) and with lines removed (0.894 against 0.634).
+- **On template resumes, v1 and v2 are close.** v1 is slightly ahead on full and re-laid-out
+  text, v2 with titles removed.
+- **Reading more text helped.** Going from 256 to 512 tokens (about 100 to 200 words) improved
+  every view, most of all on free text.
 - **The extra data made the difference.** Trained on the team data alone, v2 fails on free
-  text (MRR 0.261). Free-text resumes in training lifted it to 0.892.
+  text (MRR 0.261).
 - **Fair-comparison caveat.** v2 trained on other resumes from the same public dataset as the
   `extdev` test resumes, and v1 never saw that dataset. Part of v2's lead may come from that.
-- **Similarity range.** v2 spreads scores wider than v1. Same-role pairs mostly score 0.7 to
-  0.99, others -0.6 to 0.65. The fit score still maps 0.2–0.7 onto 0–100% (anything below 0
+- **Similarity range.** v2 spreads scores wider than v1. On free text, same-role pairs mostly
+  score 0.57 to 0.92 and others -0.46 to 0.43 (v1: 0.50 to 0.71 against 0.34 to 0.51). The fit score still maps 0.2–0.7 onto 0–100% (anything below 0
   counts as 0), and the dashboard clamps the shown percentage at 0.
 
 Decision: v2 is live since 2026-11-24. It meets the "from scratch, no fine-tuning" rule, and it
@@ -107,9 +111,9 @@ for it.
 ## Limitations
 
 - **"Relevant" means same role**, not a human judgment of fit. Near roles count as misses.
-- **Only the first 256 tokens** of a document are read (about 100 words: the small vocabulary
-  splits words into about 2.5 tokens each). A long resume's
-  later jobs and projects are ignored. v1 read up to 512 tokens.
+- **Only the first 512 tokens** of a document are read: about 200 words, because the small
+  vocabulary splits a word into about 2.5 tokens. Later jobs and projects in a long resume are
+  ignored. v1 also read 512 tokens, but its tokens are whole words more often.
 - **Small free-text test set:** 30 resumes. The numbers move by a few points between runs.
 - **Public data of unknown origin.** Both public datasets are labelled Apache-2.0, but neither
   says where its text came from. See the dataset card.

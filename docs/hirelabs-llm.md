@@ -84,7 +84,7 @@ gets about 0.14.
 - The website sends full text, so v3 replaced v2. v2 is kept as `models/hirelabs-llm-v2` for
   rollback.
 - hirelabs-matcher v2 ([hirelabs-matcher-v2.md](hirelabs-matcher-v2.md)) does far better on
-  free text (MRR 0.892). That is one reason the fit score gives the matcher 30% and the LLM 15%.
+  free text (MRR 0.959). That is one reason the fit score gives the matcher 30% and the LLM 15%.
 
 ### v2
 
