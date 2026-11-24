@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Assemble a folder you can push to a Hugging Face Space (Docker SDK).
 #   scripts/build_hf_space.sh <output-folder> [path/to/hirelabs_parser.whl]
-# Needs models/hirelabs-llm (from scripts/python/train_llm.py). models/hirelabs-matcher is
-# copied when present; without it (or the parser wheel) those routes answer 503.
+# Needs models/hirelabs-llm (from scripts/python/train_llm.py). models/hirelabs-matcher and
+# models/hirelabs-matcher-v2 are copied when present; without a matcher (or the parser wheel)
+# those routes answer 503.
 set -euo pipefail
 
 out="${1:?usage: scripts/build_hf_space.sh <output-folder> [parser.whl]}"
@@ -27,6 +28,11 @@ if [ -d "$root/models/hirelabs-matcher" ]; then
   rsync -a "$root/models/hirelabs-matcher" "$out/models/"
 else
   echo "Note: models/hirelabs-matcher not found; /embed will answer 503."
+fi
+# The from-scratch matcher (docs/hirelabs-matcher-v2.md). Set the Space variable
+# MATCHER_MODEL=/app/models/hirelabs-matcher-v2 to use it.
+if [ -d "$root/models/hirelabs-matcher-v2" ]; then
+  rsync -a --exclude training-log.json "$root/models/hirelabs-matcher-v2" "$out/models/"
 fi
 if [ -n "$wheel" ]; then
   cp "$wheel" "$out/wheels/"

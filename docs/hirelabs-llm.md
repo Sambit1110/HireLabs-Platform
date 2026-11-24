@@ -61,7 +61,34 @@ Unit tests: `python3 -m unittest discover -s scripts/python/tests -t scripts/pyt
 
 ## Results (dev split, held-out resumes)
 
-**v2 (live since 2026-11-24)**, trained with rule-based layout variety (`--relayout-prob 0.5`,
+### v3 (live since 2026-11-24): trained with real free-text resumes and jobs
+
+v3 trained on `HireLabs-Data-plus`: the team data plus two public datasets of real resumes and
+job posts (831 training resumes, 1,140 jobs; see the [dataset card](dataset-card.md) and
+[import_external.py](../scripts/dataset/import_external.py)). 2.22M parameters, 11 minutes on
+an Apple M5, best dev loss 0.702. MRR, with Recall@1 in brackets:
+
+| View | Free-text resumes (`extdev`): v2 | **v3** | Rule | Template resumes (`dev`): v2 | **v3** | Rule |
+|---|---|---|---|---|---|---|
+| Full text | 0.182 (3%) | **0.417 (23%)** | 0.138 | 0.931 (92%) | **0.999 (99.7%)** | 0.535 |
+| Titles removed | **0.246 (2%)** | 0.182 (3%) | 0.147 | 0.516 (31%) | **0.554 (35%)** | 0.508 |
+| ~35% of lines removed | **0.179 (1%)** | 0.158 (1%) | 0.138 | **0.854 (79%)** | 0.797 (69%) | 0.400 |
+| Re-laid-out | 0.084 (0%) | **0.544 (41%)** | 0.149 | 0.921 (90%) | **0.997 (99%)** | 0.359 |
+
+`extdev` is 30 held-out real resumes against 323 jobs; `dev` is the 150 team resumes against
+333 jobs (the team's jobs plus public jobs whose title maps to a team role). Random ranking
+gets about 0.14.
+
+- On free text with titles, v3 is more than twice as good as v2. Without titles or with lines
+  removed, both are close to chance on free text: the LLM still leans on the role title.
+- The website sends full text, so v3 replaced v2. v2 is kept as `models/hirelabs-llm-v2` for
+  rollback.
+- hirelabs-matcher v2 ([hirelabs-matcher-v2.md](hirelabs-matcher-v2.md)) does far better on
+  free text (MRR 0.892). That is one reason the fit score gives the matcher 30% and the LLM 15%.
+
+### v2
+
+**v2**, trained with rule-based layout variety (`--relayout-prob 0.5`,
 see `augment.py`): 4,000 steps, 8.4 minutes on an Apple M5, best dev loss 0.296. Each of the 300
 jobs ranks all 150 dev resumes. A resume counts as relevant when its role equals the job's.
 
@@ -190,17 +217,18 @@ Things to know:
 
 ## Limitations
 
-- **Templated training data: the biggest limitation.** The 850 resumes and 300 jobs follow one
-  fixed layout across 24 roles. Real uploaded resumes look different, and a free-text resume
-  scored 0 against a matching job in a manual check. Before the website relies on this model,
-  it needs more varied resume and job text. Options are a free public resume dataset (record its
-  licence in the dataset card) or real, consented team resumes. The pairing step reads the role
-  from each document's first line, so new text needs a role title there, or a change to
-  `corpus.py`.
+- **Still weak on free text without titles.** v3 added about 130 real free-text resumes and
+  840 real job posts, which helped most when titles are present. With titles removed it is near
+  chance on free text. More real, varied resumes (for example consented team resumes) would
+  help most. The pairing step reads the role from each document's first line, so new text
+  needs a role title there, or a change to `corpus.py`.
 - **"Relevant" means same role.** The evaluation counts a resume as a match only when its role
   equals the job's. That is not a human judgment of fit, and near roles (BI Analyst vs Data
   Analyst) count as misses.
 - **The 0-100 number is not the team rubric.** It estimates "same role" probability. Checking it
   against human scores needs the blind review sheets filled in by people.
-- **Other models.** hirelabs-matcher is fine-tuned from `BAAI/bge-small-en-v1.5`, and the
-  evaluator runs on Ollama. Check both against the "from scratch, no fine-tuning" rule.
+- **Other models.** hirelabs-matcher v2 is from scratch too
+  ([hirelabs-matcher-v2.md](hirelabs-matcher-v2.md)); v1, fine-tuned from
+  `BAAI/bge-small-en-v1.5`, is kept only for rollback. The optional Ollama evaluator
+  (`EVALUATOR_PROVIDER=ollama`) and the bias check's `local` provider are not the team's own
+  models.

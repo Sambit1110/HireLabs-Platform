@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from '@/lib/api/response';
 import { authenticateRequest } from '@/lib/supabase/server-auth';
 import { cleanResumeText } from '@/lib/resume/text';
 import { embedText, toPgVector } from '@/lib/resume/embedding';
+import { refreshStaleEmbeddings } from '@/lib/resume/reembed';
 import { LLM_MODEL, scoreWithLlm } from '@/lib/ai/llm-match';
 import { analyzeCandidate, roleName } from '@/lib/ai/own-analysis';
 import { databaseErrorCode } from '@/lib/resume/processing-errors';
@@ -86,7 +87,7 @@ export async function POST(request) {
 
   try {
     // 1. Generate 384-d dense embedding via hirelabs-matcher
-    const { vector, dim, model_used } = await embedText(jdText);
+    const { vector, dim, model_used, released_at: releasedAt } = await embedText(jdText);
 
     if (!Array.isArray(vector) || vector.length !== 384) {
       throw new Error(`Invalid embedding vector dimension: expected 384, got ${vector?.length}`);
@@ -107,6 +108,10 @@ export async function POST(request) {
       // Non-fatal if table migration hasn't run yet in dev
       console.warn('Could not persist job description:', saveJdErr.message);
     }
+
+    // 2b. After a matcher switch, re-embed this recruiter's resumes stored with the old matcher,
+    //     so the ranking below compares like with like.
+    await refreshStaleEmbeddings(auth.supabase, auth.user.id, releasedAt);
 
     // 3. Call pgvector match_resumes RPC
     const { data: rawMatches, error: rpcError } = await auth.supabase.rpc('match_resumes', {

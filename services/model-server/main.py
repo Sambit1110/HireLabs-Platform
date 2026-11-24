@@ -32,6 +32,8 @@ async def lifespan(app: FastAPI):
     app.state.placeholder = os.getenv("MODEL_PLACEHOLDERS") == "true"
     app.state.parser = None
     app.state.matcher = None
+    app.state.matcher_name = "hirelabs-matcher"
+    app.state.matcher_released_at = None
     app.state.llm = None
     if not app.state.placeholder:
         try:
@@ -40,13 +42,22 @@ async def lifespan(app: FastAPI):
             app.state.parser = spacy.load(os.getenv("PARSER_MODEL") or os.getenv("HIRELABS_PARSER_MODEL", "hirelabs_parser"))
         except (OSError, ImportError):
             print("HireLabs parser unavailable.", file=sys.stderr)
+        matcher_path = os.getenv("MATCHER_MODEL") or os.getenv("MATCHER_MODEL_PATH", "models/hirelabs-matcher")
         try:
-            from sentence_transformers import SentenceTransformer
+            from hirelabs_llm.encoder import ScratchMatcher, is_scratch_matcher
 
-            app.state.matcher = SentenceTransformer(
-                os.getenv("MATCHER_MODEL") or os.getenv("MATCHER_MODEL_PATH", "models/hirelabs-matcher"), local_files_only=True
-            )
-        except (ImportError, OSError, ValueError):
+            if is_scratch_matcher(matcher_path):
+                # hirelabs-matcher v2: built and trained from scratch (train_scratch_matcher.py).
+                app.state.matcher = ScratchMatcher.load(matcher_path)
+                app.state.matcher_name = "hirelabs-matcher-v2"
+                with open(os.path.join(matcher_path, "encoder.json"), encoding="utf-8") as marker:
+                    # Vectors stored before this time came from another matcher; the app re-embeds them.
+                    app.state.matcher_released_at = json.load(marker).get("released_at")
+            else:
+                from sentence_transformers import SentenceTransformer
+
+                app.state.matcher = SentenceTransformer(matcher_path, local_files_only=True)
+        except (ImportError, OSError, ValueError, RuntimeError, KeyError):
             print("HireLabs matcher unavailable.", file=sys.stderr)
         try:
             from hirelabs_llm.score import Scorer
@@ -207,7 +218,8 @@ def embed(body: EmbedInput, request: Request, response: Response):
     return {
         "vectors": vectors.tolist(),
         "dim": 384,
-        "model_used": "hirelabs-matcher",
+        "model_used": getattr(state, "matcher_name", "hirelabs-matcher"),
+        "released_at": getattr(state, "matcher_released_at", None),
     }
 
 

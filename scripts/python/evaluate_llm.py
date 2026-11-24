@@ -44,9 +44,9 @@ def summarize(metrics):
     return {key: round(metrics[key], 4) for key in ("mrr", *(f"recall_at_{k}" for k in KS))} | {"queries": metrics["queries"]}
 
 
-def evaluate(model_dir, data_dir, device="auto", max_jobs=None, seed=0):
+def evaluate(model_dir, data_dir, device="auto", max_jobs=None, seed=0, split="dev"):
     scorer = Scorer.load(model_dir, device=device)
-    dev = Corpus(data_dir, "dev")
+    dev = Corpus(data_dir, split)
     job_ids = sorted(dev.pairable_jobs)
     if max_jobs:
         job_ids = random.Random(seed).sample(job_ids, min(max_jobs, len(job_ids)))
@@ -94,9 +94,11 @@ def main():
     parser.add_argument("--data-dir", required=True, help="HireLabs-Data folder (raw/, splits.json)")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--max-jobs", type=int, help="Evaluate on a random subset of jobs (faster)")
+    parser.add_argument("--split", default="dev", help="Resume split to rank (dev, or extdev for the free-text test set)")
     parser.add_argument("--output", help="Write the results JSON here")
     args = parser.parse_args()
-    result = evaluate(args.model, args.data_dir, args.device, args.max_jobs)
+    result = evaluate(args.model, args.data_dir, args.device, args.max_jobs, split=args.split)
+    result["split"] = args.split
     text = json.dumps(result, indent=2)
     print(text)
     if args.output:
