@@ -1,6 +1,7 @@
 "use client";
 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import FeedbackSummary from "@/components/dashboard/FeedbackSummary";
 import { useEffect, useState } from "react";
 
 import {
@@ -234,6 +235,8 @@ export default function ModelResults() {
             </p>
           </div>
         </div>
+
+        <FeedbackSummary />
 
         {state.status === "loading" && <p role="status">Loading results…</p>}
 

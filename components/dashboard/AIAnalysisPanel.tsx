@@ -13,6 +13,7 @@ import { describeModel, type ModelInfo } from "@/lib/ai/model-info";
 import { SAMPLE_EVALUATION } from "@/lib/fixtures/sample-evaluation";
 import { containsEmbeddedResume } from "@/lib/ai/input-validation";
 import CandidateEvaluation from "@/components/dashboard/CandidateEvaluation";
+import FeedbackBar from "@/components/dashboard/FeedbackBar";
 import ModelBadge from "@/components/dashboard/ModelBadge";
 
 const SHOW_SAMPLE_PREVIEW = process.env.NODE_ENV !== "production";
@@ -247,8 +248,10 @@ function InsightCard({
 
 function ResultDisplay({
   analysis,
+  jobDescription,
 }: {
   analysis: AnalysisResult;
+  jobDescription: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -340,7 +343,22 @@ function ResultDisplay({
       </p>
 
       {analysis.mode === "candidate" && isRecord(analysis.data) ? (
-        <CandidateEvaluation data={analysis.data} />
+        <>
+          <CandidateEvaluation data={analysis.data} />
+          {!analysis.sample && analysis.candidateId && analysis.model.id && jobDescription.trim() && (
+            <FeedbackBar
+              resumeId={analysis.candidateId}
+              jobDescription={jobDescription.trim()}
+              modelUsed={analysis.model.id}
+              modelScore={
+                Number.isInteger(analysis.data.fit_score) && analysis.data.fit_verdict !== "insufficient_evidence"
+                  ? (analysis.data.fit_score as number)
+                  : null
+              }
+              modelVerdict={typeof analysis.data.fit_verdict === "string" ? analysis.data.fit_verdict : null}
+            />
+          )}
+        </>
       ) : sections.length > 0 ? (
         <div
           className="ai-insights-grid"
@@ -907,6 +925,7 @@ export default function AIAnalysisPanel({
         <ResultDisplay
           key={`${result.mode}-${result.generatedAt}`}
           analysis={result}
+          jobDescription={jobDescription}
         />
       )}
 
